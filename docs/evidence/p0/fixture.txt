@@ -1,0 +1,37 @@
+Input #0, lavfi, from 'testsrc2=size=160x120:rate=24:duration=2':
+  Duration: N/A, start: 0.000000, bitrate: N/A
+  Stream #0:0: Video: wrapped_avframe, yuv420p, 160x120 [SAR 1:1 DAR 4:3], 24 fps, 24 tbr, 24 tbn
+Stream mapping:
+  Stream #0:0 -> #0:0 (wrapped_avframe (native) -> h264 (libx264))
+[libx264 @ 000001ab7903bb40] using SAR=1/1
+[libx264 @ 000001ab7903bb40] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+[libx264 @ 000001ab7903bb40] profile High, level 1.1, 4:2:0, 8-bit
+[libx264 @ 000001ab7903bb40] 264 - core 165 - H.264/MPEG-4 AVC codec - Copyleft 2003-2025 - http://www.videolan.org/x264.html - options: cabac=1 ref=3 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=7 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=1 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=4 lookahead_threads=1 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=2 keyint=250 keyint_min=24 scenecut=40 intra_refresh=0 rc_lookahead=40 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+Output #0, mp4, to 'fixtures/generated/P0 合成样例 (48帧).mp4':
+  Metadata:
+    encoder         : Lavf62.12.102
+  Stream #0:0: Video: h264 (avc1 / 0x31637661), yuv420p(tv, progressive), 160x120 [SAR 1:1 DAR 4:3], q=2-31, 24 fps, 12288 tbn
+    Metadata:
+      encoder         : Lavc62.28.101 libx264
+    Side data:
+      CPB properties: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+[out#0/mp4 @ 000001ab78fd0480] video:31KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 4.546462%
+frame=   48 fps=0.0 q=-1.0 Lsize=      32KiB time=00:00:01.91 bitrate= 137.8kbits/s speed=15.2x elapsed=0:00:00.12    
+[libx264 @ 000001ab7903bb40] frame I:1     Avg QP:20.41  size:  2488
+[libx264 @ 000001ab7903bb40] frame P:16    Avg QP:26.67  size:   905
+[libx264 @ 000001ab7903bb40] frame B:31    Avg QP:31.39  size:   450
+[libx264 @ 000001ab7903bb40] consecutive B-frames:  4.2% 25.0% 12.5% 58.3%
+[libx264 @ 000001ab7903bb40] mb I  I16..4: 42.5% 12.5% 45.0%
+[libx264 @ 000001ab7903bb40] mb P  I16..4:  2.5%  1.6%  2.4%  P16..4: 18.8% 15.5% 15.9%  0.0%  0.0%    skip:43.2%
+[libx264 @ 000001ab7903bb40] mb B  I16..4:  0.3%  0.2%  0.2%  B16..8: 29.0% 11.8%  4.5%  direct: 4.1%  skip:49.9%  L0:44.1% L1:48.0% BI: 7.9%
+[libx264 @ 000001ab7903bb40] 8x8 transform intra:20.3% inter:28.3%
+[libx264 @ 000001ab7903bb40] coded y,uvDC,uvAC intra: 27.1% 53.3% 46.2% inter: 9.6% 23.4% 18.2%
+[libx264 @ 000001ab7903bb40] i16 v,h,dc,p: 81% 16%  3%  0%
+[libx264 @ 000001ab7903bb40] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu: 13% 18% 69%  0%  0%  0%  0%  0%  0%
+[libx264 @ 000001ab7903bb40] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 50% 21% 22%  2%  1%  1%  2%  1%  1%
+[libx264 @ 000001ab7903bb40] i8c dc,h,v,p: 43% 16% 41%  1%
+[libx264 @ 000001ab7903bb40] Weighted P-Frames: Y:0.0% UV:0.0%
+[libx264 @ 000001ab7903bb40] ref P L0: 62.1%  8.0% 15.7% 14.2%
+[libx264 @ 000001ab7903bb40] ref B L0: 79.6% 16.9%  3.5%
+[libx264 @ 000001ab7903bb40] ref B L1: 96.2%  3.8%
+[libx264 @ 000001ab7903bb40] kb/s:123.64

@@ -58,11 +58,11 @@ function undoCount(projectId: string): number {
 
 describe("外部命令执行器", () => {
   test("成功命令正常结束", async () => {
-    await expect(runCmd(["/usr/bin/true"])).resolves.toBeUndefined();
+    await expect(runCmd([process.execPath, "--eval", "process.exit(0)"])).resolves.toBeUndefined();
   });
 
   test("非零退出携带 stderr 上下文", async () => {
-    await expect(runCmd(["/bin/sh", "-c", "echo command-failed >&2; exit 7"])).rejects.toThrow("命令执行失败 (/bin/sh): command-failed");
+    await expect(runCmd([process.execPath, "--eval", "console.error('command-failed'); process.exit(7)"])).rejects.toThrow(`命令执行失败 (${process.execPath}): command-failed`);
   });
 
   test("已取消的任务不会启动进程", async () => {

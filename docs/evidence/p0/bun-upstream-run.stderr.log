@@ -1,0 +1,16 @@
+19618 |   })();
+19619 | }
+19620 | 
+19621 | // apps/server/src/db.ts
+19622 | var REPO_ROOT = join(import.meta.dir, "..", "..", "..");
+19623 | mkdirSync(join(STORAGE_ROOT, "projects"), { recursive: true });
+                 ^
+EPERM: operation not permitted, mkdir '\'
+    path: "\\",
+ syscall: "mkdir",
+   errno: -4048,
+    code: "EPERM"
+
+      at B:/~BUN/root/framebaker-upstream.exe:19623:10
+
+Bun v1.4.2 (Windows x64)

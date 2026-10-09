@@ -1,0 +1,236 @@
+{
+  "sample_kind": "synthetic",
+  "frame_count": 16,
+  "size_consistent": true,
+  "all_rgba": true,
+  "fully_opaque_count": 0,
+  "empty_count": 0,
+  "art_quality": "not_evaluated",
+  "matting": "not_executed",
+  "frames": [
+    {
+      "file": "P0 合成基线 48帧→旧采样16帧_000.png",
+      "mode": "RGBA",
+      "size": [
+        163,
+        120
+      ],
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "fully_opaque": false,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "2bbfbf452f36d159fe41d79fe796a77b44abd6f8681ea861daa7012068010db0"
+    },
+    {
+      "file": "P0 合成基线 48帧→旧采样16帧_001.png",
+      "mode": "RGBA",
+      "size": [
+        163,
+        120
+      ],
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "fully_opaque": false,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "6bc98a1e53d6e7e0bfb7630f28bca3034d38435cf75316a9debf472d50d201e1"
+    },
+    {
+      "file": "P0 合成基线 48帧→旧采样16帧_002.png",
+      "mode": "RGBA",
+      "size": [
+        163,
+        120
+      ],
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "fully_opaque": false,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "2662dc741173e469d1ef5fa215c4735ca0aea5de9741ff8e126e102f91d01d65"
+    },
+    {
+      "file": "P0 合成基线 48帧→旧采样16帧_003.png",
+      "mode": "RGBA",
+      "size": [
+        163,
+        120
+      ],
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "fully_opaque": false,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "b93d9c93fb2237cb915a287aeb173fcfbbdeeefd0320d6e077bc9044c60e8ed8"
+    },
+    {
+      "file": "P0 合成基线 48帧→旧采样16帧_004.png",
+      "mode": "RGBA",
+      "size": [
+        163,
+        120
+      ],
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "fully_opaque": false,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "844a6b4e841303dbe43925163dd145a84db6cac5187c892939d2a91a5415b06e"
+    },
+    {
+      "file": "P0 合成基线 48帧→旧采样16帧_005.png",
+      "mode": "RGBA",
+      "size": [
+        163,
+        120
+      ],
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "fully_opaque": false,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "ec2c37b8ab0b8d3c4bc9fea091adf94316e0d938708a4e1a252fd582e35721a7"
+    },
+    {
+      "file": "P0 合成基线 48帧→旧采样16帧_006.png",
+      "mode": "RGBA",
+      "size": [
+        163,
+        120
+      ],
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "fully_opaque": false,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "08213d88d9b5ea975c219ed9932644eb111fa8cca764f5f82290b501da72c271"
+    },
+    {
+      "file": "P0 合成基线 48帧→旧采样16帧_007.png",
+      "mode": "RGBA",
+      "size": [
+        163,
+        120
+      ],
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "fully_opaque": false,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "d3071e94c56f3817b1e63a30b59bbbe7af1bfc5c6fb7463887d5102150a6d681"
+    },
+    {
+      "file": "P0 合成基线 48帧→旧采样16帧_008.png",
+      "mode": "RGBA",
+      "size": [
+        163,
+        120
+      ],
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "fully_opaque": false,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "bc6d952bf5657f409527d17c6e6125106d445c9fe5c0565cdec4845a0b3c7663"
+    },
+    {
+      "file": "P0 合成基线 48帧→旧采样16帧_009.png",
+      "mode": "RGBA",
+      "size": [
+        163,
+        120
+      ],
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "fully_opaque": false,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "e8cc658a6b0ea3f2dc560e90baf2d710d00c07e3a1b2bb98b97518090dc0f4bf"
+    },
+    {
+      "file": "P0 合成基线 48帧→旧采样16帧_010.png",
+      "mode": "RGBA",
+      "size": [
+        163,
+        120
+      ],
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "fully_opaque": false,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "e9ef5ae56278ca36654046d66d985d463b0dc90ffe085d5d25c02a736c9e1e33"
+    },
+    {
+      "file": "P0 合成基线 48帧→旧采样16帧_011.png",
+      "mode": "RGBA",
+      "size": [
+        163,
+        120
+      ],
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "fully_opaque": false,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "dcbe202744c73ccebdc646090ead522d623c790c491bb71cacac5e3bef3b4565"
+    },
+    {
+      "file": "P0 合成基线 48帧→旧采样16帧_012.png",
+      "mode": "RGBA",
+      "size": [
+        163,
+        120
+      ],
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "fully_opaque": false,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "77d6db8fd6d82004f98a0b67ea1ea1aebae3eeb03e982a9048c9e66f31391c06"
+    },
+    {
+      "file": "P0 合成基线 48帧→旧采样16帧_013.png",
+      "mode": "RGBA",
+      "size": [
+        163,
+        120
+      ],
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "fully_opaque": false,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "f65887636b0c13bf494e1fb024eb68e48dd305b8c987fe6088e91efbc9a9cdb0"
+    },
+    {
+      "file": "P0 合成基线 48帧→旧采样16帧_014.png",
+      "mode": "RGBA",
+      "size": [
+        163,
+        120
+      ],
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "fully_opaque": false,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "5e32c07a9f0e6d3cf19012358d4121bf8eed3a65f8094ba22f2fc0f96477fb7a"
+    },
+    {
+      "file": "P0 合成基线 48帧→旧采样16帧_015.png",
+      "mode": "RGBA",
+      "size": [
+        163,
+        120
+      ],
+      "alpha_min": 0,
+      "alpha_max": 255,
+      "fully_opaque": false,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "f48e19219a25348cc97d936a94193853f50735f0e781e0b9283021f8e0159146"
+    }
+  ]
+}

@@ -7,3 +7,14 @@ coverage/
 .DS_Store
 .aider*
 .agents/
+fixtures/generated/
+probes/**/node_modules/
+probes/**/dist/
+probes/desktop/snapshot/
+probes/bun/*.exe
+probes/bun/data/
+probes/**/artifacts/
+probes/desktop/cache/
+docs/evidence/**/*.zip
+.venv-image/
+dist/

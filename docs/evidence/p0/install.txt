@@ -1,0 +1,7 @@
+bun install v1.4.2 (744846f84)
+
++ ajv@8.17.1
++ bun-types@1.3.14
++ typescript@5.9.3
+
+54 packages installed [20.28s]

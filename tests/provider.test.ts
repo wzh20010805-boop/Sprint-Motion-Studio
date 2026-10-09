@@ -320,7 +320,7 @@ describe("Provider 模型探测", () => {
 describe("生成适配器校验", () => {
   test("结构化 CLI 参数可执行，并保留 provider 元信息", async () => {
     saveSetting("genProviders", [{
-      id: "cli", name: "本地命令", type: "cli", cliBin: "/usr/bin/true", cliPromptArg: "--prompt", cliOutputArg: "--output", cliModelArg: "--model", cliExtraArgs: "--fast mode",
+      id: "cli", name: "本地命令", type: "cli", cliBin: process.execPath, cliPromptArg: "tests/fixtures/noop.ts", cliOutputArg: "--output", cliModelArg: "--model", cliExtraArgs: "--fast mode",
     }]);
 
     const adapter = createProviderAdapter({ prompt: "hero", providerId: "cli", model: "v1" }, () => {});

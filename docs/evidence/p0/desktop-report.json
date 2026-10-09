@@ -1,0 +1,164 @@
+{
+  "startedAt": "2026-10-09T17:26:48.360Z",
+  "command": [
+    "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\desktop\\artifacts\\framebaker-p0-win-x64\\FrameBaker-P0.exe",
+    "--smoke"
+  ],
+  "cwd": "C:\\Windows\\Temp",
+  "packageRoot": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\desktop\\artifacts\\framebaker-p0-win-x64",
+  "packed": true,
+  "runtime": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\desktop\\artifacts\\framebaker-p0-win-x64\\runtime\\bun.exe",
+  "backendRoot": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\desktop\\artifacts\\framebaker-p0-win-x64\\runtime\\backend",
+  "profile": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\desktop\\artifacts\\packaged-profile",
+  "versions": {
+    "node": "24.21.0",
+    "acorn": "8.18.0",
+    "ada": "4.0.0",
+    "amaro": "1.1.11",
+    "ares": "1.34.8",
+    "brotli": "1.2.0",
+    "cldr": "48.0",
+    "icu": "78.2",
+    "llhttp": "9.4.3",
+    "merve": "1.2.2",
+    "modules": "149",
+    "napi": "10",
+    "nbytes": "0.1.4",
+    "ncrypto": "0.0.1",
+    "nghttp2": "1.70.0",
+    "nghttp3": "",
+    "ngtcp2": "",
+    "openssl": "0.0.0",
+    "simdjson": "4.6.7",
+    "simdutf": "7.7.0",
+    "sqlite": "3.53.4",
+    "tz": "2026d",
+    "undici": "7.29.1",
+    "unicode": "17.0",
+    "uv": "1.52.1",
+    "uvwasi": "0.0.23",
+    "v8": "15.2.124.28-electron.0",
+    "zlib": "1.3.2.1-motley",
+    "zstd": "1.6.0",
+    "electron": "44.7.0",
+    "chrome": "152.0.7977.130"
+  },
+  "events": [
+    {
+      "kind": "backend-spawn",
+      "at": "2026-10-09T17:26:48.402Z",
+      "pid": 1364
+    },
+    {
+      "kind": "backend-ready",
+      "at": "2026-10-09T17:26:48.595Z",
+      "event": "ready",
+      "url": "http://127.0.0.1:62660/",
+      "pid": 1364,
+      "bun": "1.4.2",
+      "backendRoot": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\desktop\\artifacts\\framebaker-p0-win-x64\\runtime\\backend"
+    },
+    {
+      "kind": "page-loaded",
+      "at": "2026-10-09T17:26:48.837Z",
+      "url": "http://127.0.0.1:62660/materials"
+    },
+    {
+      "kind": "smoke-completed",
+      "at": "2026-10-09T17:26:50.460Z",
+      "passed": true
+    },
+    {
+      "kind": "backend-stop-requested",
+      "at": "2026-10-09T17:26:50.462Z",
+      "pid": 1364
+    },
+    {
+      "kind": "backend-exit",
+      "at": "2026-10-09T17:26:50.479Z",
+      "code": null,
+      "signal": "SIGTERM"
+    }
+  ],
+  "console": [],
+  "blockedRequests": [],
+  "backend": {
+    "event": "ready",
+    "url": "http://127.0.0.1:62660/",
+    "pid": 1364,
+    "bun": "1.4.2",
+    "backendRoot": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\desktop\\artifacts\\framebaker-p0-win-x64\\runtime\\backend"
+  },
+  "health": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "name": "FrameBaker"
+    }
+  },
+  "csp": "default-src 'self'; script-src 'self' 'sha256-MB902kHKpse3SwX9SJ5zYFq5S4eMmQ+3mm4rGBeKEzo='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' ws://127.0.0.1:62660; worker-src 'self' blob:; media-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-src 'none'; form-action 'self'",
+  "preferences": {
+    "allowRunningInsecureContent": false,
+    "contextIsolation": true,
+    "disableDialogs": false,
+    "disablePopups": false,
+    "enableBlinkFeatures": "",
+    "experimentalFeatures": false,
+    "javascript": true,
+    "nodeIntegration": false,
+    "nodeIntegrationInSubFrames": false,
+    "nodeIntegrationInWorker": false,
+    "safeDialogs": false,
+    "safeDialogsMessage": "",
+    "sandbox": true,
+    "webSecurity": true,
+    "webviewTag": false
+  },
+  "renderer": {
+    "title": "FrameBaker · 像素动画编辑器",
+    "rootText": "FrameBaker\n项目\n素材库\n设置\n中\n目录\n全部\n未分组\n素材工作空间\n素材库\n\n0 个素材 · 生成 / 上传 → 抠图 → 对比确认 → 导入项目 · Ctrl+点击 多选 · Shift+点击 范围选\n\n上传素材\nAI 生成\n图标大小\n\n素材库为空，先上传或 AI 生成一些素材吧",
+    "requireType": "undefined",
+    "processType": "undefined",
+    "globalType": "undefined",
+    "fontsStatus": "loaded",
+    "webSocketOk": true,
+    "resources": [
+      {
+        "pathname": "/api/health",
+        "status": 200,
+        "bytes": 31,
+        "contentType": "application/json;charset=utf-8"
+      },
+      {
+        "pathname": "/pixi.min.js",
+        "status": 200,
+        "bytes": 797792,
+        "contentType": "text/javascript; charset=utf-8"
+      },
+      {
+        "pathname": "/fonts/fusion-pixel-12px-proportional-zh_hans.otf.woff2",
+        "status": 200,
+        "bytes": 712624,
+        "contentType": "font/woff2"
+      },
+      {
+        "pathname": "/imageops/imageOps.worker.js",
+        "status": 200,
+        "bytes": 17675,
+        "contentType": "text/javascript; charset=utf-8"
+      }
+    ]
+  },
+  "screenshot": {
+    "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p0\\desktop-framebaker.png",
+    "size": {
+      "width": 1344,
+      "height": 861
+    },
+    "bytes": 123837
+  },
+  "smokePassed": true,
+  "portClosedAfterStop": true,
+  "completedAt": "2026-10-09T17:26:50.530Z",
+  "exitCode": 0
+}

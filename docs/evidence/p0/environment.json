@@ -1,0 +1,50 @@
+{
+  "verifiedAt": "2026-10-10T01:15:02.4972424+08:00",
+  "os": {
+    "Caption": "Microsoft Windows 11 专业版",
+    "OSArchitecture": "64 位",
+    "Version": "10.0.26200"
+  },
+  "memoryBytes": 34268237824,
+  "gpu": {
+    "Name": "AMD Radeon RX 6750 GRE 10GB",
+    "DriverVersion": "32.0.21043.12001"
+  },
+  "disk": {
+    "Used": 330977693696,
+    "Free": 88857452544
+  },
+  "executables": [
+    {
+      "Name": "git.exe",
+      "Source": "C:\\Program Files\\Git\\cmd\\git.exe"
+    },
+    {
+      "Name": "ffmpeg.exe",
+      "Source": "C:\\Users\\Administrator\\Downloads\\ffmpeg-n8.1-latest-win64-gpl-8.1\\bin\\ffmpeg.exe"
+    },
+    {
+      "Name": "ffprobe.exe",
+      "Source": "C:\\Users\\Administrator\\Downloads\\ffmpeg-n8.1-latest-win64-gpl-8.1\\bin\\ffprobe.exe"
+    },
+    {
+      "Name": "python.exe",
+      "Source": "E:\\python3.11.9\\python.exe"
+    },
+    {
+      "Name": "py.exe",
+      "Source": "C:\\windows\\py.exe"
+    },
+    {
+      "Name": "node.exe",
+      "Source": "C:\\Program Files\\nodejs\\node.exe"
+    },
+    {
+      "Name": "npm.cmd",
+      "Source": "C:\\Program Files\\nodejs\\npm.cmd"
+    }
+  ],
+  "bun": "1.4.2",
+  "python": "3.11.9",
+  "node": "24.16.0"
+}

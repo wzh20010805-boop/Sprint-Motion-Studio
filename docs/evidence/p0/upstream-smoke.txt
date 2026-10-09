@@ -1,0 +1,51 @@
+{
+  "upstreamCommit": "f9846c985156f83f750bcc654b56cae2a1960229",
+  "sample": "synthetic-testsrc2",
+  "originalFrames": 48,
+  "importedPoolCount": 16,
+  "expectedLegacySampledCount": 16,
+  "projectId": "a669e557-a1be-41ed-bfd7-8b0e64938ec4",
+  "job": {
+    "id": "327ba6ad-579a-4f11-b0dd-a22157ec95bb",
+    "project_id": "a669e557-a1be-41ed-bfd7-8b0e64938ec4",
+    "type": "extract_frames",
+    "status": "done",
+    "progress": "完成",
+    "error": null,
+    "created_at": 1791565943376
+  },
+  "editedFrame": {
+    "id": "720ff71a-773a-4c02-aea3-231748749217",
+    "project_id": "a669e557-a1be-41ed-bfd7-8b0e64938ec4",
+    "idx": 0,
+    "raw_path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\storage\\projects\\a669e557-a1be-41ed-bfd7-8b0e64938ec4\\raw/frame_0000.png",
+    "processed_path": null,
+    "status": "ready",
+    "duration": 2,
+    "is_keyframe": 0,
+    "offset_x": 3,
+    "offset_y": 0,
+    "scale": 1,
+    "rotation": 0,
+    "opacity": 1,
+    "tags": [],
+    "source": "extract",
+    "metadata": {},
+    "track_id": null,
+    "step_id": null,
+    "is_asset": 1,
+    "attack_effect": null
+  },
+  "matting": {
+    "engine": "none",
+    "model": "u2net",
+    "hint": "未安装抠图引擎，已原样复制：请先执行 scripts/setup_matting.ps1",
+    "modelCached": false
+  },
+  "gui": "http://127.0.0.1:43187/project/a669e557-a1be-41ed-bfd7-8b0e64938ec4",
+  "limitations": [
+    "未安装模型；未进行真实角色抠图验收",
+    "旧导入以8 FPS抽样，未保留完整48帧",
+    "导出在浏览器Canvas；后续桌面探针验证"
+  ]
+}

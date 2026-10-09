@@ -1,0 +1,26 @@
+{
+  "engine": "none",
+  "model_downloaded": false,
+  "job": {
+    "id": "47f97962-1957-4748-b85e-7b0c264cc282",
+    "project_id": "",
+    "type": "matting",
+    "status": "done",
+    "progress": "完成",
+    "error": null,
+    "created_at": 1791566252919
+  },
+  "material": {
+    "id": "42d48806-e684-4a1e-99a9-058f5dde6f76",
+    "name": "P0_engine_missing",
+    "raw_path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\storage\\materials\\42d48806-e684-4a1e-99a9-058f5dde6f76\\raw.png",
+    "processed_path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\storage\\materials\\42d48806-e684-4a1e-99a9-058f5dde6f76\\processed.png",
+    "status": "matted",
+    "source": "image",
+    "folder_id": null,
+    "metadata": {},
+    "created_at": 1791566252918,
+    "kind": "image"
+  },
+  "result": "上游缺引擎仍标记完成；不是抠图成功"
+}

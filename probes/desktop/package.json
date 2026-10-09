@@ -1,0 +1,11 @@
+{
+  "name": "framebaker-p0-desktop-probe",
+  "version": "0.0.0",
+  "private": true,
+  "description": "P0 本机可行性探针，不是正式产品",
+  "main": "main.cjs",
+  "dependencies": {
+    "electron": "44.7.0"
+  },
+  "trustedDependencies": ["electron"]
+}

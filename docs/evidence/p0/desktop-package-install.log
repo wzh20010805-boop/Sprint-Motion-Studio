@@ -1,0 +1,10 @@
+cwd: D:\AIJOB\tools\Sprite Motion Studio\framebaker\probes\desktop\artifacts\framebaker-p0-win-x64\runtime\backend
+command: runtime/bun.exe install --frozen-lockfile
+exit: 0
+bun install v1.4.2 (744846f84)
+
++ ajv@8.17.1
++ bun-types@1.3.14
++ typescript@5.9.3
+
+54 packages installed [3.18s]

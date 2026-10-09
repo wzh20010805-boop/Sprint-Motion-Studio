@@ -1,0 +1,57 @@
+{
+  "startedAt": "2026-10-09T17:17:25.378Z",
+  "cwd": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker",
+  "runnerBun": "1.4.2",
+  "command": "bun probes/bun/run-probe.ts",
+  "results": [
+    {
+      "name": "bun-run",
+      "executable": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\bun\\artifacts\\bun-probe.exe",
+      "port": 43211,
+      "pid": 25976,
+      "launchCwd": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\bun\\artifacts",
+      "started": true,
+      "health": {
+        "ok": true,
+        "name": "FrameBaker P0 Bun probe",
+        "bun": "1.4.2",
+        "platform": "win32",
+        "execPath": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\bun\\artifacts\\bun-probe.exe",
+        "moduleDir": "B:\\~BUN\\root",
+        "dbPath": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\bun\\artifacts\\run-data\\probe.sqlite",
+        "sqlite": {
+          "value": "compiled-bun-sqlite-ok"
+        },
+        "resourcePath": "B:\\~BUN\\root\\assets\\resource.txt",
+        "resourceText": "FrameBaker P0 embedded resource path probe"
+      },
+      "resources": [
+        {
+          "path": "/",
+          "status": 200,
+          "bytes": 323,
+          "contentType": "text/html;charset=utf-8"
+        },
+        {
+          "path": "/resource.txt",
+          "status": 200,
+          "bytes": 43,
+          "contentType": "text/plain; charset=utf-8"
+        }
+      ],
+      "exitCode": 143,
+      "portClosedAfterStop": true
+    },
+    {
+      "name": "bun-upstream-run",
+      "executable": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\bun\\artifacts\\framebaker-upstream.exe",
+      "port": 43212,
+      "pid": 39600,
+      "launchCwd": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\bun\\artifacts",
+      "started": false,
+      "exitCode": 1,
+      "portClosedAfterStop": true
+    }
+  ],
+  "completedAt": "2026-10-09T17:17:25.716Z"
+}

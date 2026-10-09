@@ -1,0 +1,7 @@
+
+Error: 后端提前退出: 1/null
+    at ChildProcess.<anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\probes\desktop\main.cjs:55:176)
+    at ChildProcess.wrapper (node:events:639:12)
+    at ChildProcess.emit (node:events:514:28)
+    at ChildProcess._handle.onexit (node:internal/child_process:295:12)
+{"exitCode":1,"evidenceRoot":"D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p0"}

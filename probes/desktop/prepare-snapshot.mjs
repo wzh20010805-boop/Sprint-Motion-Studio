@@ -1,0 +1,11 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+const probe = path.dirname(fileURLToPath(import.meta.url));
+const repo = path.resolve(probe, "../..");
+const snapshot = path.join(probe, "snapshot");
+if (fs.existsSync(path.join(snapshot, "package.json"))) throw new Error("已有快照，保留原始 P0 证据；如需新版请使用新的探针副本目录");
+fs.mkdirSync(snapshot, { recursive: true });
+for (const directory of ["apps", "packages"]) fs.cpSync(path.join(repo, directory), path.join(snapshot, directory), { recursive: true, filter: p => !p.split(path.sep).includes("node_modules") });
+for (const file of ["package.json", "bun.lock"]) fs.copyFileSync(path.join(repo, file), path.join(snapshot, file));
+console.log(JSON.stringify({ snapshot, source: repo, capturedAt: new Date().toISOString(), command: "node probes/desktop/prepare-snapshot.mjs" }));
