@@ -1,0 +1,19 @@
+{
+  "command": "bun probes/desktop/run-attached-smoke.ts",
+  "startedAt": "2026-10-09T17:31:45.596Z",
+  "fixture": "P0 上游服务，无鉴权；P1 真实鉴权由根任务另测",
+  "servicePid": 19076,
+  "hostExit": 0,
+  "smokePassed": true,
+  "serviceAliveAfterHost": true,
+  "cookieAttributes": {
+    "name": "sfs_token",
+    "httpOnly": true,
+    "sameSite": "strict",
+    "path": "/"
+  },
+  "noTokenInReport": true,
+  "passed": true,
+  "fixtureExit": 143,
+  "completedAt": "2026-10-09T17:31:48.025Z"
+}

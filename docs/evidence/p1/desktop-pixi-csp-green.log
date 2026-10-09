@@ -1,0 +1,10 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\pixi-csp.test.ts:
+(pass) 实际自托管 Pixi 脚本可在禁止动态代码生成的 CSP 环境通过渲染器检查 [51.48ms]
+(pass) 普通与 gzip Pixi 响应内容一致，且条件缓存分别可重验证 [22.37ms]
+
+ 2 pass
+ 0 fail
+ 8 expect() calls
+Ran 2 tests across 1 file. [318.00ms]

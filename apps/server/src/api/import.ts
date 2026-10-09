@@ -2,7 +2,8 @@ import { Elysia, t } from "elysia";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { db, STORAGE_ROOT, uid } from "../db";
-import { createGenerationJobs, createJob } from "../queue";
+import { createGenerationJobs, createJob, createSourceExtractionJob } from "../queue";
+import { createClip, importVideo, PipelineError } from "../pipeline/service";
 import { checkVideoSupport, resolveReferencePaths } from "../providerAdapter";
 
 export const importApi = new Elysia({ prefix: "/api" })
@@ -12,6 +13,16 @@ export const importApi = new Elysia({ prefix: "/api" })
     async ({ body, status }) => {
       const project = db.query("SELECT id FROM projects WHERE id = ?").get(body.projectId);
       if (!project) return status(404, "项目不存在");
+
+      // MP4 默认完整抽帧；明确指定 fps 才沿用旧采样工作流。
+      if (body.type === "mp4" && body.mode !== "fps") {
+        try {
+          const source = await importVideo(body.projectId, { name: body.file.name, bytes: new Uint8Array(await body.file.arrayBuffer()) });
+          const clip = createClip(body.projectId, source.id, body.file.name.replace(/\.[^.]+$/, "") || "视频动作");
+          const jobId = createSourceExtractionJob(body.projectId, clip.id);
+          return { jobId, sourceId: source.id, clipId: clip.id, mode: "all" };
+        } catch (error) { return status(error instanceof PipelineError ? error.httpStatus : 400, (error as Error).message); }
+      }
 
       const stagingId = uid();
       const dir = join(STORAGE_ROOT, "staging", stagingId);
@@ -47,6 +58,7 @@ export const importApi = new Elysia({ prefix: "/api" })
         projectId: t.String(),
         type: t.Union([t.Literal("gif"), t.Literal("mp4"), t.Literal("image")]),
         fps: t.Optional(t.String()),
+        mode: t.Optional(t.Union([t.Literal("all"), t.Literal("fps")])),
         autoMatting: t.Optional(t.String()),
       }),
     }

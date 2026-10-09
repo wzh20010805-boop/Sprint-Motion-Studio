@@ -1,0 +1,260 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\extract-all.test.ts:
+12 |   try { api = await import("../../apps/server/src/pipeline/extractAll"); } catch { /* RED：能力尚未实现 */ }
+13 |   try { probeApi = await import("../../apps/server/src/pipeline/probe"); } catch { /* RED：能力尚未实现 */ }
+14 | }, 120_000);
+15 | 
+16 | function requireApi() {
+17 |   expect(api?.extractAll).toBeFunction();
+                               ^
+error: expect(received).toBeFunction()
+
+Received: undefined
+
+      at requireApi (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:17:27)
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:23:5)
+(fail) 完整显示帧提取（真实 FFmpeg） > 48 帧无截断并以源整数索引保存 [0.90ms]
+12 |   try { api = await import("../../apps/server/src/pipeline/extractAll"); } catch { /* RED：能力尚未实现 */ }
+13 |   try { probeApi = await import("../../apps/server/src/pipeline/probe"); } catch { /* RED：能力尚未实现 */ }
+14 | }, 120_000);
+15 | 
+16 | function requireApi() {
+17 |   expect(api?.extractAll).toBeFunction();
+                               ^
+error: expect(received).toBeFunction()
+
+Received: undefined
+
+      at requireApi (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:17:27)
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:23:5)
+(fail) 完整显示帧提取（真实 FFmpeg） > 61 帧无截断并以源整数索引保存 [0.14ms]
+12 |   try { api = await import("../../apps/server/src/pipeline/extractAll"); } catch { /* RED：能力尚未实现 */ }
+13 |   try { probeApi = await import("../../apps/server/src/pipeline/probe"); } catch { /* RED：能力尚未实现 */ }
+14 | }, 120_000);
+15 | 
+16 | function requireApi() {
+17 |   expect(api?.extractAll).toBeFunction();
+                               ^
+error: expect(received).toBeFunction()
+
+Received: undefined
+
+      at requireApi (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:17:27)
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:23:5)
+(fail) 完整显示帧提取（真实 FFmpeg） > 120 帧无截断并以源整数索引保存 [0.13ms]
+12 |   try { api = await import("../../apps/server/src/pipeline/extractAll"); } catch { /* RED：能力尚未实现 */ }
+13 |   try { probeApi = await import("../../apps/server/src/pipeline/probe"); } catch { /* RED：能力尚未实现 */ }
+14 | }, 120_000);
+15 | 
+16 | function requireApi() {
+17 |   expect(api?.extractAll).toBeFunction();
+                               ^
+error: expect(received).toBeFunction()
+
+Received: undefined
+
+      at requireApi (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:17:27)
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:23:5)
+(fail) 完整显示帧提取（真实 FFmpeg） > 300 帧无截断并以源整数索引保存 [0.11ms]
+12 |   try { api = await import("../../apps/server/src/pipeline/extractAll"); } catch { /* RED：能力尚未实现 */ }
+13 |   try { probeApi = await import("../../apps/server/src/pipeline/probe"); } catch { /* RED：能力尚未实现 */ }
+14 | }, 120_000);
+15 | 
+16 | function requireApi() {
+17 |   expect(api?.extractAll).toBeFunction();
+                               ^
+error: expect(received).toBeFunction()
+
+Received: undefined
+
+      at requireApi (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:17:27)
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:36:5)
+(fail) 完整显示帧提取（真实 FFmpeg） > 重复画面仍保留全部 48 个显示帧和 2 秒停顿 [0.33ms]
+12 |   try { api = await import("../../apps/server/src/pipeline/extractAll"); } catch { /* RED：能力尚未实现 */ }
+13 |   try { probeApi = await import("../../apps/server/src/pipeline/probe"); } catch { /* RED：能力尚未实现 */ }
+14 | }, 120_000);
+15 | 
+16 | function requireApi() {
+17 |   expect(api?.extractAll).toBeFunction();
+                               ^
+error: expect(received).toBeFunction()
+
+Received: undefined
+
+      at requireApi (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:17:27)
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:45:5)
+(fail) 完整显示帧提取（真实 FFmpeg） > 真正 VFR 保留 1/24、1/12、1/8、1/24 秒时长 [0.28ms]
+12 |   try { api = await import("../../apps/server/src/pipeline/extractAll"); } catch { /* RED：能力尚未实现 */ }
+13 |   try { probeApi = await import("../../apps/server/src/pipeline/probe"); } catch { /* RED：能力尚未实现 */ }
+14 | }, 120_000);
+15 | 
+16 | function requireApi() {
+17 |   expect(api?.extractAll).toBeFunction();
+                               ^
+error: expect(received).toBeFunction()
+
+Received: undefined
+
+      at requireApi (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:17:27)
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:56:5)
+(fail) 完整显示帧提取（真实 FFmpeg） > Unicode、空格和 shell 元字符是普通文件名 [0.20ms]
+12 |   try { api = await import("../../apps/server/src/pipeline/extractAll"); } catch { /* RED：能力尚未实现 */ }
+13 |   try { probeApi = await import("../../apps/server/src/pipeline/probe"); } catch { /* RED：能力尚未实现 */ }
+14 | }, 120_000);
+15 | 
+16 | function requireApi() {
+17 |   expect(api?.extractAll).toBeFunction();
+                               ^
+error: expect(received).toBeFunction()
+
+Received: undefined
+
+      at requireApi (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:17:27)
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:64:5)
+(fail) 完整显示帧提取（真实 FFmpeg） > 已有 raw 拒绝覆盖且原文件不变 [0.26ms]
+12 |   try { api = await import("../../apps/server/src/pipeline/extractAll"); } catch { /* RED：能力尚未实现 */ }
+13 |   try { probeApi = await import("../../apps/server/src/pipeline/probe"); } catch { /* RED：能力尚未实现 */ }
+14 | }, 120_000);
+15 | 
+16 | function requireApi() {
+17 |   expect(api?.extractAll).toBeFunction();
+                               ^
+error: expect(received).toBeFunction()
+
+Received: undefined
+
+      at requireApi (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:17:27)
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:73:5)
+(fail) 完整显示帧提取（真实 FFmpeg） > 提取取消保留暂存并且不发布 raw 或 timing [0.31ms]
+12 |   try { api = await import("../../apps/server/src/pipeline/extractAll"); } catch { /* RED：能力尚未实现 */ }
+13 |   try { probeApi = await import("../../apps/server/src/pipeline/probe"); } catch { /* RED：能力尚未实现 */ }
+14 | }, 120_000);
+15 | 
+16 | function requireApi() {
+17 |   expect(api?.extractAll).toBeFunction();
+                               ^
+error: expect(received).toBeFunction()
+
+Received: undefined
+
+      at requireApi (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:17:27)
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:86:5)
+(fail) 完整显示帧提取（真实 FFmpeg） > 预先取消探测时不启动输出 [0.20ms]
+12 |   try { api = await import("../../apps/server/src/pipeline/extractAll"); } catch { /* RED：能力尚未实现 */ }
+13 |   try { probeApi = await import("../../apps/server/src/pipeline/probe"); } catch { /* RED：能力尚未实现 */ }
+14 | }, 120_000);
+15 | 
+16 | function requireApi() {
+17 |   expect(api?.extractAll).toBeFunction();
+                               ^
+error: expect(received).toBeFunction()
+
+Received: undefined
+
+      at requireApi (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:17:27)
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:99:5)
+(fail) 完整显示帧提取（真实 FFmpeg） > 损坏媒体 明确失败且无伪完成目录 [0.23ms]
+12 |   try { api = await import("../../apps/server/src/pipeline/extractAll"); } catch { /* RED：能力尚未实现 */ }
+13 |   try { probeApi = await import("../../apps/server/src/pipeline/probe"); } catch { /* RED：能力尚未实现 */ }
+14 | }, 120_000);
+15 | 
+16 | function requireApi() {
+17 |   expect(api?.extractAll).toBeFunction();
+                               ^
+error: expect(received).toBeFunction()
+
+Received: undefined
+
+      at requireApi (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:17:27)
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:99:5)
+(fail) 完整显示帧提取（真实 FFmpeg） > 无视频流 明确失败且无伪完成目录 [0.13ms]
+12 |   try { api = await import("../../apps/server/src/pipeline/extractAll"); } catch { /* RED：能力尚未实现 */ }
+13 |   try { probeApi = await import("../../apps/server/src/pipeline/probe"); } catch { /* RED：能力尚未实现 */ }
+14 | }, 120_000);
+15 | 
+16 | function requireApi() {
+17 |   expect(api?.extractAll).toBeFunction();
+                               ^
+error: expect(received).toBeFunction()
+
+Received: undefined
+
+      at requireApi (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:17:27)
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:99:5)
+(fail) 完整显示帧提取（真实 FFmpeg） > HDR 明确失败且无伪完成目录 [0.15ms]
+12 |   try { api = await import("../../apps/server/src/pipeline/extractAll"); } catch { /* RED：能力尚未实现 */ }
+13 |   try { probeApi = await import("../../apps/server/src/pipeline/probe"); } catch { /* RED：能力尚未实现 */ }
+14 | }, 120_000);
+15 | 
+16 | function requireApi() {
+17 |   expect(api?.extractAll).toBeFunction();
+                               ^
+error: expect(received).toBeFunction()
+
+Received: undefined
+
+      at requireApi (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:17:27)
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:99:5)
+(fail) 完整显示帧提取（真实 FFmpeg） > 旋转 明确失败且无伪完成目录 [0.12ms]
+12 |   try { api = await import("../../apps/server/src/pipeline/extractAll"); } catch { /* RED：能力尚未实现 */ }
+13 |   try { probeApi = await import("../../apps/server/src/pipeline/probe"); } catch { /* RED：能力尚未实现 */ }
+14 | }, 120_000);
+15 | 
+16 | function requireApi() {
+17 |   expect(api?.extractAll).toBeFunction();
+                               ^
+error: expect(received).toBeFunction()
+
+Received: undefined
+
+      at requireApi (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:17:27)
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:99:5)
+(fail) 完整显示帧提取（真实 FFmpeg） > 非方形像素 明确失败且无伪完成目录 [0.12ms]
+12 |   try { api = await import("../../apps/server/src/pipeline/extractAll"); } catch { /* RED：能力尚未实现 */ }
+13 |   try { probeApi = await import("../../apps/server/src/pipeline/probe"); } catch { /* RED：能力尚未实现 */ }
+14 | }, 120_000);
+15 | 
+16 | function requireApi() {
+17 |   expect(api?.extractAll).toBeFunction();
+                               ^
+error: expect(received).toBeFunction()
+
+Received: undefined
+
+      at requireApi (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:17:27)
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:99:5)
+(fail) 完整显示帧提取（真实 FFmpeg） > 交错 明确失败且无伪完成目录 [0.11ms]
+12 |   try { api = await import("../../apps/server/src/pipeline/extractAll"); } catch { /* RED：能力尚未实现 */ }
+13 |   try { probeApi = await import("../../apps/server/src/pipeline/probe"); } catch { /* RED：能力尚未实现 */ }
+14 | }, 120_000);
+15 | 
+16 | function requireApi() {
+17 |   expect(api?.extractAll).toBeFunction();
+                               ^
+error: expect(received).toBeFunction()
+
+Received: undefined
+
+      at requireApi (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:17:27)
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:107:5)
+(fail) 完整显示帧提取（真实 FFmpeg） > 缺失和非单调 PTS 不用平均 FPS 掩盖，超安全整数有理数明确拒绝 [0.29ms]
+12 |   try { api = await import("../../apps/server/src/pipeline/extractAll"); } catch { /* RED：能力尚未实现 */ }
+13 |   try { probeApi = await import("../../apps/server/src/pipeline/probe"); } catch { /* RED：能力尚未实现 */ }
+14 | }, 120_000);
+15 | 
+16 | function requireApi() {
+17 |   expect(api?.extractAll).toBeFunction();
+                               ^
+error: expect(received).toBeFunction()
+
+Received: undefined
+
+      at requireApi (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:17:27)
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:118:5)
+(fail) 完整显示帧提取（真实 FFmpeg） > 输出 PNG 数据损坏必须完整解码失败，不能只检查 IHDR [0.22ms]
+
+ 0 pass
+ 18 fail
+ 18 expect() calls
+Ran 18 tests across 1 file. [637.00ms]

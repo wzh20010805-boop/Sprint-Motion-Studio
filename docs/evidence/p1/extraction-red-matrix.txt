@@ -1,0 +1,66 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\extract-all.test.ts:
+161 |     const changingSar = structuredClone(document);
+162 |     changingSar.frames[1].sample_aspect_ratio = "2:1";
+163 |     expect(() => probeApi.parseVideoProbe(JSON.stringify(changingSar))).toThrow(/像素|SAR/);
+164 |     const reflected = structuredClone(document);
+165 |     reflected.streams[0].side_data_list = [{ side_data_type: "Display Matrix", rotation: 0, displaymatrix: "\n00000000: -65536 0 0\n00000001: 0 65536 0\n00000002: 0 0 1073741824\n" }];
+166 |     expect(() => probeApi.parseVideoProbe(JSON.stringify(reflected))).toThrow(/矩阵|旋转/);
+                                                                            ^
+error: expect(received).toThrow(expected)
+
+Expected pattern: /\u77E9\u9635|\u65CB\u8F6C/
+
+Received function did not throw
+Received value: {
+  streamIndex: 0,
+  width: 64,
+  height: 48,
+  codec: "h264",
+  pixelFormat: "yuv420p",
+  timeBase: {
+    num: 1,
+    den: 12288,
+  },
+  averageFrameRate: {
+    num: 96,
+    den: 7,
+  },
+  nominalFrameRate: {
+    num: 24,
+    den: 1,
+  },
+  sampleAspectRatio: {
+    num: 1,
+    den: 1,
+  },
+  streamStartPts: "0",
+  streamDurationPts: "3584",
+  frames: [
+    {
+      pts: "0",
+      duration: "512",
+    }, {
+      pts: "512",
+      duration: "1024",
+    }, {
+      pts: "1536",
+      duration: "1536",
+    }, {
+      pts: "3072",
+      duration: "512",
+    }
+  ],
+  formatName: "mov,mp4,m4a,3gp,3g2,mj2",
+  warnings: [],
+}
+
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:166:71)
+(fail) 完整显示帧提取（真实 FFmpeg） > 逐帧 SAR 改变与异常显示矩阵也明确拒绝 [40.41ms]
+
+ 0 pass
+ 21 filtered out
+ 1 fail
+ 4 expect() calls
+Ran 1 test across 1 file. [642.00ms]

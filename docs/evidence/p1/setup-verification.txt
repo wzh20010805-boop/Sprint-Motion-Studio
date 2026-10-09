@@ -1,0 +1,4 @@
+bun install v1.4.2 (744846f84)
+
+Checked 60 installs across 59 packages (no changes) [12.00ms]
+{"schema_version":"1.0","ok":true,"status":"succeeded","requires_user_action":false,"data":{"bun":"1.4.2","platform":"win32","ffmpeg":{"available":true,"path":"C:\\Users\\Administrator\\Downloads\\ffmpeg-n8.1-latest-win64-gpl-8.1\\bin\\ffmpeg.exe","version":"ffmpeg version n8.1.1-118-g1034b144ff-20260615 Copyright (c) 2000-2026 the FFmpeg developers"},"ffprobe":{"available":true,"path":"C:\\Users\\Administrator\\Downloads\\ffmpeg-n8.1-latest-win64-gpl-8.1\\bin\\ffprobe.exe","version":"ffprobe version n8.1.1-118-g1034b144ff-20260615 Copyright (c) 2007-2026 the FFmpeg developers"},"isolated_python":true,"capabilities":{"extract_all":true,"matting":false,"cocos_integration":false,"cli_requires_gui":false}},"artifacts":[],"warnings":["MODEL_NOT_READY","P1_ONLY"],"error":null}

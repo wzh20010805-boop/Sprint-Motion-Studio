@@ -1,0 +1,26 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\cli.test.ts:
+(pass) doctor输出一个JSON且模型未准备不会冒充可用 [92.77ms]
+(pass) 不支持的抽帧mode在创建服务前返回参数错误 [36.11ms]
+(pass) 未知命令给结构化错误并不把日志混入stdout [38.63ms]
+(pass) 不开GUI也能完成真实48帧流程，复用服务并返回真实失败退出码 [2564.76ms]
+ 98 |     info=JSON.parse(readFileSync(join(workspace,".sfs/service.json"),"utf8"));
+ 99 |     const video=join(workspace,"video.mp4");
+100 |     const fixture=Bun.spawn(["ffmpeg","-hide_banner","-nostdin","-n","-f","lavfi","-i","testsrc2=size=32x32:rate=24","-frames:v","2","-c:v","libx264",video],{stdout:"pipe",stderr:"pipe"});
+101 |     await Promise.all([fixture.exited,new Response(fixture.stdout).text(),new Response(fixture.stderr).text()]);
+102 |     const imported=await invoke(["import","video","--project",created.body.project_id,"--file",video,"--workspace",workspace],env);
+103 |     expect(imported.exitCode).toBe(3);
+                                    ^
+error: expect(received).toBe(expected)
+
+Expected: 3
+Received: 2
+
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\cli.test.ts:103:31)
+(fail) 缺少ffprobe的真实视频导入返回依赖错误3而不是素材错误2 [445.28ms]
+
+ 4 pass
+ 1 fail
+ 36 expect() calls
+Ran 5 tests across 1 file. [3.27s]

@@ -1,0 +1,31 @@
+bun test v1.4.2 (744846f84)
+
+tests\import-order.test.ts:
+2 | import { sortImportFiles, waitForQueuedJob } from "../apps/web/src/hooks/useImportWorkflow";
+3 | 
+4 | test("服务重启的 interrupted 任务立即结束等待并保留失败原因", async () => {
+5 |   let polls = 0;
+6 |   const result = await waitForQueuedJob("restart", () => polls < 2, async () => { polls++; return {status:"interrupted",error:"SERVICE_RESTARTED"}; }, async () => {});
+7 |   expect(result).toEqual({status:"interrupted",error:"SERVICE_RESTARTED"});
+                     ^
+error: expect(received).toEqual(expected)
+
+  {
+-   "error": "SERVICE_RESTARTED",
+-   "status": "interrupted",
++   "status": "stale",
+  }
+
+- Expected  - 2
++ Received  + 1
+
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\import-order.test.ts:7:18)
+(fail) 服务重启的 interrupted 任务立即结束等待并保留失败原因 [0.53ms]
+(pass) 多文件导入顺序 > 按文件名自然升序排列数字帧 [0.18ms]
+(pass) 多文件导入顺序 > 任务状态短暂查询失败时继续等待，不提前放行下一文件 [0.14ms]
+(pass) 多文件导入顺序 > 批次失效期间返回的旧任务结果会被丢弃 [0.12ms]
+
+ 3 pass
+ 1 fail
+ 6 expect() calls
+Ran 4 tests across 1 file. [71.00ms]

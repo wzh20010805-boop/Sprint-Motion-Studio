@@ -1,0 +1,13 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\cli.test.ts:
+(pass) doctor输出一个JSON且模型未准备不会冒充可用 [108.18ms]
+(pass) 不支持的抽帧mode在创建服务前返回参数错误 [35.23ms]
+(pass) 未知命令给结构化错误并不把日志混入stdout [36.69ms]
+(pass) 不开GUI也能完成真实48帧流程，复用服务并返回真实失败退出码 [2822.75ms]
+(pass) 缺少ffprobe的真实视频导入返回依赖错误3而不是素材错误2 [450.30ms]
+
+ 5 pass
+ 0 fail
+ 37 expect() calls
+Ran 5 tests across 1 file. [3.52s]

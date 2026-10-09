@@ -6,15 +6,20 @@ import { getSettingJson } from "./provider";
 import { matte } from "./jobs/matting";
 import { JobCancelledError } from "./jobs/run";
 import { splitImageLayers, type ImageLayersPayload } from "./jobs/imageLayers";
+import { extractSource, getSource, PipelineError, prepareSourceExtraction, type SourceExtractPayload } from "./pipeline/service";
+import { appendFileSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
+import { STORAGE_ROOT } from "./db";
 
 export interface JobPayload {
   extract?: ExtractPayload;
   generate?: GeneratePayload;
   matting?: { target: "frame" | "material"; id: string };
   imageLayers?: ImageLayersPayload;
+  sourceExtract?: SourceExtractPayload;
 }
 
-// 任务负载只存内存（状态落 SQLite），重启后 queued/running 任务不会恢复
+// 内存缓存仅服务本次队列；完整参数与结果持久化，重启后明确标记 interrupted。
 const payloads = new Map<string, JobPayload>();
 const controllers = new Map<string, AbortController>();
 const waiting: string[] = [];
@@ -34,21 +39,41 @@ export function getQueueConcurrency(): number {
 }
 
 // 启动时把上次进程遗留的 queued/running 任务标记为中断（负载随内存丢失，不可能再继续）
-db.query("UPDATE jobs SET status = 'error', error = '服务重启，任务中断' WHERE status IN ('queued', 'running')").run();
+db.query("UPDATE jobs SET status = 'interrupted', error = '服务重启，任务中断；请从抽帧阶段重新开始', error_code='SERVICE_RESTARTED', updated_at=? WHERE status IN ('queued', 'running')").run(Date.now());
 
 export function createJob(projectId: string, type: JobType, payload: JobPayload): string {
   const id = uid();
-  db.query("INSERT INTO jobs (id, project_id, type, status, created_at) VALUES (?, ?, ?, 'queued', ?)").run(
+  const directory = join(STORAGE_ROOT, "jobs", id);
+  mkdirSync(directory, { recursive: true });
+  const logPath = join(directory, "job.log");
+  appendFileSync(logPath, `${new Date().toISOString()} queued\n`);
+  const source = payload.sourceExtract ? getSource(projectId, payload.sourceExtract.sourceId) : null;
+  db.query("INSERT INTO jobs (id, project_id, type, status, created_at, updated_at,payload,clip_id,base_revision,input_fingerprint,backend,log_path) VALUES (?, ?, ?, 'queued', ?, ?, ?, ?, ?, ?, ?, ?)").run(
     id,
     projectId,
     type,
-    Date.now()
+    Date.now(), Date.now(), JSON.stringify(payload), payload.sourceExtract?.clipId ?? null,
+    payload.sourceExtract?.baseRevision ?? null, source?.sha256 ?? null,
+    payload.sourceExtract ? "ffmpeg-passthrough" : null, logPath
   );
   payloads.set(id, payload);
   waiting.push(id);
   broadcast("job_queued", { id, projectId, type });
   pump();
   return id;
+}
+
+export function createSourceExtractionJob(projectId: string, clipId: string, baseRevision?: number): string {
+  const sourceExtract = prepareSourceExtraction(projectId, clipId, baseRevision);
+  const active = db.query("SELECT id FROM jobs WHERE status IN ('queued','running') AND (clip_id=? OR json_extract(payload,'$.sourceExtract.sourceId')=?) LIMIT 1").get(clipId, sourceExtract.sourceId);
+  if (active) throw new PipelineError("EXTRACTION_BUSY", "动作或源素材已有抽帧任务", 409);
+  return createJob(projectId, "extract_frames", { sourceExtract });
+}
+
+export function getPersistedJob(id: string): (Record<string, unknown> & { payload: JobPayload; result: unknown | null }) | null {
+  const row = db.query("SELECT * FROM jobs WHERE id=?").get(id) as Record<string, unknown> | null;
+  if (!row) return null;
+  return { ...row, payload: JSON.parse(String(row.payload ?? "{}")), result: row.result ? JSON.parse(String(row.result)) : null };
 }
 
 /** 图片批量生成拆成独立任务，由全局队列统一控制并发；视频仍只创建一个任务。 */
@@ -154,12 +179,14 @@ function pump() {
 }
 
 function setJob(id: string, status: string, progress?: string | null, error?: string | null) {
-  db.query("UPDATE jobs SET status = ?, progress = COALESCE(?, progress), error = COALESCE(?, error) WHERE id = ?").run(
+  db.query("UPDATE jobs SET status = ?, progress = COALESCE(?, progress), error = COALESCE(?, error),updated_at=? WHERE id = ?").run(
     status,
     progress ?? null,
     error ?? null,
-    id
+    Date.now(), id
   );
+  const row = db.query("SELECT log_path FROM jobs WHERE id=?").get(id) as { log_path: string | null } | null;
+  if (row?.log_path) appendFileSync(row.log_path, `${new Date().toISOString()} ${status} ${error ?? progress ?? ""}\n`);
 }
 
 async function runJob(id: string) {
@@ -175,6 +202,7 @@ async function runJob(id: string) {
   const signal = ac.signal;
   let generatedReferenceId: string | undefined;
   let completionProgress = "完成";
+  let result: unknown = null;
   // 相同 progress 文本去重（如视频轮询每 5s 的重复心跳），避免无谓 DB 写 + 全局广播
   let lastProgress = "";
   const report = (p: string) => {
@@ -188,10 +216,13 @@ async function runJob(id: string) {
   broadcast("job_running", { id, projectId: job.project_id });
   try {
     if (signal.aborted) throw new JobCancelledError();
-    if (job.type === "extract_frames" && payload.extract) {
-      await extractFrames(payload.extract, report, enqueueMatting, signal);
+    if (job.type === "extract_frames" && payload.sourceExtract) {
+      result = await extractSource(payload.sourceExtract, report, signal);
+    } else if (job.type === "extract_frames" && payload.extract) {
+      result = await extractFrames(payload.extract, report, enqueueMatting, signal);
     } else if (job.type === "generate_frames" && payload.generate) {
       const generated = await generateFrames(payload.generate, report, enqueueMatting, signal);
+      result = generated;
       if (payload.generate.followUp && generated.artifacts[0]?.kind === "image") generatedReferenceId = generated.artifacts[0].id;
       if (generated.warning) completionProgress = `完成（${generated.warning}）`;
     } else if (job.type === "matting" && payload.matting) {
@@ -205,6 +236,7 @@ async function runJob(id: string) {
     }
     if (signal.aborted) throw new JobCancelledError();
     if (generatedReferenceId && payload.generate) enqueueGeneratedFollowUp(payload.generate, generatedReferenceId);
+    db.query("UPDATE jobs SET result=?,checkpoint=? WHERE id=?").run(result === null ? null : JSON.stringify(result), JSON.stringify({ stage: "complete" }), id);
     setJob(id, "done", completionProgress);
     broadcast("job_done", { id, projectId: job.project_id, type: job.type, progress: completionProgress });
   } catch (err) {
@@ -213,6 +245,8 @@ async function runJob(id: string) {
       broadcast("job_cancelled", { id, projectId: job.project_id, type: job.type });
     } else {
       const msg = err instanceof Error ? err.message : String(err);
+      const taggedCode = err && typeof err === "object" && "code" in err && typeof err.code === "string" ? err.code : "JOB_FAILED";
+      db.query("UPDATE jobs SET error_code=? WHERE id=?").run(err instanceof PipelineError ? err.code : taggedCode, id);
       console.error(`[job ${id}] ${job.type} 失败:`, msg);
       setJob(id, "error", null, msg);
       broadcast("job_error", { id, projectId: job.project_id, type: job.type, error: msg });

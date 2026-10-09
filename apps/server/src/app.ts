@@ -23,6 +23,7 @@ import { attackEffectsApi } from "./api/attackEffects";
 import { mcpHandler } from "./mcp";
 import { cancelJob, getQueueConcurrency } from "./queue";
 import { broadcast } from "./ws";
+import { pipelineApi } from "./pipeline/api";
 
 // imageOps worker 打包结果：生产缓存一次，开发每次重建（跟随源码改动）
 let imageOpsWorkerCode: string | null = null;
@@ -40,6 +41,7 @@ async function buildImageOpsWorker(): Promise<string> {
 }
 
 const pixiBundlePath = join(import.meta.dir, "..", "..", "web", "node_modules", "pixi.js", "dist", "pixi.min.js");
+const pixiCspPolyfillPath = join(import.meta.dir, "..", "..", "web", "node_modules", "pixi.js", "dist", "packages", "unsafe-eval.min.js");
 let pixiGzipCache: { version: string; body: Uint8Array } | null = null;
 
 function acceptsGzip(value: string | null): boolean {
@@ -82,9 +84,10 @@ export const app = new Elysia()
   .get("/api/health", () => ({ ok: true, name: "FrameBaker" }))
   // Pixi 只由编辑器路由按需加载；本地自托管避免每个页面都依赖第三方 CDN。
   .get("/pixi.min.js", ({ request, status }) => {
-    if (!existsSync(pixiBundlePath)) return status(404, "PixiJS 文件不存在，请先安装依赖");
+    if (!existsSync(pixiBundlePath) || !existsSync(pixiCspPolyfillPath)) return status(404, "PixiJS 或 CSP 兼容资源不存在，请先安装依赖");
     const stat = statSync(pixiBundlePath);
-    const version = `${stat.size.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}`;
+    const polyfillStat = statSync(pixiCspPolyfillPath);
+    const version = `${stat.size.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}-${polyfillStat.size.toString(16)}-${Math.floor(polyfillStat.mtimeMs).toString(16)}`;
     const gzip = acceptsGzip(request.headers.get("accept-encoding"));
     const etag = `"${version}${gzip ? "-gzip" : ""}"`;
     const headers = {
@@ -98,9 +101,11 @@ export const app = new Elysia()
     if (request.headers.get("if-none-match") === etag) {
       return new Response(null, { status: 304, headers });
     }
-    if (!gzip) return new Response(Bun.file(pixiBundlePath), { headers });
+    // 同版本官方 polyfill 直接修补全局 PIXI；渲染器不再要求 CSP 开放 unsafe-eval。
+    const script = () => Buffer.concat([readFileSync(pixiBundlePath), Buffer.from("\n"), readFileSync(pixiCspPolyfillPath)]);
+    if (!gzip) return new Response(script(), { headers });
     if (pixiGzipCache?.version !== version) {
-      pixiGzipCache = { version, body: Bun.gzipSync(readFileSync(pixiBundlePath), { level: 9 }) };
+      pixiGzipCache = { version, body: Bun.gzipSync(script(), { level: 9 }) };
     }
     return new Response(pixiGzipCache.body, { headers });
   })
@@ -235,6 +240,7 @@ export const app = new Elysia()
     }
   })
   .use(projectsApi)
+  .use(pipelineApi)
   .use(skeletalProjectsApi)
   .use(framesApi)
   .use(timelineApi)

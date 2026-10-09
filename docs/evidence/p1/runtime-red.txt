@@ -1,0 +1,50 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\runtime.test.ts:
+ 5 | 
+ 6 | const root = join(import.meta.dir, "../../fixtures/generated/runtime-tests", crypto.randomUUID());
+ 7 | mkdirSync(root, { recursive: true });
+ 8 | 
+ 9 | test("服务实例锁在加载业务数据库之前拒绝第二个写入者", () => {
+10 |   expect(typeof runtime.acquireServiceLock).toBe("function");
+                                                 ^
+error: expect(received).toBe(expected)
+
+Expected: "function"
+Received: "undefined"
+
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\runtime.test.ts:10:45)
+(fail) 服务实例锁在加载业务数据库之前拒绝第二个写入者 [0.32ms]
+14 |   const next = runtime.acquireServiceLock(root);
+15 |   next.release();
+16 | });
+17 | 
+18 | test("服务释放不能移除新实例的描述文件", () => {
+19 |   expect(typeof runtime.acquireServiceLock).toBe("function");
+                                                 ^
+error: expect(received).toBe(expected)
+
+Expected: "function"
+Received: "undefined"
+
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\runtime.test.ts:19:45)
+(fail) 服务释放不能移除新实例的描述文件 [0.26ms]
+26 |   lock.release();
+27 |   expect(existsSync(path)).toBeTrue();
+28 | });
+29 | 
+30 | test("鉴权拒绝未授权API、其他Origin、Host和WebSocket", () => {
+31 |   expect(typeof runtime.authorizeLocalRequest).toBe("function");
+                                                    ^
+error: expect(received).toBe(expected)
+
+Expected: "function"
+Received: "undefined"
+
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\runtime.test.ts:31:48)
+(fail) 鉴权拒绝未授权API、其他Origin、Host和WebSocket [0.18ms]
+
+ 0 pass
+ 3 fail
+ 3 expect() calls
+Ran 3 tests across 1 file. [36.00ms]

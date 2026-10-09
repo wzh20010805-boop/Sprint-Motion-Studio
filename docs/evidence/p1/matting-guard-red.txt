@@ -1,0 +1,25 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\cli.test.ts:
+(pass) doctor输出一个JSON且模型未准备不会冒充可用 [74.42ms]
+(pass) 不支持的抽帧mode在创建服务前返回参数错误 [32.63ms]
+(pass) 未知命令给结构化错误并不把日志混入stdout [32.49ms]
+69 |     expect((await fetch(info.url + "/api/v1/projects", {headers:{authorization:`Bearer ${info.token}`,origin:"http://wrong.example"}})).status).toBe(403);
+70 |     const disabled = await fetch(info.url + "/api/doctor", {headers:{authorization:`Bearer ${info.token}`}});
+71 |     expect(disabled.status).toBe(403);
+72 |     const matteForm = new FormData(); matteForm.set("projectId",project); matteForm.set("type","mp4"); matteForm.set("autoMatting","true"); matteForm.set("file",Bun.file(video));
+73 |     const matte = await fetch(info.url+"/api/import/upload",{method:"POST",headers:{authorization:`Bearer ${info.token}`},body:matteForm});
+74 |     expect(matte.status).toBe(503);
+                              ^
+error: expect(received).toBe(expected)
+
+Expected: 503
+Received: 200
+
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\cli.test.ts:74:26)
+(fail) 不开GUI也能完成真实48帧流程，复用服务并返回真实失败退出码 [2751.28ms]
+
+ 3 pass
+ 1 fail
+ 26 expect() calls
+Ran 4 tests across 1 file. [2.97s]

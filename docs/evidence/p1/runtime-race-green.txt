@@ -1,0 +1,12 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\runtime.test.ts:
+(pass) 服务实例锁在加载业务数据库之前拒绝第二个写入者 [18.39ms]
+(pass) 服务释放不能移除新实例的描述文件 [13.47ms]
+(pass) 鉴权拒绝未授权API、其他Origin、Host和WebSocket [1.06ms]
+(pass) 两个进程并发恢复失效锁时只有一个持有者 [547.42ms]
+
+ 4 pass
+ 0 fail
+ 15 expect() calls
+Ran 4 tests across 1 file. [665.00ms]

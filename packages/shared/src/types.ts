@@ -27,7 +27,7 @@ export type JobType = (typeof JOB_TYPES)[number];
 export const IMAGE_LAYER_COUNT_MIN = 1;
 export const IMAGE_LAYER_COUNT_MAX = 4;
 
-export const JOB_STATUSES = ["queued", "running", "done", "error", "cancelled"] as const;
+export const JOB_STATUSES = ["queued", "running", "done", "error", "cancelled", "interrupted"] as const;
 export type JobStatus = (typeof JOB_STATUSES)[number];
 
 export const MATERIAL_STATUSES = ["raw", "matted"] as const;
@@ -372,6 +372,8 @@ export interface MattingSettings {
 
 /** GET /api/config 响应 */
 export interface ServerConfig {
+  /** 隔离 SFS 入口的阶段能力；上游入口不带此字段。 */
+  sfs?: { phase: "P1"; extraction_mode: "all"; matting_ready: false };
   matting: {
     engine: MattingEngine;
     model: string;
@@ -807,6 +809,17 @@ export interface Job {
   progress: string | null;
   error: string | null;
   created_at: number;
+  payload?: unknown;
+  result?: unknown;
+  error_code?: string | null;
+  clip_id?: string | null;
+  base_revision?: number | null;
+  input_fingerprint?: string | null;
+  backend?: string | null;
+  checkpoint?: string | null;
+  log_path?: string | null;
+  updated_at?: number | null;
+  requires_user_action?: number;
 }
 
 /** DB 行形态：JSON 字段未解析，status/source 为宽松 string */

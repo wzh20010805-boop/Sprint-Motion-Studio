@@ -17,4 +17,8 @@ probes/**/artifacts/
 probes/desktop/cache/
 docs/evidence/**/*.zip
 .venv-image/
+workspaces/
+docs/evidence/p1/service-fixtures/
+docs/evidence/p1/review-queue-all-*/
+docs/evidence/p1/desktop-pixi-csp-red-harness-error.log
 dist/

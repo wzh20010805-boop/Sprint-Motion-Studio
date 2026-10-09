@@ -1,0 +1,14 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\service.test.ts:
+(pass) P1 shared service > migration backs up WAL contents before adding source schema and remains idempotent [49.79ms]
+(pass) P1 shared service > HTTP imports validated immutable source and queues exact timed frames as safe editor copies [568.99ms]
+(pass) P1 shared service > restart retains queued payload and marks jobs interrupted without false resume [158.97ms]
+(pass) P1 shared service > cancelled extraction publishes no completed DB source and preserves original [466.68ms]
+(pass) P1 shared service > GUI edit during extraction rejects stale commit and retained source can be retried [410.96ms]
+(pass) P1 shared service > legacy GUI default and direct all mode worker share exact source semantics [762.03ms]
+
+ 6 pass
+ 0 fail
+ 6 expect() calls
+Ran 6 tests across 1 file. [2.45s]

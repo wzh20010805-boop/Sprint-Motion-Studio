@@ -570,3 +570,22 @@ After handshake, send `notifications/initialized` notification (no response need
 ```
 
 Tools return `content: [{ type: "text", text: "…" }]` format (text is a JSON string); on error `isError: true`.
+# Soldier Frame Studio P1 local API supplement
+
+The isolated `sfs.cmd` entry shares upstream business storage and binds to `127.0.0.1`. API/WebSocket requests except `/api/health` require a Bearer token or local HttpOnly cookie; Host must match and an Origin header must be same-origin. Read credentials from workspace `.sfs/service.json`; never log or commit them.
+
+| Endpoint | Input | Output |
+|---|---|---|
+| POST `/api/v1/projects` | JSON name | data.project, project_id |
+| GET `/api/v1/projects/:id` | ID | project/sources/clips and revision |
+| POST `/api/v1/sources/import` | multipart projectId/file | immutable copy, SHA256, complete probe, source_id |
+| POST `/api/v1/clips` | JSON project_id/source_id/name | existing axis/main track, clip_id |
+| POST `/api/v1/extract` | JSON project_id/clip_id/mode:"all"/base_revision? | accepted and real job_id |
+| GET `/api/v1/jobs/:id` | ID | persisted payload/state/result/error |
+| POST `/api/v1/jobs/:id/cancel` | ID | cancellation scoped to that job |
+
+Responses contain schema_version "1.0", ok, status, project_id, requires_user_action, data, artifacts, warnings and error; job operations include job_id. Upstream done/error map to succeeded/failed; restart leftovers become interrupted. `job status` can query failed history with exit0; `job wait` reflects the terminal outcome. See [README_SFS.md](../README_SFS.md).
+
+Legacy `/api/import/upload` defaults MP4 to the same complete-frame service; explicit mode=fps preserves old sampling. Source PNGs still include scene backgrounds. Exact timing is independent of integer timeline ticks; preview quantization reports PREVIEW_TIMING_QUANTIZED. Source files use zero-based frame_000000.png; game export naming belongs to P4.
+
+The isolated entry disables generation, provider/cloud diagnostics, broad upstream MCP and unavailable matting. Legacy material-library video sampling is disabled; import video from a project. `/api/config` adds sfs.phase=P1. Thin MCP integration remains P4 scope.

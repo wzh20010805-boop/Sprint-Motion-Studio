@@ -1,0 +1,52 @@
+{
+  "createdAt": "2026-10-09T17:37:00.326Z",
+  "runtime": "1.4.2",
+  "platform": "win32",
+  "ffmpeg": "8.1.1-118-g1034b144ff-20260615",
+  "records": [
+    {
+      "count": 48,
+      "actualPngCount": 48,
+      "duration": {
+        "num": 2,
+        "den": 1
+      },
+      "fixture": "fixtures/generated/p1-1791567382798-6e26b160-34e0-43ea-a2bc-6c43ea419c07/source-cfr-48-a74d67f7-af3c-47f9-af7c-e9c179b84686",
+      "timing": "docs/evidence/p1/extraction-timing-cfr48.json",
+      "contactSheet": "docs/evidence/p1/extraction-contact-cfr48.png"
+    },
+    {
+      "count": 61,
+      "actualPngCount": 61,
+      "duration": {
+        "num": 61,
+        "den": 24
+      },
+      "fixture": "fixtures/generated/p1-1791567382798-6e26b160-34e0-43ea-a2bc-6c43ea419c07/source-cfr-61-7c07b23f-b207-4107-9e05-25ad99940212",
+      "timing": "docs/evidence/p1/extraction-timing-cfr61.json",
+      "contactSheet": "docs/evidence/p1/extraction-contact-cfr61.png"
+    },
+    {
+      "count": 120,
+      "actualPngCount": 120,
+      "duration": {
+        "num": 5,
+        "den": 1
+      },
+      "fixture": "fixtures/generated/p1-1791567382798-6e26b160-34e0-43ea-a2bc-6c43ea419c07/source-cfr-120-496f2aae-3ef5-4e2b-8bd9-e63d89dd6fe5",
+      "timing": "docs/evidence/p1/extraction-timing-cfr120.json",
+      "contactSheet": "docs/evidence/p1/extraction-contact-cfr120.png"
+    },
+    {
+      "count": 300,
+      "actualPngCount": 300,
+      "duration": {
+        "num": 25,
+        "den": 2
+      },
+      "fixture": "fixtures/generated/p1-1791567382798-6e26b160-34e0-43ea-a2bc-6c43ea419c07/source-cfr-300-d2cd8b97-62bb-4304-b4d4-b7be3bec7ed7",
+      "timing": "docs/evidence/p1/extraction-timing-cfr300.json",
+      "contactSheet": "docs/evidence/p1/extraction-contact-cfr300.png"
+    }
+  ]
+}

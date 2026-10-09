@@ -1,0 +1,50 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\cli.test.ts:
+10 |   return { exitCode, body, stdout, stderr };
+11 | }
+12 | 
+13 | test("doctor输出一个JSON且模型未准备不会冒充可用", async () => {
+14 |   const result = await invoke(["doctor", "--json"]);
+15 |   expect(result.exitCode).toBe(0);
+                               ^
+error: expect(received).toBe(expected)
+
+Expected: 0
+Received: 1
+
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\cli.test.ts:15:27)
+(fail) doctor输出一个JSON且模型未准备不会冒充可用 [18.81ms]
+19 |   expect(result.body?.warnings).toContain("MODEL_NOT_READY");
+20 | });
+21 | 
+22 | test("不支持的抽帧mode在创建服务前返回参数错误", async () => {
+23 |   const result = await invoke(["extract", "--mode", "fps", "--project", "x", "--clip", "x", "--json"]);
+24 |   expect(result.exitCode).toBe(2);
+                               ^
+error: expect(received).toBe(expected)
+
+Expected: 2
+Received: 1
+
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\cli.test.ts:24:27)
+(fail) 不支持的抽帧mode在创建服务前返回参数错误 [14.18ms]
+25 |   expect(result.body?.error?.code).toBe("INVALID_ARGUMENT");
+26 | });
+27 | 
+28 | test("未知命令给结构化错误并不把日志混入stdout", async () => {
+29 |   const result = await invoke(["unknown", "--json"]);
+30 |   expect(result.exitCode).toBe(2);
+                               ^
+error: expect(received).toBe(expected)
+
+Expected: 2
+Received: 1
+
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\cli.test.ts:30:27)
+(fail) 未知命令给结构化错误并不把日志混入stdout [16.50ms]
+
+ 0 pass
+ 3 fail
+ 3 expect() calls
+Ran 3 tests across 1 file. [80.00ms]

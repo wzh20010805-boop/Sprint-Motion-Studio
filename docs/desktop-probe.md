@@ -76,3 +76,11 @@ $env:P0_PROFILE_DIR = 'D:\AIJOB\tools\Sprite Motion Studio\framebaker\probes\des
 本探针没有打包 Python Worker、FFmpeg 或模型，没有真实角色素材去背景质量验收，也没有把截图当作完整功能测试。只运行本地界面及资源请求；宿主对白名单外请求直接拒绝，未触发云生成操作。
 
 编译资产和运行路径依据 [Bun 单文件可执行文件文档](https://bun.sh/docs/bundler/executables)；宿主配置、CSP、导航限制和渲染隔离依据 [Electron 安全指南](https://www.electronjs.org/docs/latest/tutorial/security)。目录包、源码快照、缓存和安装依赖应保持忽略，提交小型探针源码与本页证据即可。
+
+## 供后续统一服务验证的可选附着模式
+
+默认 P0 模式不变。显式设置 `SFS_SERVICE_URL=http://127.0.0.1:<port>/` 后，宿主只连接已有服务，不再创建或停止后端。若提供 `SFS_SERVICE_TOKEN`，加载页面前设置 `sfs_token` Cookie（HttpOnly、SameSite=strict），主进程健康/HTML请求使用 Bearer；令牌不写入报告。连接描述文件的路径不作任何默认假定，由调用方提供已解析的 URL 和令牌。
+
+`SFS_PROBE_PATH` 可选 `/materials`、`/settings`、`/motions`、`/project/<id>` 或 `/`。`SFS_PROBE_REQUIRE_FULL_FRAMES=1` 要求当前可见页面含完整逐帧选项文字；调用方负责进入包含该选项的界面。后续测试必须设置新的 `P0_EVIDENCE_DIR`，保留 P0 默认运行证据。
+
+`bun probes/desktop/run-attached-smoke.ts` 已在本脚本拥有的无鉴权 P0 fixture 上通过（退出 0）：真实 GUI 和资源加载、Cookie 属性、宿主退出后服务仍存活、报告不含令牌均通过。报告位于 `evidence/p0/desktop-attach/desktop-attach-test.json`。该 fixture 只证明附着和 Cookie 传递路线，P1 真实鉴权是否接受该 Cookie 由后续统一服务测试另行验证。

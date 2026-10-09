@@ -1,0 +1,25 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\runtime.test.ts:
+(pass) 服务实例锁在加载业务数据库之前拒绝第二个写入者 [13.16ms]
+(pass) 服务释放不能移除新实例的描述文件 [6.94ms]
+(pass) 鉴权拒绝未授权API、其他Origin、Host和WebSocket [0.76ms]
+48 |     const child=Bun.spawn([process.execPath,join(import.meta.dir,"../fixtures/stale-lock-worker.ts"),workspace,role],{stdout:"pipe",stderr:"pipe"});
+49 |     const [exit,stdout,stderr]=await Promise.all([child.exited,new Response(child.stdout).text(),new Response(child.stderr).text()]);
+50 |     expect({exit,stderr}).toEqual({exit:0,stderr:""});
+51 |     return JSON.parse(stdout);
+52 |   }));
+53 |   expect(results.filter(result=>result.acquired).length).toBe(1);
+                                                              ^
+error: expect(received).toBe(expected)
+
+Expected: 1
+Received: 2
+
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\runtime.test.ts:53:58)
+(fail) 两个进程并发恢复失效锁时只有一个持有者 [566.69ms]
+
+ 3 pass
+ 1 fail
+ 15 expect() calls
+Ran 4 tests across 1 file. [661.00ms]

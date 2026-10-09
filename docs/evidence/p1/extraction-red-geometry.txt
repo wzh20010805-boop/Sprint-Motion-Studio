@@ -1,0 +1,66 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\extract-all.test.ts:
+158 |   test("逐帧 SAR 改变与异常显示矩阵也明确拒绝", async () => {
+159 |     requireApi();
+160 |     const document = JSON.parse(await command(["ffprobe", "-v", "error", "-show_streams", "-show_format", "-show_frames", "-select_streams", "v:0", "-of", "json", media.vfr]));
+161 |     const changingSar = structuredClone(document);
+162 |     changingSar.frames[1].sample_aspect_ratio = "2:1";
+163 |     expect(() => probeApi.parseVideoProbe(JSON.stringify(changingSar))).toThrow(/像素|SAR/);
+                                                                              ^
+error: expect(received).toThrow(expected)
+
+Expected pattern: /\u50CF\u7D20|SAR/
+
+Received function did not throw
+Received value: {
+  streamIndex: 0,
+  width: 64,
+  height: 48,
+  codec: "h264",
+  pixelFormat: "yuv420p",
+  timeBase: {
+    num: 1,
+    den: 12288,
+  },
+  averageFrameRate: {
+    num: 96,
+    den: 7,
+  },
+  nominalFrameRate: {
+    num: 24,
+    den: 1,
+  },
+  sampleAspectRatio: {
+    num: 1,
+    den: 1,
+  },
+  streamStartPts: "0",
+  streamDurationPts: "3584",
+  frames: [
+    {
+      pts: "0",
+      duration: "512",
+    }, {
+      pts: "512",
+      duration: "1024",
+    }, {
+      pts: "1536",
+      duration: "1536",
+    }, {
+      pts: "3072",
+      duration: "512",
+    }
+  ],
+  formatName: "mov,mp4,m4a,3gp,3g2,mj2",
+  warnings: [],
+}
+
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\extract-all.test.ts:163:73)
+(fail) 完整显示帧提取（真实 FFmpeg） > 逐帧 SAR 改变与异常显示矩阵也明确拒绝 [34.03ms]
+
+ 0 pass
+ 21 filtered out
+ 1 fail
+ 3 expect() calls
+Ran 1 test across 1 file. [687.00ms]

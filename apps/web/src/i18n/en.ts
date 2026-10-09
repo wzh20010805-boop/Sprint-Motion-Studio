@@ -1187,6 +1187,12 @@ export const en = {
   "genBackground.recommend": "Auto recommend",
   "genBackground.recommending": "Recommending…",
   "genBackground.recommendFailed": "Could not recommend a background color: {msg}",
+  "sfs.extractionMode": "Video extraction mode",
+  "sfs.interrupted": "Interrupted by service restart",
+  "sfs.allFrames": "All original frames (default)",
+  "sfs.legacySampling": "Legacy FPS sampling (drops frames)",
+  "sfs.rawTimingHint": "Original frames and source timing are preserved. VFR timeline preview may be quantized; source timing remains authoritative.",
+  "sfs.mattingPending": "P1 extracts all frames with scene backgrounds intact. Scene matting awaits model preparation in P2.",
 } as const;
 
 export type MsgKey = keyof typeof en;

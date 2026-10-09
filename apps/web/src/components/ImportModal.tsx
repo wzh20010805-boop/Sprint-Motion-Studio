@@ -71,7 +71,8 @@ export default function ImportModal({ projectId, axisId, trackId, startStepId, t
   const [matQuery, setMatQuery] = useState(""); // 素材搜索（name + prompt 本地过滤）
   // 上传 Tab：多文件逐个分发
   const [fps, setFps] = useState(8);
-  const [autoMatting, setAutoMatting] = useState(true); // 默认勾选抠图去背
+  const [extractMode, setExtractMode] = useState<"all" | "fps">("all");
+  const [autoMatting, setAutoMatting] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [providerId, setProviderId] = useState("");
   const [model, setModel] = useState("");
@@ -84,6 +85,7 @@ export default function ImportModal({ projectId, axisId, trackId, startStepId, t
   const fileRef = useRef<HTMLInputElement>(null);
   const theme = useTheme();
   const cfg = useServerConfig();
+  const sfsP1 = cfg?.sfs?.phase === "P1";
   const workflow = useImportWorkflow(onDone);
   const { items, finished, submitting, setSubmitting, updateItem, okCount, errCount } = workflow;
 
@@ -194,7 +196,8 @@ export default function ImportModal({ projectId, axisId, trackId, startStepId, t
       fd.append("projectId", projectId);
       fd.append("type", inferType(file));
       fd.append("fps", String(fps));
-      fd.append("autoMatting", String(autoMatting));
+      fd.append("mode", extractMode);
+      fd.append("autoMatting", String(sfsP1 ? false : autoMatting));
       const { jobId } = await api.upload(fd);
       return { kind: "queued", jobId };
     }, true);
@@ -265,7 +268,7 @@ export default function ImportModal({ projectId, axisId, trackId, startStepId, t
           <button type="button" className={`tab ${tab === "upload" ? "active" : ""}`} onClick={() => { setTab("upload"); resetProgress(); }}>
             <Upload size={14} /> {t("msg.upload_files")}
           </button>
-          <button type="button" className={`tab ${tab === "cli" ? "active" : ""}`} onClick={() => { setTab("cli"); resetProgress(); }}>
+          <button type="button" disabled={sfsP1} className={`tab ${tab === "cli" ? "active" : ""}`} onClick={() => { setTab("cli"); resetProgress(); }}>
             <Sparkles size={14} /> {t("msg.generate")}
           </button>
         </div>
@@ -431,14 +434,22 @@ export default function ImportModal({ projectId, axisId, trackId, startStepId, t
               </div>
             )}
 
-            {hasVideo && (
+            <div className="form-row" data-testid="sfs-extraction-mode">
+              <label>{t("sfs.extractionMode")}</label>
+              <select className="px-input" value={extractMode} onChange={(e) => setExtractMode(e.target.value as "all" | "fps")}>
+                <option value="all">{t("sfs.allFrames")}</option>
+                <option value="fps">{t("sfs.legacySampling")}</option>
+              </select>
+              <p>{t("sfs.rawTimingHint")}</p>
+            </div>
+            {hasVideo && extractMode === "fps" && (
               <div className="form-row">
                 <label>{t("msg.mp4_extract_fps_fps_applies_to_all_videos", { fps })}</label>
                 <input type="range" min={1} max={24} value={fps} onChange={(e) => setFps(Number(e.target.value))} />
               </div>
             )}
 
-            <MattingOption checked={autoMatting} onChange={setAutoMatting} />
+            {sfsP1 ? <p>{t("sfs.mattingPending")}</p> : <MattingOption checked={autoMatting} onChange={setAutoMatting} />}
 
             {finished && (
               <div className="up-summary">

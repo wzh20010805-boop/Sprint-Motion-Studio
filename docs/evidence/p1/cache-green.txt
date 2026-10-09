@@ -1,0 +1,11 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\cache.test.ts:
+(pass) 缓存的损坏 PNG 和截断时序阻止新 Clip 入库，恢复有效产物后仍能复用三帧 [425.45ms]
+(pass) 缓存 PNG 即使 IHDR 有效也必须完整解码通过 [350.46ms]
+(pass) 缓存时序中的路径和显示时长篡改不会被相同帧数掩盖 [314.61ms]
+
+ 3 pass
+ 0 fail
+ 3 expect() calls
+Ran 3 tests across 1 file. [1150.00ms]

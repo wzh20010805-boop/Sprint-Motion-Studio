@@ -570,3 +570,22 @@ FrameBaker 正在 http://localhost:3000 运行，MCP 端点为 /mcp（Streamable
 ```
 
 工具返回 `content: [{ type: "text", text: "…" }]` 格式（text 为 JSON 字符串）；错误时 `isError: true`。
+# 小兵工坊 P1 本地 API 补充
+
+通过 `sfs.cmd` 启动的隔离服务复用上游业务数据库，只监听 `127.0.0.1`。除 `/api/health` 外，API / WebSocket 需要 Bearer token 或本地 HttpOnly cookie；Host 必须匹配服务，存在 Origin 时必须匹配同源。令牌从工作区 `.sfs/service.json` 读取，不能提交或打印。
+
+| 路由 | 输入 | 结果 |
+|---|---|---|
+| POST `/api/v1/projects` | JSON `name` | `data.project`、`project_id` |
+| GET `/api/v1/projects/:id` | ID | `data.project/sources/clips` 和修订号 |
+| POST `/api/v1/sources/import` | multipart `projectId/file` | 不可变视频、SHA256、完整探测，`data.source_id` |
+| POST `/api/v1/clips` | JSON `project_id/source_id/name` | 复用动画轴和主轨，`data.clip_id` |
+| POST `/api/v1/extract` | JSON `project_id/clip_id/mode:"all"/base_revision?` | accepted，真实 `job_id` |
+| GET `/api/v1/jobs/:id` | ID | 持久任务参数/状态/结果/异常 |
+| POST `/api/v1/jobs/:id/cancel` | ID | 取消当前任务自己的操作 |
+
+统一响应含 `schema_version:"1.0"`、`ok`、`status`、`project_id`、`requires_user_action`、`data`、`artifacts`、`warnings`、`error`，任务操作另含 `job_id`。旧 done/error 对外映射 succeeded/failed；重启遗留任务为 interrupted。CLI `job status` 成功查询可退出0并返回失败状态，`job wait` 则反映终态退出码，详见 [README_SFS.md](../README_SFS.md)。
+
+上游 `/api/import/upload` 的 MP4 默认转入同一完整源帧服务；仅明确 `mode=fps` 使用旧采样。源 PNG 为完整未抠图画面，不得把抽帧成功称为透明处理成功。精确时序独立于上游整数 tick，预览量化会报告 `PREVIEW_TIMING_QUANTIZED`。源帧采用 `frame_000000.png` 零起始索引；未来游戏动作导出命名属 P4。
+
+隔离入口禁用生成/provider/云体检/宽权限 MCP 及未准备抠图；素材库视频采样入口禁用，请从项目上传视频。`/api/config` 增加 `sfs.phase=P1` 能力提示。P1 不增加高权限 MCP；薄 MCP 属 P4。

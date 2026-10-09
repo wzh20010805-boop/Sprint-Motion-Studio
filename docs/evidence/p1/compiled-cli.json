@@ -1,0 +1,80 @@
+{
+  "project_id": "a34924a9-b3d4-4a45-8d6a-40fca0fdcf9a",
+  "passed": true,
+  "source_id": "dae44e33-5417-4e2e-ae48-a95720082e8e",
+  "workspace": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\compiled-cli-8c8062bf-92dd-40bf-a3d8-d574b7c51733",
+  "cwd": "C:\\Windows\\Temp",
+  "exit_code": 0,
+  "clip_id": "3f852028-6a26-4204-bc7d-7416503e5587",
+  "executable": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\dist\\sfs.exe",
+  "result": {
+    "schema_version": "1.0",
+    "ok": true,
+    "status": "succeeded",
+    "job_id": "2134a341-ee8c-49de-a334-f795bc86f1c7",
+    "project_id": "a34924a9-b3d4-4a45-8d6a-40fca0fdcf9a",
+    "requires_user_action": false,
+    "data": {
+      "job": {
+        "id": "2134a341-ee8c-49de-a334-f795bc86f1c7",
+        "project_id": "a34924a9-b3d4-4a45-8d6a-40fca0fdcf9a",
+        "type": "extract_frames",
+        "status": "done",
+        "progress": "完成",
+        "error": null,
+        "created_at": 1791568683358,
+        "payload": {
+          "sourceExtract": {
+            "projectId": "a34924a9-b3d4-4a45-8d6a-40fca0fdcf9a",
+            "sourceId": "dae44e33-5417-4e2e-ae48-a95720082e8e",
+            "clipId": "3f852028-6a26-4204-bc7d-7416503e5587",
+            "baseRevision": 3
+          }
+        },
+        "result": {
+          "source_id": "dae44e33-5417-4e2e-ae48-a95720082e8e",
+          "clip_id": "3f852028-6a26-4204-bc7d-7416503e5587",
+          "frame_count": 48,
+          "revision": 99,
+          "source_duration": {
+            "num": 2,
+            "den": 1
+          },
+          "preview_duration_seconds": 2.0000000000000013,
+          "warnings": [],
+          "artifacts": [
+            {
+              "kind": "source_timing",
+              "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\compiled-cli-8c8062bf-92dd-40bf-a3d8-d574b7c51733\\sources\\dae44e33-5417-4e2e-ae48-a95720082e8e\\timing.json"
+            },
+            {
+              "kind": "source_frames",
+              "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\compiled-cli-8c8062bf-92dd-40bf-a3d8-d574b7c51733\\sources\\dae44e33-5417-4e2e-ae48-a95720082e8e\\raw"
+            }
+          ]
+        },
+        "error_code": null,
+        "clip_id": "3f852028-6a26-4204-bc7d-7416503e5587",
+        "base_revision": 3,
+        "input_fingerprint": "7e207ecb49d3104d9e17ecb866077842417709294bc3463ba47ef8fbb6ce9350",
+        "backend": "ffmpeg-passthrough",
+        "checkpoint": "{\"stage\":\"complete\"}",
+        "log_path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\compiled-cli-8c8062bf-92dd-40bf-a3d8-d574b7c51733\\jobs\\2134a341-ee8c-49de-a334-f795bc86f1c7\\job.log",
+        "updated_at": 1791568684895,
+        "requires_user_action": 0
+      }
+    },
+    "artifacts": [
+      {
+        "kind": "source_timing",
+        "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\compiled-cli-8c8062bf-92dd-40bf-a3d8-d574b7c51733\\sources\\dae44e33-5417-4e2e-ae48-a95720082e8e\\timing.json"
+      },
+      {
+        "kind": "source_frames",
+        "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\compiled-cli-8c8062bf-92dd-40bf-a3d8-d574b7c51733\\sources\\dae44e33-5417-4e2e-ae48-a95720082e8e\\raw"
+      }
+    ],
+    "warnings": [],
+    "error": null
+  }
+}

@@ -4,6 +4,11 @@ This document records features, changes, and bug fixes by release. Main releases
 
 ## [Unreleased]
 
+- Soldier Frame Studio P0 audits pinned upstream history, Windows/Bun/FFmpeg/licenses and Electron feasibility, preserving real failure evidence.
+- P1 adds complete display frames, exact PTS/rational timing, immutable sources, consistent migration backups, shared GUI/CLI service and persisted jobs. All frames are default; legacy sampling is explicit.
+- The isolated entry binds loopback and verifies API/WS token, Host and Origin; unavailable matting fails explicitly. Cache reuse, concurrent stale-lock recovery and interrupted GUI finalization are repaired.
+- Serve the installed Pixi compatibility polyfill under strict CSP. Scene matting and standalone distribution remain future phases.
+
 ## [0.5.0] - 2026-09-02
 
 ### Added

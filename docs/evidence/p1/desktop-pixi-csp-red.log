@@ -1,0 +1,23 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\pixi-csp.test.ts:
+ 7 |   const response = await app.handle(new Request("http://localhost/pixi.min.js"));
+ 8 |   expect(response.status).toBe(200);
+ 9 |   const context = createContext({ console, navigator: { userAgent: "CSP 测试" }, setTimeout, clearTimeout, performance, URL, Blob, EventTarget, Event }, { codeGeneration: { strings: false, wasm: false } });
+10 |   runInContext(await response.text(), context);
+11 |   expect(() => runInContext('new Function("return 1")', context)).toThrow();
+12 |   expect(() => runInContext("PIXI.AbstractRenderer.prototype._unsafeEvalCheck.call({})", context)).not.toThrow();
+                                                                                                            ^
+error: expect(received).not.toThrow()
+
+Error name: "Error"
+Error message: "Current environment does not allow unsafe-eval, please use pixi.js/unsafe-eval module to enable support."
+
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\pixi-csp.test.ts:12:104)
+(fail) 实际自托管 Pixi 脚本可在禁止动态代码生成的 CSP 环境通过渲染器检查 [57.35ms]
+(pass) 普通与 gzip Pixi 响应内容一致，且条件缓存分别可重验证 [21.06ms]
+
+ 1 pass
+ 1 fail
+ 8 expect() calls
+Ran 2 tests across 1 file. [308.00ms]

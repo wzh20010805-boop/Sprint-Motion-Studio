@@ -1,0 +1,55 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\service.test.ts:
+(pass) P1 shared service > migration backs up WAL contents before adding source schema and remains idempotent [48.10ms]
+(pass) P1 shared service > HTTP imports validated immutable source and queues exact timed frames as safe editor copies [618.27ms]
+(pass) P1 shared service > restart retains queued payload and marks jobs interrupted without false resume [158.40ms]
+(pass) P1 shared service > cancelled extraction publishes no completed DB source and preserves original [465.64ms]
+(pass) P1 shared service > GUI edit during extraction rejects stale commit and retained source can be retried [387.91ms]
+12 |   const proc = Bun.spawn([process.execPath, "-e", code], {
+13 |     cwd: repo, env: { ...process.env, SFS_WORKSPACE: workspace }, stdout: "pipe", stderr: "pipe",
+14 |   });
+15 |   const [exit, stdout, stderr] = await Promise.all([proc.exited, new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+16 |   await Bun.write(join(workspace, "test-output.log"), `${stdout}\n${stderr}`);
+17 |   expect({ exit, output: `${stdout}\n${stderr}` }).toEqual({ exit: 0, output: "PASS\n\n" });
+                                                        ^
+error: expect(received).toEqual(expected)
+
+  {
+-   "exit": 0,
++   "exit": 1,
+    "output": 
+- "PASS
++ "
++ 188 |   return { stageDir, files };
++ 189 | }
++ 190 | 
++ 191 | function cleanupStaging(stageDir: string, stagingFile: string) {
++ 192 |   rmSync(stageDir, { recursive: true, force: true });
++ 193 |   rmSync(dirname(stagingFile), { recursive: true, force: true });
++         ^
++ EBUSY: resource busy or locked, rm 'D:\AIJOB\tools\Sprite Motion Studio\framebaker\docs\evidence\p1\service-fixtures\gui-bridge-7e51ab9e-0722-4652-8609-3ae21915cb4b'
++     path: "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p1\\service-fixtures\\gui-bridge-7e51ab9e-0722-4652-8609-3ae21915cb4b",
++  syscall: "rm",
++    errno: -4082,
++     code: "EBUSY"
+  
++       at cleanupStaging (D:\AIJOB\tools\Sprite Motion Studio\framebaker\apps\server\src\jobs\extract.ts:193:3)
++       at extractFrames (D:\AIJOB\tools\Sprite Motion Studio\framebaker\apps\server\src\jobs\extract.ts:246:5)
++ 
++ Bun v1.4.2 (Windows x64)
+  "
+  ,
+  }
+
+- Expected  - 2
++ Received  + 18
+
+      at child (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\service.test.ts:17:52)
+      at async <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\service.test.ts:129:11)
+(fail) P1 shared service > legacy GUI default and direct all mode worker share exact source semantics [605.77ms]
+
+ 5 pass
+ 1 fail
+ 6 expect() calls
+Ran 6 tests across 1 file. [2.34s]

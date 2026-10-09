@@ -1187,6 +1187,12 @@ export const zh = {
   "genBackground.recommend": "自动推荐",
   "genBackground.recommending": "正在推荐…",
   "genBackground.recommendFailed": "推荐垫底色失败：{msg}",
+  "sfs.extractionMode": "视频抽帧模式",
+  "sfs.interrupted": "服务重启，任务中断",
+  "sfs.allFrames": "全部原始帧（默认）",
+  "sfs.legacySampling": "旧版 FPS 采样（主动跳帧）",
+  "sfs.rawTimingHint": "完整保留原始帧和源时序。变帧率视频在时间轴预览中可能量化，请以源时序文件为准。",
+  "sfs.mattingPending": "P1 仅完成完整抽帧，画面仍包含场景背景；场景抠图等待 P2 模型准备。",
 } as const;
 
 export type MsgKey = keyof typeof zh;

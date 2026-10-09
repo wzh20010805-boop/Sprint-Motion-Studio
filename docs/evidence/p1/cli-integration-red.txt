@@ -1,0 +1,25 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\cli.test.ts:
+(pass) doctor输出一个JSON且模型未准备不会冒充可用 [71.52ms]
+(pass) 不支持的抽帧mode在创建服务前返回参数错误 [32.38ms]
+(pass) 未知命令给结构化错误并不把日志混入stdout [31.47ms]
+55 |     expect(existsSync(extracted.body.artifacts[0].path)).toBeTrue();
+56 |     const inspect = await command(["project", "inspect", "--project", project]);
+57 |     expect(inspect.body.data.sources[0].id).toBe(source);
+58 |     expect(JSON.parse(readFileSync(join(workspace,".sfs/service.json"),"utf8")).instance_id).toBe(info.instance_id);
+59 |     const revision = await command(["extract", "--project", project, "--clip", clip.body.data.clip_id, "--base-revision", "0"]);
+60 |     expect(revision.exitCode).toBe(6);
+                                   ^
+error: expect(received).toBe(expected)
+
+Expected: 6
+Received: 1
+
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\cli.test.ts:60:31)
+(fail) 不开GUI也能完成真实48帧流程，复用服务并返回真实失败退出码 [2328.53ms]
+
+ 3 pass
+ 1 fail
+ 20 expect() calls
+Ran 4 tests across 1 file. [2.51s]

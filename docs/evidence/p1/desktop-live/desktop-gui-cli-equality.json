@@ -1,0 +1,2169 @@
+{
+  "checkedAt": "2026-10-09T18:05:09.131Z",
+  "command": "bun probes/desktop/run-p1-smoke.ts --compare-only",
+  "cwd": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker",
+  "bun": "1.4.2",
+  "comparisonMode": "read existing source timing and PNG bytes; no service startup or GUI rerun",
+  "workspace": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-desktop-workspace\\run-1791568528697",
+  "projectId": "c261621b-9709-41a3-a70d-ca69f3872a50",
+  "sourceIds": {
+    "cli": "4e252ddd-2519-43fb-bc54-f188ebdcd162",
+    "gui": "42b0dfb3-14ca-408a-8cc4-640392ea2297"
+  },
+  "timingPaths": {
+    "cli": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-desktop-workspace\\run-1791568528697\\sources\\4e252ddd-2519-43fb-bc54-f188ebdcd162\\timing.json",
+    "gui": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-desktop-workspace\\run-1791568528697\\sources\\42b0dfb3-14ca-408a-8cc4-640392ea2297\\timing.json"
+  },
+  "comparedFields": [
+    "source_index",
+    "pts",
+    "time_base",
+    "presentation_time",
+    "display_duration",
+    "duration_origin",
+    "decode_status"
+  ],
+  "ignoredFields": [
+    "source_id",
+    "source_frame_id"
+  ],
+  "frameCounts": {
+    "cli": 48,
+    "gui": 48
+  },
+  "originalVideoHashes": {
+    "cli": "7e207ecb49d3104d9e17ecb866077842417709294bc3463ba47ef8fbb6ce9350",
+    "gui": "7e207ecb49d3104d9e17ecb866077842417709294bc3463ba47ef8fbb6ce9350"
+  },
+  "originalVideoEqual": true,
+  "totalDuration": {
+    "cli": {
+      "num": 2,
+      "den": 1
+    },
+    "gui": {
+      "num": 2,
+      "den": 1
+    }
+  },
+  "totalDurationEqual": true,
+  "allTimingEqual": true,
+  "allPngBytesEqual": true,
+  "sourceIndicesContinuous": true,
+  "mismatches": [],
+  "frames": [
+    {
+      "index": 0,
+      "cli": {
+        "source_index": 0,
+        "pts": "0",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 0,
+          "den": 1
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 0,
+        "pts": "0",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 0,
+          "den": 1
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "0d384c3f7b307a13083bfadc9b44e551c3fcebe989d7fc1bc60b24190e617bba",
+      "guiPngSha256": "0d384c3f7b307a13083bfadc9b44e551c3fcebe989d7fc1bc60b24190e617bba",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 1,
+      "cli": {
+        "source_index": 1,
+        "pts": "512",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 1,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 1,
+        "pts": "512",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 1,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "191d33fcfcd003a76d1da7c26f91c2e4ef03e76bec730115b1826fc7d949f80d",
+      "guiPngSha256": "191d33fcfcd003a76d1da7c26f91c2e4ef03e76bec730115b1826fc7d949f80d",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 2,
+      "cli": {
+        "source_index": 2,
+        "pts": "1024",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 1,
+          "den": 12
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 2,
+        "pts": "1024",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 1,
+          "den": 12
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "1d5184818adaaf8b0330db8b2d490e8feb38b7e48c8c336a27c914617d098e26",
+      "guiPngSha256": "1d5184818adaaf8b0330db8b2d490e8feb38b7e48c8c336a27c914617d098e26",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 3,
+      "cli": {
+        "source_index": 3,
+        "pts": "1536",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 1,
+          "den": 8
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 3,
+        "pts": "1536",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 1,
+          "den": 8
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "dffc2dc42e1eb0ba91e4282e4c82787a97fcb1099338ecfdc7d80e80cbae307b",
+      "guiPngSha256": "dffc2dc42e1eb0ba91e4282e4c82787a97fcb1099338ecfdc7d80e80cbae307b",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 4,
+      "cli": {
+        "source_index": 4,
+        "pts": "2048",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 1,
+          "den": 6
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 4,
+        "pts": "2048",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 1,
+          "den": 6
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "4653286b0476c9e755d2c74feedade8d5cd28eec6a315980063ef84280c869b6",
+      "guiPngSha256": "4653286b0476c9e755d2c74feedade8d5cd28eec6a315980063ef84280c869b6",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 5,
+      "cli": {
+        "source_index": 5,
+        "pts": "2560",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 5,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 5,
+        "pts": "2560",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 5,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "dc1026735073ffbdac0e8ef001be0309aa61d2de78a27fd5a5b8632c385d3a83",
+      "guiPngSha256": "dc1026735073ffbdac0e8ef001be0309aa61d2de78a27fd5a5b8632c385d3a83",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 6,
+      "cli": {
+        "source_index": 6,
+        "pts": "3072",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 1,
+          "den": 4
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 6,
+        "pts": "3072",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 1,
+          "den": 4
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "bab239ee0ecd8f0c7916949731f4f17bc672cd7fb4574896c7b50cbee5263121",
+      "guiPngSha256": "bab239ee0ecd8f0c7916949731f4f17bc672cd7fb4574896c7b50cbee5263121",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 7,
+      "cli": {
+        "source_index": 7,
+        "pts": "3584",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 7,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 7,
+        "pts": "3584",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 7,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "b017e4f2e233f07491910607a2a76b649df280fe30991d2abcf653446f19c713",
+      "guiPngSha256": "b017e4f2e233f07491910607a2a76b649df280fe30991d2abcf653446f19c713",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 8,
+      "cli": {
+        "source_index": 8,
+        "pts": "4096",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 1,
+          "den": 3
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 8,
+        "pts": "4096",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 1,
+          "den": 3
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "9313c931c7cd432947b40870cbd1445886d86ad78c828d08bd9fca58bb792f93",
+      "guiPngSha256": "9313c931c7cd432947b40870cbd1445886d86ad78c828d08bd9fca58bb792f93",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 9,
+      "cli": {
+        "source_index": 9,
+        "pts": "4608",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 3,
+          "den": 8
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 9,
+        "pts": "4608",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 3,
+          "den": 8
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "2fcd42c6c9bb8b1d828d939cc08838a3f27be9f9e74aeaea6b9ef2422d2049ff",
+      "guiPngSha256": "2fcd42c6c9bb8b1d828d939cc08838a3f27be9f9e74aeaea6b9ef2422d2049ff",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 10,
+      "cli": {
+        "source_index": 10,
+        "pts": "5120",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 5,
+          "den": 12
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 10,
+        "pts": "5120",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 5,
+          "den": 12
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "bb1f4ae31885f1802ddf7fb21a7c7e5ff90851757996887a01f56e937d6161f1",
+      "guiPngSha256": "bb1f4ae31885f1802ddf7fb21a7c7e5ff90851757996887a01f56e937d6161f1",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 11,
+      "cli": {
+        "source_index": 11,
+        "pts": "5632",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 11,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 11,
+        "pts": "5632",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 11,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "b1bea595590981b998758289ef5d1af43665f2a79526f5cd1406f5e0dc317ecd",
+      "guiPngSha256": "b1bea595590981b998758289ef5d1af43665f2a79526f5cd1406f5e0dc317ecd",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 12,
+      "cli": {
+        "source_index": 12,
+        "pts": "6144",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 1,
+          "den": 2
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 12,
+        "pts": "6144",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 1,
+          "den": 2
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "02b9f364952c64fb6763ba9ffed20e010c821bcd3c6781291a4c818e8920bf45",
+      "guiPngSha256": "02b9f364952c64fb6763ba9ffed20e010c821bcd3c6781291a4c818e8920bf45",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 13,
+      "cli": {
+        "source_index": 13,
+        "pts": "6656",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 13,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 13,
+        "pts": "6656",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 13,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "1ed9ece67f56926ca1a63518ee92adcea584b24e701afb9647828e1712449187",
+      "guiPngSha256": "1ed9ece67f56926ca1a63518ee92adcea584b24e701afb9647828e1712449187",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 14,
+      "cli": {
+        "source_index": 14,
+        "pts": "7168",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 7,
+          "den": 12
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 14,
+        "pts": "7168",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 7,
+          "den": 12
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "f90940ebe6dd980af7b09bedfbeb96eb27f35d7db5db24845995444195ddff85",
+      "guiPngSha256": "f90940ebe6dd980af7b09bedfbeb96eb27f35d7db5db24845995444195ddff85",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 15,
+      "cli": {
+        "source_index": 15,
+        "pts": "7680",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 5,
+          "den": 8
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 15,
+        "pts": "7680",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 5,
+          "den": 8
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "35583be2a78b07abca246138f846ceab3a7fa3fd3b259f4646d60052b5e13341",
+      "guiPngSha256": "35583be2a78b07abca246138f846ceab3a7fa3fd3b259f4646d60052b5e13341",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 16,
+      "cli": {
+        "source_index": 16,
+        "pts": "8192",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 2,
+          "den": 3
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 16,
+        "pts": "8192",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 2,
+          "den": 3
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "791fc46583235b6967027c6eac7653fa5006824e496bad914ec566cdd02d6a99",
+      "guiPngSha256": "791fc46583235b6967027c6eac7653fa5006824e496bad914ec566cdd02d6a99",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 17,
+      "cli": {
+        "source_index": 17,
+        "pts": "8704",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 17,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 17,
+        "pts": "8704",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 17,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "d2f3b4725dac93b5b4c0cd6db2eaa361c5dc799a19f88b31ded98da2708bfd6f",
+      "guiPngSha256": "d2f3b4725dac93b5b4c0cd6db2eaa361c5dc799a19f88b31ded98da2708bfd6f",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 18,
+      "cli": {
+        "source_index": 18,
+        "pts": "9216",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 3,
+          "den": 4
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 18,
+        "pts": "9216",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 3,
+          "den": 4
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "ab3d68c196b806c27b258b04a1e7902475d4f95d14968597bc25e8af5b5c339b",
+      "guiPngSha256": "ab3d68c196b806c27b258b04a1e7902475d4f95d14968597bc25e8af5b5c339b",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 19,
+      "cli": {
+        "source_index": 19,
+        "pts": "9728",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 19,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 19,
+        "pts": "9728",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 19,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "c749d68902a96130f815dd80684f7ea5c791b7ed36566f1a2d7003cf7694ed39",
+      "guiPngSha256": "c749d68902a96130f815dd80684f7ea5c791b7ed36566f1a2d7003cf7694ed39",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 20,
+      "cli": {
+        "source_index": 20,
+        "pts": "10240",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 5,
+          "den": 6
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 20,
+        "pts": "10240",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 5,
+          "den": 6
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "d3a10942be53787975f7e513cd71e244fc370fb70e427fee9ed51dc13a28cbdc",
+      "guiPngSha256": "d3a10942be53787975f7e513cd71e244fc370fb70e427fee9ed51dc13a28cbdc",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 21,
+      "cli": {
+        "source_index": 21,
+        "pts": "10752",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 7,
+          "den": 8
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 21,
+        "pts": "10752",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 7,
+          "den": 8
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "b83c7b20a81368c854608d64b5b02c9df1781df13f4b317cf218cb6492e9603e",
+      "guiPngSha256": "b83c7b20a81368c854608d64b5b02c9df1781df13f4b317cf218cb6492e9603e",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 22,
+      "cli": {
+        "source_index": 22,
+        "pts": "11264",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 11,
+          "den": 12
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 22,
+        "pts": "11264",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 11,
+          "den": 12
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "00f203c2136415a080f7dcb325096f058a8ce70ffeb67ebd8531440bf92821d3",
+      "guiPngSha256": "00f203c2136415a080f7dcb325096f058a8ce70ffeb67ebd8531440bf92821d3",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 23,
+      "cli": {
+        "source_index": 23,
+        "pts": "11776",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 23,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 23,
+        "pts": "11776",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 23,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "a309c0c967007042be6400c42d3bff8f38476e7f58795ac10b3ab30ea612f11b",
+      "guiPngSha256": "a309c0c967007042be6400c42d3bff8f38476e7f58795ac10b3ab30ea612f11b",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 24,
+      "cli": {
+        "source_index": 24,
+        "pts": "12288",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 1,
+          "den": 1
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 24,
+        "pts": "12288",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 1,
+          "den": 1
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "ec1708f4af70317cbdf3ca4e9aa72f9d76b3cb0a2f4f46d00c6d2c24790c9cfc",
+      "guiPngSha256": "ec1708f4af70317cbdf3ca4e9aa72f9d76b3cb0a2f4f46d00c6d2c24790c9cfc",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 25,
+      "cli": {
+        "source_index": 25,
+        "pts": "12800",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 25,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 25,
+        "pts": "12800",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 25,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "fdbcf271ca45401a39486f092915096643639327b16401c685c506f75af6ada2",
+      "guiPngSha256": "fdbcf271ca45401a39486f092915096643639327b16401c685c506f75af6ada2",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 26,
+      "cli": {
+        "source_index": 26,
+        "pts": "13312",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 13,
+          "den": 12
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 26,
+        "pts": "13312",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 13,
+          "den": 12
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "3eab984ad5be288119a1f8fecfe5c756a04660998033014c23dc2f1b1c249415",
+      "guiPngSha256": "3eab984ad5be288119a1f8fecfe5c756a04660998033014c23dc2f1b1c249415",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 27,
+      "cli": {
+        "source_index": 27,
+        "pts": "13824",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 9,
+          "den": 8
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 27,
+        "pts": "13824",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 9,
+          "den": 8
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "80e11a74080f6036902bb2d41ee5bf551e1ff27d1e766106d2a4af4d478fdd76",
+      "guiPngSha256": "80e11a74080f6036902bb2d41ee5bf551e1ff27d1e766106d2a4af4d478fdd76",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 28,
+      "cli": {
+        "source_index": 28,
+        "pts": "14336",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 7,
+          "den": 6
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 28,
+        "pts": "14336",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 7,
+          "den": 6
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "1822e82609d60b49d50c57f6bee846f67a9c510c2eeb45bdd06bfcbaf16903a8",
+      "guiPngSha256": "1822e82609d60b49d50c57f6bee846f67a9c510c2eeb45bdd06bfcbaf16903a8",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 29,
+      "cli": {
+        "source_index": 29,
+        "pts": "14848",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 29,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 29,
+        "pts": "14848",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 29,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "0886439ba44084cc7d7a5e8a5ef5b344944e973b781019ff027fe7c1ade39f38",
+      "guiPngSha256": "0886439ba44084cc7d7a5e8a5ef5b344944e973b781019ff027fe7c1ade39f38",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 30,
+      "cli": {
+        "source_index": 30,
+        "pts": "15360",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 5,
+          "den": 4
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 30,
+        "pts": "15360",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 5,
+          "den": 4
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "e4073e2b25cfb2c8137dd1e8f54513ed57859bbfbcaffb91b9de77b72482a4ee",
+      "guiPngSha256": "e4073e2b25cfb2c8137dd1e8f54513ed57859bbfbcaffb91b9de77b72482a4ee",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 31,
+      "cli": {
+        "source_index": 31,
+        "pts": "15872",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 31,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 31,
+        "pts": "15872",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 31,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "002a22c2c27a704a375c16ea1d6c74e83bfee0002769baf67075811486b661b6",
+      "guiPngSha256": "002a22c2c27a704a375c16ea1d6c74e83bfee0002769baf67075811486b661b6",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 32,
+      "cli": {
+        "source_index": 32,
+        "pts": "16384",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 4,
+          "den": 3
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 32,
+        "pts": "16384",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 4,
+          "den": 3
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "e63aa247ddc7e018d7d629ddba4681046526d4f98b3880b9294f1b045052f454",
+      "guiPngSha256": "e63aa247ddc7e018d7d629ddba4681046526d4f98b3880b9294f1b045052f454",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 33,
+      "cli": {
+        "source_index": 33,
+        "pts": "16896",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 11,
+          "den": 8
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 33,
+        "pts": "16896",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 11,
+          "den": 8
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "a948cbf2154e49c13b5ef612aadf1d996be21481467ff44f7633339b4abf4156",
+      "guiPngSha256": "a948cbf2154e49c13b5ef612aadf1d996be21481467ff44f7633339b4abf4156",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 34,
+      "cli": {
+        "source_index": 34,
+        "pts": "17408",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 17,
+          "den": 12
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 34,
+        "pts": "17408",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 17,
+          "den": 12
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "8eb0e8cbfcf6ba815c3dac0bf9446ba3dc2204bd968d3fe3153fd2d04704ae1e",
+      "guiPngSha256": "8eb0e8cbfcf6ba815c3dac0bf9446ba3dc2204bd968d3fe3153fd2d04704ae1e",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 35,
+      "cli": {
+        "source_index": 35,
+        "pts": "17920",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 35,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 35,
+        "pts": "17920",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 35,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "a3098f9c81cc4f1507a754df8ff1f5199383fe4a6160036951503829eab032a4",
+      "guiPngSha256": "a3098f9c81cc4f1507a754df8ff1f5199383fe4a6160036951503829eab032a4",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 36,
+      "cli": {
+        "source_index": 36,
+        "pts": "18432",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 3,
+          "den": 2
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 36,
+        "pts": "18432",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 3,
+          "den": 2
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "fcf74ea8c2ee9b6dbe01c0043919618ed3f82cfec0ee8a0db2df614e37714b5d",
+      "guiPngSha256": "fcf74ea8c2ee9b6dbe01c0043919618ed3f82cfec0ee8a0db2df614e37714b5d",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 37,
+      "cli": {
+        "source_index": 37,
+        "pts": "18944",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 37,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 37,
+        "pts": "18944",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 37,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "2b647c10d83eaec24945e2bc32e7a7e5ab4104daeca3fab36c6ffa315df28e4e",
+      "guiPngSha256": "2b647c10d83eaec24945e2bc32e7a7e5ab4104daeca3fab36c6ffa315df28e4e",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 38,
+      "cli": {
+        "source_index": 38,
+        "pts": "19456",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 19,
+          "den": 12
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 38,
+        "pts": "19456",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 19,
+          "den": 12
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "0a8b2a029dc8f1f0aed2f30ec57c77609f99654ab141bf64bf11bc7c20da4564",
+      "guiPngSha256": "0a8b2a029dc8f1f0aed2f30ec57c77609f99654ab141bf64bf11bc7c20da4564",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 39,
+      "cli": {
+        "source_index": 39,
+        "pts": "19968",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 13,
+          "den": 8
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 39,
+        "pts": "19968",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 13,
+          "den": 8
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "ad2f1a7aa1ed789980cbec2a08b83fcf895497aa7c8a5ab3922f4d8daaee8418",
+      "guiPngSha256": "ad2f1a7aa1ed789980cbec2a08b83fcf895497aa7c8a5ab3922f4d8daaee8418",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 40,
+      "cli": {
+        "source_index": 40,
+        "pts": "20480",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 5,
+          "den": 3
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 40,
+        "pts": "20480",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 5,
+          "den": 3
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "bfcf98c5d9e577ddf814f4ccbecd3a77aade168f05e514ef0df10efa97807e66",
+      "guiPngSha256": "bfcf98c5d9e577ddf814f4ccbecd3a77aade168f05e514ef0df10efa97807e66",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 41,
+      "cli": {
+        "source_index": 41,
+        "pts": "20992",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 41,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 41,
+        "pts": "20992",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 41,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "218d47336456e07c8da98efc98cb676befcbc5df57bb2e79c211e2bbd5cb5941",
+      "guiPngSha256": "218d47336456e07c8da98efc98cb676befcbc5df57bb2e79c211e2bbd5cb5941",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 42,
+      "cli": {
+        "source_index": 42,
+        "pts": "21504",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 7,
+          "den": 4
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 42,
+        "pts": "21504",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 7,
+          "den": 4
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "b8a60614a7a09dde4c54198242fd6061ce8ec04be52d8283d9d86a2babc0e952",
+      "guiPngSha256": "b8a60614a7a09dde4c54198242fd6061ce8ec04be52d8283d9d86a2babc0e952",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 43,
+      "cli": {
+        "source_index": 43,
+        "pts": "22016",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 43,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 43,
+        "pts": "22016",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 43,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "9af9afbe4de7d7adff5f7bf40eede3497abcf9296b0d05d5ccf02f8dfb0cb697",
+      "guiPngSha256": "9af9afbe4de7d7adff5f7bf40eede3497abcf9296b0d05d5ccf02f8dfb0cb697",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 44,
+      "cli": {
+        "source_index": 44,
+        "pts": "22528",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 11,
+          "den": 6
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 44,
+        "pts": "22528",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 11,
+          "den": 6
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "a10449b4de9cc1a7a6c1c93d54245aa37e793dbf8366b58073e13eafbe2ad344",
+      "guiPngSha256": "a10449b4de9cc1a7a6c1c93d54245aa37e793dbf8366b58073e13eafbe2ad344",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 45,
+      "cli": {
+        "source_index": 45,
+        "pts": "23040",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 15,
+          "den": 8
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 45,
+        "pts": "23040",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 15,
+          "den": 8
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "d73720f58e81d9d22ec89fae2271f2f8f9f29846758c7d2fca5460a9183da604",
+      "guiPngSha256": "d73720f58e81d9d22ec89fae2271f2f8f9f29846758c7d2fca5460a9183da604",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 46,
+      "cli": {
+        "source_index": 46,
+        "pts": "23552",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 23,
+          "den": 12
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 46,
+        "pts": "23552",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 23,
+          "den": 12
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "next_pts",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "d4adbf22c23c0c073b0d5e40a011cd60c137847b226bd1772dc9fb8bbbd871c1",
+      "guiPngSha256": "d4adbf22c23c0c073b0d5e40a011cd60c137847b226bd1772dc9fb8bbbd871c1",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    },
+    {
+      "index": 47,
+      "cli": {
+        "source_index": 47,
+        "pts": "24064",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 47,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "frame_duration",
+        "decode_status": "ok"
+      },
+      "gui": {
+        "source_index": 47,
+        "pts": "24064",
+        "time_base": {
+          "num": 1,
+          "den": 12288
+        },
+        "presentation_time": {
+          "num": 47,
+          "den": 24
+        },
+        "display_duration": {
+          "num": 1,
+          "den": 24
+        },
+        "duration_origin": "frame_duration",
+        "decode_status": "ok"
+      },
+      "timingEqual": true,
+      "cliPngSha256": "bf0264be60537aa6715545da8f0700628133941aadb391a8b69cd747abcc8677",
+      "guiPngSha256": "bf0264be60537aa6715545da8f0700628133941aadb391a8b69cd747abcc8677",
+      "pngEqual": true,
+      "sourceIndexContinuous": true
+    }
+  ],
+  "passed": true
+}

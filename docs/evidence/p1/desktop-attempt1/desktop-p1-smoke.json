@@ -1,0 +1,235 @@
+{
+  "startedAt": "2026-10-09T17:47:53.103Z",
+  "command": "bun probes/desktop/run-p1-smoke.ts",
+  "cwd": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker",
+  "bun": "1.4.2",
+  "workspace": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-desktop-workspace",
+  "video": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\P0 合成样例 (48帧).mp4",
+  "commands": [
+    {
+      "argv": [
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\.runtime\\node_modules\\@oven\\bun-windows-x64\\bin\\bun.exe",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\apps\\cli\\src\\index.ts",
+        "project",
+        "create",
+        "--name",
+        "P1 desktop 2026-10-09T17:47:53.103Z",
+        "--workspace",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-desktop-workspace",
+        "--json"
+      ],
+      "cwd": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker",
+      "exitCode": 0,
+      "status": "succeeded",
+      "ok": true,
+      "project_id": "19b74a97-7f9e-47ed-a8af-978f8c2654db"
+    },
+    {
+      "argv": [
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\.runtime\\node_modules\\@oven\\bun-windows-x64\\bin\\bun.exe",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\apps\\cli\\src\\index.ts",
+        "import",
+        "video",
+        "--project",
+        "19b74a97-7f9e-47ed-a8af-978f8c2654db",
+        "--file",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\P0 合成样例 (48帧).mp4",
+        "--workspace",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-desktop-workspace",
+        "--json"
+      ],
+      "cwd": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker",
+      "exitCode": 0,
+      "status": "succeeded",
+      "ok": true,
+      "project_id": "19b74a97-7f9e-47ed-a8af-978f8c2654db"
+    },
+    {
+      "argv": [
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\.runtime\\node_modules\\@oven\\bun-windows-x64\\bin\\bun.exe",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\apps\\cli\\src\\index.ts",
+        "clip",
+        "create",
+        "--project",
+        "19b74a97-7f9e-47ed-a8af-978f8c2654db",
+        "--source",
+        "1119c863-1c06-413c-9159-24bc4775814b",
+        "--name",
+        "CLI 完整48帧动作",
+        "--workspace",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-desktop-workspace",
+        "--json"
+      ],
+      "cwd": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker",
+      "exitCode": 0,
+      "status": "succeeded",
+      "ok": true,
+      "project_id": "19b74a97-7f9e-47ed-a8af-978f8c2654db"
+    },
+    {
+      "argv": [
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\.runtime\\node_modules\\@oven\\bun-windows-x64\\bin\\bun.exe",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\apps\\cli\\src\\index.ts",
+        "extract",
+        "--project",
+        "19b74a97-7f9e-47ed-a8af-978f8c2654db",
+        "--clip",
+        "3ab82cc7-bb1f-466e-af3c-557155f3d51c",
+        "--mode",
+        "all",
+        "--wait",
+        "--timeout",
+        "60",
+        "--workspace",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-desktop-workspace",
+        "--json"
+      ],
+      "cwd": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker",
+      "exitCode": 0,
+      "status": "succeeded",
+      "ok": true,
+      "project_id": "19b74a97-7f9e-47ed-a8af-978f8c2654db",
+      "job_id": "68bd010f-d022-44d2-af8d-dcfef7ecf569"
+    },
+    {
+      "argv": [
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\.runtime\\node_modules\\@oven\\bun-windows-x64\\bin\\bun.exe",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\apps\\cli\\src\\index.ts",
+        "project",
+        "inspect",
+        "--project",
+        "19b74a97-7f9e-47ed-a8af-978f8c2654db",
+        "--workspace",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-desktop-workspace",
+        "--json"
+      ],
+      "cwd": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker",
+      "exitCode": 0,
+      "status": "succeeded",
+      "ok": true,
+      "project_id": "19b74a97-7f9e-47ed-a8af-978f8c2654db"
+    },
+    {
+      "argv": [
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\.runtime\\node_modules\\@oven\\bun-windows-x64\\bin\\bun.exe",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\apps\\cli\\src\\index.ts",
+        "project",
+        "inspect",
+        "--project",
+        "19b74a97-7f9e-47ed-a8af-978f8c2654db",
+        "--workspace",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-desktop-workspace",
+        "--json"
+      ],
+      "cwd": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker",
+      "exitCode": 0,
+      "status": "succeeded",
+      "ok": true,
+      "project_id": "19b74a97-7f9e-47ed-a8af-978f8c2654db"
+    }
+  ],
+  "cliExtraction": {
+    "projectId": "19b74a97-7f9e-47ed-a8af-978f8c2654db",
+    "sourceId": "1119c863-1c06-413c-9159-24bc4775814b",
+    "clipId": "3ab82cc7-bb1f-466e-af3c-557155f3d51c",
+    "frameCount": 48,
+    "status": "succeeded"
+  },
+  "service": {
+    "url": "http://127.0.0.1:63089",
+    "pid": 18276,
+    "instance_id": "84030ae7-b0ed-413b-812f-e05306e6fdb0",
+    "workspace": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-desktop-workspace"
+  },
+  "unauthenticatedApiStatus": 401,
+  "unauthenticatedWsStatus": 401,
+  "hostExit": 1,
+  "gui": {
+    "scenario": {
+      "projectId": "19b74a97-7f9e-47ed-a8af-978f8c2654db",
+      "steps": [
+        {
+          "action": "click",
+          "text": "导入素材"
+        },
+        {
+          "action": "click",
+          "text": "上传文件"
+        }
+      ],
+      "phase": "P1",
+      "initialFrames": 48,
+      "initialRevision": 99,
+      "protectedApiStatus": 200,
+      "editorScreenshot": {
+        "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p1\\desktop-live\\desktop-p1-editor.png",
+        "size": {
+          "width": 1344,
+          "height": 861
+        },
+        "bytes": 163383
+      },
+      "importDefaults": {
+        "mode": "all",
+        "selectedLabel": "全部原始帧（默认）",
+        "noCheckedMatting": true,
+        "mattingPending": false,
+        "tabs": [
+          {
+            "text": "素材库",
+            "disabled": false
+          },
+          {
+            "text": "上传文件",
+            "disabled": false
+          },
+          {
+            "text": "生成",
+            "disabled": false
+          }
+        ]
+      },
+      "importScreenshot": {
+        "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p1\\desktop-live\\desktop-p1-import-defaults.png",
+        "size": {
+          "width": 1344,
+          "height": 861
+        },
+        "bytes": 213996
+      }
+    },
+    "authCookieAttributes": {
+      "name": "sfs_token",
+      "httpOnly": true,
+      "sameSite": "strict",
+      "path": "/"
+    },
+    "websocket": true,
+    "serviceAliveAfterDetach": true,
+    "error": "Error: P1 默认导入/鉴权/48帧基线断言失败\n    at runP1EditorScenario (D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\desktop\\main.cjs:69:240)\n    at async run (D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\desktop\\main.cjs:232:55)",
+    "console": [
+      {
+        "level": "error",
+        "message": "Pixi 初始化失败: Error: Current environment does not allow unsafe-eval, please use pixi.js/unsafe-eval module to enable support."
+      }
+    ],
+    "blockedRequests": []
+  },
+  "noTokenInDesktopReport": true,
+  "cliAfterGui": {
+    "projectId": "19b74a97-7f9e-47ed-a8af-978f8c2654db",
+    "initialRevision": 99,
+    "finalRevision": 99,
+    "sources": 1,
+    "clips": [
+      {
+        "id": "3ab82cc7-bb1f-466e-af3c-557155f3d51c",
+        "status": "extracted",
+        "source_id": "1119c863-1c06-413c-9159-24bc4775814b"
+      }
+    ]
+  },
+  "sameServiceAfterWindowClose": true,
+  "passed": false,
+  "completedAt": "2026-10-09T17:48:02.691Z"
+}

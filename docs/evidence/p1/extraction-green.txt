@@ -1,0 +1,31 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\extract-all.test.ts:
+(pass) 完整显示帧提取（真实 FFmpeg） > 48 帧无截断并以源整数索引保存 [220.90ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 61 帧无截断并以源整数索引保存 [268.30ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 120 帧无截断并以源整数索引保存 [303.56ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 300 帧无截断并以源整数索引保存 [417.78ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 重复画面仍保留全部 48 个显示帧和 2 秒停顿 [171.65ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 真正 VFR 保留 1/24、1/12、1/8、1/24 秒时长 [133.35ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > Unicode、空格和 shell 元字符是普通文件名 [170.87ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 音频位于全局流 0 时仍映射首个视频流并逐帧保持解码顺序 [282.63ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 已有 raw 拒绝覆盖且原文件不变 [5.06ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 提取取消保留暂存并且不发布 raw 或 timing [101.66ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 预先取消探测时不启动输出 [0.17ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 损坏媒体 明确失败且无伪完成目录 [36.57ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 无视频流 明确失败且无伪完成目录 [37.33ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > HDR 明确失败且无伪完成目录 [41.16ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 旋转 明确失败且无伪完成目录 [46.13ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 非方形像素 明确失败且无伪完成目录 [42.14ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 交错 明确失败且无伪完成目录 [41.77ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 缺失和非单调 PTS 不用平均 FPS 掩盖，超安全整数有理数明确拒绝 [39.03ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > JSON 中超安全整数 PTS 先以 BigInt 读取，约分后才转 JSON 数值 [36.11ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 末帧优先可信帧时长，其次流终点，无依据时明确 estimated [36.58ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 逐帧 SAR 改变与异常显示矩阵也明确拒绝 [34.63ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 输出 PNG 数据损坏必须完整解码失败，不能只检查 IHDR [176.71ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 每张 PNG 必须与源宽高一致，失败仍保留暂存 [165.46ms]
+
+ 23 pass
+ 0 fail
+ 127 expect() calls
+Ran 23 tests across 1 file. [3.84s]

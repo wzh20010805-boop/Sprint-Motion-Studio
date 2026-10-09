@@ -1,0 +1,3 @@
+Error: P1 默认导入/鉴权/48帧基线断言失败
+    at runP1EditorScenario (D:\AIJOB\tools\Sprite Motion Studio\framebaker\probes\desktop\main.cjs:69:240)
+    at async run (D:\AIJOB\tools\Sprite Motion Studio\framebaker\probes\desktop\main.cjs:232:55)

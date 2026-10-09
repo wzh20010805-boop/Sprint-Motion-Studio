@@ -1,0 +1,152 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\cache.test.ts:
+31 |     db.close();console.log('PASS');
+32 |   `;
+33 |   const proc = Bun.spawn([process.execPath, "-e", code], { cwd: repository, env: { ...process.env, SFS_WORKSPACE: workspace }, stdout: "pipe", stderr: "pipe" });
+34 |   const [exit, stdout, stderr] = await Promise.all([proc.exited, new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+35 |   await Bun.write(join(workspace, "cache-test-output.log"), `${stdout}\n${stderr}`);
+36 |   expect({ exit, stdout, stderr }).toEqual({ exit: 0, stdout: "PASS\n", stderr: "" });
+                                        ^
+error: expect(received).toEqual(expected)
+
+  {
+-   "exit": 0,
+-   "stderr": "",
+-   "stdout": 
+- "PASS
++   "exit": 1,
++   "stderr": 
++ "AssertionError: Missing expected rejection.
++  generatedMessage: false,
++      actual: undefined,
++    expected: /PNG|\u89E3\u7801/,
++    operator: "rejects",
++        diff: "simple",
++        code: "ERR_ASSERTION"
++ 
++       at innerFail (node:assert:50:27)
++       at expectsError (node:assert:385:14)
++       at assert.rejects (node:assert:434:17)
++ 
++ Bun v1.4.2 (Windows x64)
+  "
+  ,
++   "stdout": "",
+  }
+
+- Expected  - 4
++ Received  + 16
+
+      at cacheScenario (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\cache.test.ts:36:36)
+      at async <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\cache.test.ts:40:9)
+(fail) 缓存的损坏 PNG 和截断时序阻止新 Clip 入库，恢复有效产物后仍能复用三帧 [393.95ms]
+31 |     db.close();console.log('PASS');
+32 |   `;
+33 |   const proc = Bun.spawn([process.execPath, "-e", code], { cwd: repository, env: { ...process.env, SFS_WORKSPACE: workspace }, stdout: "pipe", stderr: "pipe" });
+34 |   const [exit, stdout, stderr] = await Promise.all([proc.exited, new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+35 |   await Bun.write(join(workspace, "cache-test-output.log"), `${stdout}\n${stderr}`);
+36 |   expect({ exit, stdout, stderr }).toEqual({ exit: 0, stdout: "PASS\n", stderr: "" });
+                                        ^
+error: expect(received).toEqual(expected)
+
+  {
+-   "exit": 0,
+-   "stderr": "",
+-   "stdout": 
+- "PASS
++   "exit": 1,
++   "stderr": 
++ "AssertionError: Missing expected rejection.
++  generatedMessage: false,
++      actual: undefined,
++    expected: /PNG|\u89E3\u7801|\u5931\u8D25/,
++    operator: "rejects",
++        diff: "simple",
++        code: "ERR_ASSERTION"
++ 
++       at innerFail (node:assert:50:27)
++       at expectsError (node:assert:385:14)
++       at assert.rejects (node:assert:434:17)
++ 
++ Bun v1.4.2 (Windows x64)
+  "
+  ,
++   "stdout": "",
+  }
+
+- Expected  - 4
++ Received  + 16
+
+      at cacheScenario (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\cache.test.ts:36:36)
+      at async <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\cache.test.ts:58:9)
+(fail) 缓存 PNG 即使 IHDR 有效也必须完整解码通过 [375.10ms]
+31 |     db.close();console.log('PASS');
+32 |   `;
+33 |   const proc = Bun.spawn([process.execPath, "-e", code], { cwd: repository, env: { ...process.env, SFS_WORKSPACE: workspace }, stdout: "pipe", stderr: "pipe" });
+34 |   const [exit, stdout, stderr] = await Promise.all([proc.exited, new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+35 |   await Bun.write(join(workspace, "cache-test-output.log"), `${stdout}\n${stderr}`);
+36 |   expect({ exit, stdout, stderr }).toEqual({ exit: 0, stdout: "PASS\n", stderr: "" });
+                                        ^
+error: expect(received).toEqual(expected)
+
+  {
+-   "exit": 0,
+-   "stderr": "",
+-   "stdout": 
+- "PASS
++   "exit": 1,
++   "stderr": 
++ "AssertionError: The validation function is expected to return "true". Received false
++ 
++ Caught error:
++ 
++ Error: EEXIST: file already exists, copyfile 'D:\AIJOB\tools\Sprite Motion Studio\framebaker\fixtures\generated\p1-cache-semantic-timing-1791568493895-7165a5e1-c0bc-4259-a40e-b5f07fc04a68\sources\aff55c02-894a-469b-ab0f-988c6fba26ad\raw\frame_000001.png' -> 'D:\AIJOB\tools\Sprite Motion Studio\framebaker\fixtures\generated\p1-cache-semantic-timing-1791568493895-7165a5e1-c0bc-4259-a40e-b5f07fc04a68\projects\1c1cd9d3-c89d-43bd-99e7-39f6bd769479\raw\ac0dac1f-2e21-499f-bfe3-f93872cb17e7\423938ca-c6f4-4962-98b9-8a24b90210ce\frame_000001.png'
++  generatedMessage: true,
++    expected: [Function],
++    operator: "rejects",
++        diff: "simple",
++        code: "ERR_ASSERTION"
++ 
++       at expectedException (node:assert:327:33)
++       at expectsError (node:assert:395:20)
++       at assert.rejects (node:assert:434:17)
++ 
++ 156 |   mkdirSync(copies, { recursive: true });
++ 157 |   const cells = timing.frames.map((frame, index) => {
++ 158 |     if (signal?.aborted) throw new JobCancelledError();
++ 159 |     if (frame.source_index !== index || !/^raw\/frame_\d{6}\.png$/.test(frame.file)) throw new PipelineError("INVALID_TIMING", "源帧索引或文件路径无效");
++ 160 |     const path = join(copies, basename(frame.file));
++ 161 |     copyFileSync(join(directory, frame.file), path, constants.COPYFILE_EXCL);
++           ^
++ EEXIST: file already exists, copyfile 'D:\AIJOB\tools\Sprite Motion Studio\framebaker\fixtures\generated\p1-cache-semantic-timing-1791568493895-7165a5e1-c0bc-4259-a40e-b5f07fc04a68\sources\aff55c02-894a-469b-ab0f-988c6fba26ad\raw\frame_000001.png' -> 'D:\AIJOB\tools\Sprite Motion Studio\framebaker\fixtures\generated\p1-cache-semantic-timing-1791568493895-7165a5e1-c0bc-4259-a40e-b5f07fc04a68\projects\1c1cd9d3-c89d-43bd-99e7-39f6bd769479\raw\ac0dac1f-2e21-499f-bfe3-f93872cb17e7\423938ca-c6f4-4962-98b9-8a24b90210ce\frame_000001.png'
++     path: "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-cache-semantic-timing-1791568493895-7165a5e1-c0bc-4259-a40e-b5f07fc04a68\\sources\\aff55c02-894a-469b-ab0f-988c6fba26ad\\raw\\frame_000001.png",
++     dest: "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-cache-semantic-timing-1791568493895-7165a5e1-c0bc-4259-a40e-b5f07fc04a68\\projects\\1c1cd9d3-c89d-43bd-99e7-39f6bd769479\\raw\\ac0dac1f-2e21-499f-bfe3-f93872cb17e7\\423938ca-c6f4-4962-98b9-8a24b90210ce\\frame_000001.png",
++  syscall: "copyfile",
++    errno: -4075,
++     code: "EEXIST"
++ 
++       at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\apps\server\src\pipeline\service.ts:161:5)
++       at map (1:11)
++       at extractSource (D:\AIJOB\tools\Sprite Motion Studio\framebaker\apps\server\src\pipeline\service.ts:157:31)
++       at waitForActual (node:assert:352:34)
++       at assert.rejects (node:assert:434:77)
++       at D:\AIJOB\tools\Sprite Motion Studio\framebaker\[eval]:25:20
++ 
++ Bun v1.4.2 (Windows x64)
+  "
+  ,
++   "stdout": "",
+  }
+
+- Expected  - 4
++ Received  + 40
+
+      at cacheScenario (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\cache.test.ts:36:36)
+      at async <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\cache.test.ts:67:9)
+(fail) 缓存时序中的路径和显示时长篡改不会被相同帧数掩盖 [332.12ms]
+
+ 0 pass
+ 3 fail
+ 3 expect() calls
+Ran 3 tests across 1 file. [1188.00ms]

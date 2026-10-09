@@ -56,3 +56,9 @@ No test framework; verification = typecheck + curl smoke tests (see examples in 
 - `FRAMEBAKER_MATTING_MODEL`: rembg model name (default `u2net`); **fallback only** — settings page matting.model takes priority; model cache in `storage/models` (U2NET_HOME).
 - `FRAMEBAKER_QUEUE_CONCURRENCY`: job queue parallelism (default `2`, clamped 1–16); **fallback only** — settings page `queueConcurrency` (read in real-time on each `pump()`, so changes take effect immediately for new jobs) takes priority; current value exposed via `GET /api/config`.
 - Matting engine: without CLI configured, uses `.venv-matting` bundled rembg installed by `scripts/setup_matting.sh` (Windows: `scripts/setup_matting.ps1`) (POSIX: `bin/rembg`, Windows: `Scripts/rembg.exe`; gitignored), then PATH rembg, then passthrough copy as last resort; detection results visible via `GET /api/config` (resolved in real-time on each request).
+# Soldier Frame Studio continuation
+
+- For P0/P1 continuation, read `README_SFS.md` and `docs/progress.md`; the user supplied section20 spec in the parent workspace defines phase scope. Keep changes in this independent clone and preserve upstream history.
+- Source originals, complete raw frames, failed staging and evidence remain retained; this user instruction overrides upstream smoke-test cleanup guidance below.
+- New extraction uses `pipeline/probe.ts` argv runner because exact stdout is required; preserve integer PTS/rational timing. CLI calls shared HTTP; obtain workspace lock before loading DB. Canonical source paths are separate from editable GUI copies.
+- Public API/architecture changes update bilingual docs. SFS local MCP is disabled until P4; do not expand upstream broad tools or present P1 raw frames as transparent, approved output.

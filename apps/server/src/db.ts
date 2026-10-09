@@ -1,12 +1,13 @@
 import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+import { backupBeforeMigrations, migratePipeline } from "./pipeline/migrations";
 import { ensureBuiltinAnimationAssets, normalizeGeneratedAnimationAssetNames } from "./builtinAnimationAssets";
 import type { AttackEffectCell, AttackEffectCellRow, Frame, FrameRow, Material, MaterialRow } from "@framebaker/shared";
 
 // 仓库根目录（apps/server/src → 根）：storage 固定放在根级，与启动时的 cwd 无关
 export const REPO_ROOT = join(import.meta.dir, "..", "..", "..");
-export const STORAGE_ROOT = join(REPO_ROOT, "storage");
+export const STORAGE_ROOT = process.env.SFS_WORKSPACE ? resolve(process.env.SFS_WORKSPACE) : join(REPO_ROOT, "storage");
 
 // 确保运行时目录存在
 mkdirSync(join(STORAGE_ROOT, "projects"), { recursive: true });
@@ -14,6 +15,7 @@ mkdirSync(join(STORAGE_ROOT, "staging"), { recursive: true });
 mkdirSync(join(STORAGE_ROOT, "materials"), { recursive: true });
 
 export const db = new Database(join(STORAGE_ROOT, "framebaker.db"), { create: true });
+const pipelineBackup = backupBeforeMigrations(db, STORAGE_ROOT);
 db.exec("PRAGMA journal_mode = WAL;");
 db.exec(`
 CREATE TABLE IF NOT EXISTS projects (
@@ -263,6 +265,8 @@ db.query(
 db.query(
   "UPDATE materials SET source = 'layers' WHERE source = 'api' AND json_valid(metadata) AND json_extract(metadata, '$.provider') = 'imageLayers'"
 ).run();
+
+export const pipelineMigration = migratePipeline(db, STORAGE_ROOT, pipelineBackup);
 
 export const uid = () => crypto.randomUUID();
 

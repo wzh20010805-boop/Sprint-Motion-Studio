@@ -1,0 +1,124 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\service.test.ts:
+12 |   const proc = Bun.spawn([process.execPath, "-e", code], {
+13 |     cwd: repo, env: { ...process.env, SFS_WORKSPACE: workspace }, stdout: "pipe", stderr: "pipe",
+14 |   });
+15 |   const [exit, stdout, stderr] = await Promise.all([proc.exited, new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+16 |   await Bun.write(join(workspace, "test-output.log"), `${stdout}\n${stderr}`);
+17 |   expect({ exit, output: `${stdout}\n${stderr}` }).toEqual({ exit: 0, output: "PASS\n\n" });
+                                                        ^
+error: expect(received).toEqual(expected)
+
+  {
+-   "exit": 0,
++   "exit": 1,
+    "output": 
+- "PASS
++ "
++ error: Cannot find module './apps/server/src/pipeline/migrations.ts' from 'D:\AIJOB\tools\Sprite Motion Studio\framebaker\[eval]'
+  
++ Bun v1.4.2 (Windows x64)
+  "
+  ,
+  }
+
+- Expected  - 2
++ Received  + 4
+
+      at child (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\service.test.ts:17:52)
+      at async <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\service.test.ts:22:11)
+(fail) P1 shared service > migration backs up WAL contents before adding source schema and remains idempotent [32.37ms]
+12 |   const proc = Bun.spawn([process.execPath, "-e", code], {
+13 |     cwd: repo, env: { ...process.env, SFS_WORKSPACE: workspace }, stdout: "pipe", stderr: "pipe",
+14 |   });
+15 |   const [exit, stdout, stderr] = await Promise.all([proc.exited, new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+16 |   await Bun.write(join(workspace, "test-output.log"), `${stdout}\n${stderr}`);
+17 |   expect({ exit, output: `${stdout}\n${stderr}` }).toEqual({ exit: 0, output: "PASS\n\n" });
+                                                        ^
+error: expect(received).toEqual(expected)
+
+  {
+-   "exit": 0,
++   "exit": 1,
+    "output": 
+- "PASS
++ "
++ 2 |       import assert from 'node:assert/strict';
++ 3 |       import {readFileSync,existsSync} from 'node:fs';
++ 4 |       import {join} from 'node:path';
++ 5 |       const {app} = await import('./apps/server/src/app.ts');
++ 6 |       const {db,STORAGE_ROOT} = await import('./apps/server/src/db.ts');
++ 7 |       assert.equal(STORAGE_ROOT, process.env.SFS_WORKSPACE);
++                  ^
++ AssertionError: Expected values to be strictly equal:
++ + actual - expected
+  
++ + 'D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\storage'
++ - 'D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p1\\service-fixtures\\http-eb2e117f-e6e2-4807-ab73-24dd236aa519'
++ 
++  generatedMessage: true,
++      actual: "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\storage",
++    expected: "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p1\\service-fixtures\\http-eb2e117f-e6e2-4807-ab73-24dd236aa519",
++    operator: "strictEqual",
++        diff: "simple",
++        code: "ERR_ASSERTION"
++ 
++       at D:\AIJOB\tools\Sprite Motion Studio\framebaker\[eval]:7:14
++ 
++ Bun v1.4.2 (Windows x64)
+  "
+  ,
+  }
+
+- Expected  - 2
++ Received  + 24
+
+      at child (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\service.test.ts:17:52)
+      at async <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\service.test.ts:46:11)
+(fail) P1 shared service > HTTP imports validated immutable source and queues exact timed frames as safe editor copies [217.53ms]
+12 |   const proc = Bun.spawn([process.execPath, "-e", code], {
+13 |     cwd: repo, env: { ...process.env, SFS_WORKSPACE: workspace }, stdout: "pipe", stderr: "pipe",
+14 |   });
+15 |   const [exit, stdout, stderr] = await Promise.all([proc.exited, new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+16 |   await Bun.write(join(workspace, "test-output.log"), `${stdout}\n${stderr}`);
+17 |   expect({ exit, output: `${stdout}\n${stderr}` }).toEqual({ exit: 0, output: "PASS\n\n" });
+                                                        ^
+error: expect(received).toEqual(expected)
+
+  {
+-   "exit": 0,
++   "exit": 1,
+    "output": 
+- "PASS
++ "
++ 1 | 
++ 2 |       import assert from 'node:assert/strict';
++ 3 |       const {db} = await import('./apps/server/src/db.ts');
++ 4 |       db.query('INSERT INTO jobs(id,project_id,type,status,created_at,payload) VALUES(?,?,?,?,?,?)').run('survivor','p','extract_frames','running',123,JSON.stringify({sourceExtract:{projectId:'p',clipId:'c',sourceId:'s',baseRevision:7}}));
++              ^
++ SQLiteError: table jobs has no column named payload
++       errno: 1,
++  byteOffset: -1,
++        code: "SQLITE_ERROR"
+  
++       at [prepareOwned] (bun:sqlite:330:37)
++       at query (bun:sqlite:347:31)
++       at D:\AIJOB\tools\Sprite Motion Studio\framebaker\[eval]:4:10
++ 
++ Bun v1.4.2 (Windows x64)
+  "
+  ,
+  }
+
+- Expected  - 2
++ Received  + 16
+
+      at child (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\service.test.ts:17:52)
+      at async <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\service.test.ts:90:11)
+(fail) P1 shared service > restart retains queued payload and marks jobs interrupted without false resume [69.34ms]
+
+ 0 pass
+ 3 fail
+ 3 expect() calls
+Ran 3 tests across 1 file. [358.00ms]

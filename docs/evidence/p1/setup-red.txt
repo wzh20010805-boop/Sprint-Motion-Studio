@@ -1,0 +1,18 @@
+At D:\AIJOB\tools\Sprite Motion Studio\framebaker\scripts\setup_sfs.ps1:25 char:47
++         $sfsPython = Join-Path $sfsRepo '.venv-image\Scripts\python.e ...
++                                               ~~~~~~
+Unexpected token '-image' in expression or statement.
+At D:\AIJOB\tools\Sprite Motion Studio\framebaker\scripts\setup_sfs.ps1:25 char:53
++ ...      $sfsPython = Join-Path $sfsRepo '.venv-image\Scripts\python.exe'
++                                                      ~~~~~~~~~~~~~~~~~~~~
+Unexpected token '\Scripts\python.exe'
+        if (-not (Test-Path -LiteralPath $sfsPython)) {
+            & py -3.11 -m venv (Join-Path $sfsRepo '.venv-image')
+            if ($LASTEXITCODE -ne 0) { throw '闇€瑕?Python' in expression or statement.
+At D:\AIJOB\tools\Sprite Motion Studio\framebaker\scripts\setup_sfs.ps1:29 char:10
++         }
++          ~
+The Try statement is missing its Catch or Finally block.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : UnexpectedToken
+ 

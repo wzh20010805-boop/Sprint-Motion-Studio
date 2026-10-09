@@ -1,0 +1,12 @@
+bun test v1.4.2 (744846f84)
+
+tests\import-order.test.ts:
+(pass) 服务重启的 interrupted 任务立即结束等待并保留失败原因 [0.21ms]
+(pass) 多文件导入顺序 > 按文件名自然升序排列数字帧 [0.16ms]
+(pass) 多文件导入顺序 > 任务状态短暂查询失败时继续等待，不提前放行下一文件 [0.13ms]
+(pass) 多文件导入顺序 > 批次失效期间返回的旧任务结果会被丢弃 [0.11ms]
+
+ 4 pass
+ 0 fail
+ 7 expect() calls
+Ran 4 tests across 1 file. [112.00ms]

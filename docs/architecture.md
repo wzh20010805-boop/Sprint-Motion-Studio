@@ -231,3 +231,12 @@ Database tables (`apps/server/src/db.ts`, created on startup with CREATE TABLE I
 - `i18n.ts` + `i18n/zh.ts` / `i18n/en.ts`: interface language (zh default / en); copy uses stable keys (e.g., `common.close`), `t(key)` / `useT()` looks up table; localStorage `framebaker-lang` + settings `lang`
 - `notice.ts` + `AppModals` (mounted at App root): global notification bar and confirmation modal, replacing browser default `alert`/`confirm` — any component calls `notify(text)` / `await askConfirm(text)`, browser default dialogs are forbidden
 - `api.ts`: typed fetch wrapper and compatibility facade; `api/mediaUrls.ts` owns frame/material URL construction and `api/ws.ts` owns the WebSocket client (3s reconnect on disconnect)
+# Soldier Frame Studio P1 additions
+
+Retain upstream React/Pixi → Bun/Elysia → SQLite. `apps/cli` calls the shared HTTP service; the Electron development host opens the existing GUI with a local cookie. `runtimeBootstrap.ts` obtains the workspace lock before dynamically loading SQLite. `runtime.ts` owns loopback authentication and lock ownership. Both clients discover the same `.sfs/service.json` rather than opening separate business writers.
+
+SFS_WORKSPACE selects runtime storage; upstream storage remains the default compatibility path. VACUUM INTO makes a WAL-consistent backup before migrations. Schema3 adds sources, exact source-frame timing, clips mapped to existing axes/main tracks, project revisions and persisted job payload/results. Dependencies flow queue → pipeline/service → probe/extractAll.
+
+Immutable source video/PNG/timing and editable project copies are separate. Unique staging is validated for count, integer indices, dimensions and complete PNG decode before publication; a final revision check and transaction project frames into the main track. Cache reuse validates timing and PNGs again. Cancellation, errors and stale results cannot commit apparently complete frames. Integer PTS are strings; rational arithmetic uses BigInt and safe JSON integers.
+
+P1 stores complete raw frames/timing only. Matting, ground references, game canvas and Cocos delivery remain later phases. VFR preview ticks may be quantized with warnings; timing.json stays authoritative. Restart leftovers become interrupted with preserved payload/intermediates. Electron retains strict CSP by serving the installed Pixi compatibility polyfill that avoids dynamic code generation.

@@ -1,0 +1,400 @@
+{
+  "startedAt": "2026-10-09T17:53:50.668Z",
+  "command": [
+    "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\desktop\\node_modules\\electron\\dist\\electron.exe",
+    "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\desktop",
+    "--smoke"
+  ],
+  "cwd": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker",
+  "packageRoot": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\desktop\\node_modules\\electron\\dist",
+  "packed": false,
+  "runtime": "D:\\AIJOB\\tools\\Sprite Motion Studio\\.runtime\\node_modules\\@oven\\bun-windows-x64\\bin\\bun.exe",
+  "backendRoot": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\desktop\\snapshot",
+  "profile": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-desktop-workspace\\run-1791568428112\\.sfs\\desktop-profile",
+  "pagePath": "/project/67333e2a-6580-4c03-9c96-ae57bb610e7a",
+  "serviceManagement": "attach-existing",
+  "versions": {
+    "node": "24.21.0",
+    "acorn": "8.18.0",
+    "ada": "4.0.0",
+    "amaro": "1.1.11",
+    "ares": "1.34.8",
+    "brotli": "1.2.0",
+    "cldr": "48.0",
+    "icu": "78.2",
+    "llhttp": "9.4.3",
+    "merve": "1.2.2",
+    "modules": "149",
+    "napi": "10",
+    "nbytes": "0.1.4",
+    "ncrypto": "0.0.1",
+    "nghttp2": "1.70.0",
+    "nghttp3": "",
+    "ngtcp2": "",
+    "openssl": "0.0.0",
+    "simdjson": "4.6.7",
+    "simdutf": "7.7.0",
+    "sqlite": "3.53.4",
+    "tz": "2026d",
+    "undici": "7.29.1",
+    "unicode": "17.0",
+    "uv": "1.52.1",
+    "uvwasi": "0.0.23",
+    "v8": "15.2.124.28-electron.0",
+    "zlib": "1.3.2.1-motley",
+    "zstd": "1.6.0",
+    "electron": "44.7.0",
+    "chrome": "152.0.7977.130"
+  },
+  "events": [
+    {
+      "kind": "external-service-attached",
+      "at": "2026-10-09T17:53:50.758Z",
+      "url": "http://127.0.0.1:64527/",
+      "cookieConfigured": true
+    },
+    {
+      "kind": "page-loaded",
+      "at": "2026-10-09T17:53:51.102Z",
+      "url": "http://127.0.0.1:64527/project/67333e2a-6580-4c03-9c96-ae57bb610e7a"
+    },
+    {
+      "kind": "external-service-detached",
+      "at": "2026-10-09T17:54:05.275Z",
+      "serviceAlive": true
+    }
+  ],
+  "console": [
+    {
+      "level": "error",
+      "message": "Connecting to 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=' violates the following Content Security Policy directive: \"connect-src 'self' ws://127.0.0.1:64527\". The action has been blocked."
+    },
+    {
+      "level": "error",
+      "message": "Fetch API cannot load data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=. Refused to connect because it violates the document's Content Security Policy."
+    }
+  ],
+  "blockedRequests": [],
+  "backend": {
+    "url": "http://127.0.0.1:64527/",
+    "owned": false
+  },
+  "authCookieConfigured": true,
+  "authCookieAttributes": {
+    "name": "sfs_token",
+    "httpOnly": true,
+    "sameSite": "strict",
+    "path": "/"
+  },
+  "health": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "name": "Sprite Motion Studio",
+      "instance_id": "e8cb6e65-93ed-4bd0-b54e-161175573563",
+      "pid": 7824
+    }
+  },
+  "csp": "default-src 'self'; script-src 'self' 'sha256-MB902kHKpse3SwX9SJ5zYFq5S4eMmQ+3mm4rGBeKEzo='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' ws://127.0.0.1:64527; worker-src 'self' blob:; media-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-src 'none'; form-action 'self'",
+  "preferences": {
+    "allowRunningInsecureContent": false,
+    "contextIsolation": true,
+    "disableDialogs": false,
+    "disablePopups": false,
+    "enableBlinkFeatures": "",
+    "experimentalFeatures": false,
+    "javascript": true,
+    "nodeIntegration": false,
+    "nodeIntegrationInSubFrames": false,
+    "nodeIntegrationInWorker": false,
+    "safeDialogs": false,
+    "safeDialogsMessage": "",
+    "sandbox": true,
+    "webSecurity": true,
+    "webviewTag": false
+  },
+  "renderer": {
+    "title": "FrameBaker · 像素动画编辑器",
+    "rootText": "P1 desktop 2026-10-09T17:53:48.112Z\n48 帧\n导入素材\n播放预览\n导出动画\n帧资产\n拖动缩略图到下方轨道单元格；资产可重复使用\nCtrl+点击 多选 · Shift+点击 范围选 · 右键 菜单\n#1\n#2\n#3\n#4\n#5\n#6\n#7\n#8\n#9\n#10\n#11\n#12\n#13\n#14\n#15\n#16\n#17\n#18\n#19\n#20\n#21\n#22\n#23\n#24\n#25\n#26\n#27\n#28\n#29\n#30\n#31\n#32\n#33\n#34\n#35\n#36\n#37\n#38\n#39\n#40\n#41\n#42\n#43\n#44\n#45\n#46\n#47\n#48\n100%\n缩放\n100%\n旋转\n0°\n透明\n100%\n×1\n攻击特效\n烈焰\n利刃\n笔宽 18\n删除特效\n缩放 100%\n透明 100%\n选中任意单元格即可绘制；拖动特效改变位置，复制到其他步骤继续调整\nSpace\n+ 拖动：移动画布\n动画轴\nCLI 完整48帧动作\n轨道：后 → 前\n添加轨道\n添加步骤\n删除步骤\n− 时长\n+ 时长\n顶层优先显示\n#1\n×1\n#2\n×1\n#3\n×1\n#4\n×1\n#5\n×1\n#6\n×1\n#7\n×1\n#8\n×1\n#9\n×1\n#10\n×1\n#11\n×1\n#12\n×1\n#13\n×1\n#14\n×1\n#15\n×1\n#16\n×1\n#17\n×1\n#18\n×1\n#19\n×1\n#20\n×1\n#21\n×1\n#22\n×1\n#23\n×1\n#24\n×1\n#25\n×1\n#26\n×1\n#27\n×1\n#28\n×1\n#29\n×1\n#30\n×1\n#31\n×1\n#32\n×1\n#33\n×1\n#34\n×1\n#35\n×1\n#36\n×1\n#37\n×1\n#38\n×1\n#39\n×1\n#40\n×1\n#41\n×1\n#42\n×1\n#43\n×1\n#44\n×1\n#45\n×1\n#46\n×1\n#47\n×1\n#48\n×1\nMain",
+    "fullFrameOptionVisible": true,
+    "buttonLabels": [
+      "返回项目列表",
+      "导入素材",
+      "播放预览",
+      "导出动画",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "100%",
+      "100%",
+      "0°",
+      "100%",
+      "烈焰",
+      "利刃",
+      "删除特效",
+      "CLI 完整48帧动作",
+      "添加动画轴",
+      "删除动画轴",
+      "添加轨道",
+      "添加步骤",
+      "删除步骤",
+      "− 时长",
+      "+ 时长",
+      "隐藏轨道",
+      "锁定轨道",
+      "上移图层",
+      "下移图层"
+    ],
+    "requireType": "undefined",
+    "processType": "undefined",
+    "globalType": "undefined",
+    "fontsStatus": "loaded",
+    "webSocketOk": true,
+    "resources": [
+      {
+        "pathname": "/api/health",
+        "status": 200,
+        "bytes": 105,
+        "contentType": "application/json;charset=utf-8"
+      },
+      {
+        "pathname": "/pixi.min.js",
+        "status": 200,
+        "bytes": 813505,
+        "contentType": "text/javascript; charset=utf-8"
+      },
+      {
+        "pathname": "/fonts/fusion-pixel-12px-proportional-zh_hans.otf.woff2",
+        "status": 200,
+        "bytes": 712624,
+        "contentType": "font/woff2"
+      },
+      {
+        "pathname": "/imageops/imageOps.worker.js",
+        "status": 200,
+        "bytes": 17675,
+        "contentType": "text/javascript; charset=utf-8"
+      }
+    ]
+  },
+  "p1Scenario": {
+    "projectId": "67333e2a-6580-4c03-9c96-ae57bb610e7a",
+    "steps": [
+      {
+        "action": "click",
+        "text": "导入素材"
+      },
+      {
+        "action": "click",
+        "text": "上传文件"
+      },
+      {
+        "action": "click",
+        "text": "导入 1 个文件"
+      }
+    ],
+    "phase": "P1",
+    "initialFrames": 48,
+    "initialRevision": 99,
+    "protectedApiStatus": 200,
+    "editorScreenshot": {
+      "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p1\\desktop-live\\desktop-p1-editor.png",
+      "size": {
+        "width": 1360,
+        "height": 900
+      },
+      "bytes": 213596
+    },
+    "importDefaults": {
+      "mode": "all",
+      "selectedLabel": "全部原始帧（默认）",
+      "noCheckedMatting": true,
+      "mattingPending": true,
+      "tabs": [
+        {
+          "text": "素材库",
+          "disabled": false
+        },
+        {
+          "text": "上传文件",
+          "disabled": false
+        },
+        {
+          "text": "生成",
+          "disabled": true
+        }
+      ]
+    },
+    "importScreenshot": {
+      "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p1\\desktop-live\\desktop-p1-import-defaults.png",
+      "size": {
+        "width": 1360,
+        "height": 900
+      },
+      "bytes": 311587
+    },
+    "guiUpload": {
+      "clipId": "270949a9-015b-459a-b9a4-c49d39371ea3",
+      "sourceId": "a3f3c7b0-0028-423d-9389-d22d0bdd55b9",
+      "frames": 48,
+      "steps": 48,
+      "statuses": [
+        "ready"
+      ]
+    },
+    "uploadScreenshot": {
+      "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p1\\desktop-live\\desktop-p1-upload-complete.png",
+      "size": {
+        "width": 1360,
+        "height": 900
+      },
+      "bytes": 313546
+    }
+  },
+  "error": "Error: 找不到可点击的界面按钮: 完成 / 关闭\n    at clickButton (D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\desktop\\main.cjs:56:25)\n    at async runP1EditorScenario (D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\desktop\\main.cjs:105:5)\n    at async run (D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\desktop\\main.cjs:237:55)",
+  "externalServicePreserved": true,
+  "serviceAliveAfterDetach": true,
+  "completedAt": "2026-10-09T17:54:05.275Z",
+  "exitCode": 1
+}

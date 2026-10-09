@@ -44,7 +44,7 @@ const JobItem = memo(function JobItem({
       <div className="row">
         {job.status === "done" ? (
           <CheckCircle2 size={13} className="ok" />
-        ) : job.status === "error" ? (
+        ) : job.status === "error" || job.status === "interrupted" ? (
           <XCircle size={13} className="err" />
         ) : job.status === "cancelled" ? (
           <Square size={13} className="wait" />
@@ -55,6 +55,8 @@ const JobItem = memo(function JobItem({
         <span className="prog" title={job.error ?? job.progress ?? undefined}>
           {job.status === "done"
             ? (job.progress && job.progress !== "完成" ? job.progress : t("msg.done"))
+            : job.status === "interrupted"
+              ? t("sfs.interrupted")
             : job.status === "error"
               ? t("msg.failed")
               : job.status === "cancelled"
@@ -72,18 +74,18 @@ const JobItem = memo(function JobItem({
             <Square size={11} />
           </button>
         )}
-        {(job.status === "done" || job.status === "error" || job.status === "cancelled") && (
+        {!isActive(job) && (
           <button type="button" className="dismiss" title={t("msg.dismiss")} onClick={() => onDismiss(job.id)}>
             <X size={12} />
           </button>
         )}
       </div>
       <div
-        className={`px-progress ${job.status === "done" ? "done" : ""} ${job.status === "error" ? "error" : ""} ${job.status === "cancelled" ? "error" : ""}`}
+        className={`px-progress ${job.status === "done" ? "done" : ""} ${job.status === "error" || job.status === "interrupted" ? "error" : ""} ${job.status === "cancelled" ? "error" : ""}`}
       >
         <div className="bar" />
       </div>
-      {job.status === "error" && job.error && <div className="job-error-text">{job.error}</div>}
+      {(job.status === "error" || job.status === "interrupted") && job.error && <div className="job-error-text">{job.error}</div>}
     </motion.div>
   );
 });

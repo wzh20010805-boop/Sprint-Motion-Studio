@@ -1,0 +1,59 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\service.test.ts:
+(pass) P1 shared service > migration backs up WAL contents before adding source schema and remains idempotent [55.06ms]
+(pass) P1 shared service > HTTP imports validated immutable source and queues exact timed frames as safe editor copies [638.93ms]
+(pass) P1 shared service > restart retains queued payload and marks jobs interrupted without false resume [158.24ms]
+(pass) P1 shared service > cancelled extraction publishes no completed DB source and preserves original [477.71ms]
+(pass) P1 shared service > GUI edit during extraction rejects stale commit and retained source can be retried [392.13ms]
+12 |   const proc = Bun.spawn([process.execPath, "-e", code], {
+13 |     cwd: repo, env: { ...process.env, SFS_WORKSPACE: workspace }, stdout: "pipe", stderr: "pipe",
+14 |   });
+15 |   const [exit, stdout, stderr] = await Promise.all([proc.exited, new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+16 |   await Bun.write(join(workspace, "test-output.log"), `${stdout}\n${stderr}`);
+17 |   expect({ exit, output: `${stdout}\n${stderr}` }).toEqual({ exit: 0, output: "PASS\n\n" });
+                                                        ^
+error: expect(received).toEqual(expected)
+
+  {
+-   "exit": 0,
++   "exit": 1,
+    "output": 
+- "PASS
++ "
++  8 |       const other=createProject('worker');await extractFrames({stagingFile:input,mediaType:'mp4',mode:'all',fps:8,autoMatting:false,target:{kind:'project',projectId:other.id}},()=>{},()=>{});
++  9 |       const workerSource=db.query('SELECT id,original_path FROM sources WHERE project_id=?').get(other.id);assert.ok(workerSource);assert.ok(existsSync(workerSource.original_path));const workerFrames=db.query('SELECT source_index,timing_json FROM source_frames WHERE source_id=? ORDER BY source_index').all(workerSource.id);assert.equal(workerFrames.length,48);
++ 10 |       for(let i=0;i<48;i++){const a=JSON.parse(sourceFrames[i].timing_json),b=JSON.parse(workerFrames[i].timing_json);assert.equal(a.source_index,b.source_index);assert.equal(a.pts,b.pts);assert.deepEqual(a.display_duration,b.display_duration)}assert.ok(existsSync(input));
++ 11 |       const queued=createProject('queued bridge'); const {createJob,getPersistedJob}=await import('./apps/server/src/queue.ts');
++ 12 |       const id=createJob(queued.id,'extract_frames',{extract:{stagingFile:input,mediaType:'mp4',mode:'all',fps:8,autoMatting:false,target:{kind:'project',projectId:queued.id}}});
++ 13 |       let q;for(let i=0;i<200;i++){q=getPersistedJob(id);if(['done','error'].includes(q.status))break;await Bun.sleep(20)}assert.equal(q.status,'done');assert.equal(q.result?.frame_count,48);assert.ok(existsSync(q.result.artifacts[0].path));console.log('PASS');
++                                                                                                                                                                     ^
++ AssertionError: Expected values to be strictly equal:
+  
++ undefined !== 48
++ 
++  generatedMessage: true,
++      actual: undefined,
++    expected: 48,
++    operator: "strictEqual",
++        diff: "simple",
++        code: "ERR_ASSERTION"
++ 
++       at D:\AIJOB\tools\Sprite Motion Studio\framebaker\[eval]:13:160
++ 
++ Bun v1.4.2 (Windows x64)
+  "
+  ,
+  }
+
+- Expected  - 2
++ Received  + 22
+
+      at child (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\service.test.ts:17:52)
+      at async <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\service.test.ts:129:11)
+(fail) P1 shared service > legacy GUI default and direct all mode worker share exact source semantics [1043.30ms]
+
+ 5 pass
+ 1 fail
+ 6 expect() calls
+Ran 6 tests across 1 file. [2.84s]

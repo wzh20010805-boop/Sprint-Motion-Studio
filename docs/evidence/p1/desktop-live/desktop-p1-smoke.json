@@ -1,0 +1,310 @@
+{
+  "startedAt": "2026-10-09T17:55:28.698Z",
+  "command": "bun probes/desktop/run-p1-smoke.ts",
+  "cwd": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker",
+  "bun": "1.4.2",
+  "workspace": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-desktop-workspace\\run-1791568528697",
+  "video": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\P0 合成样例 (48帧).mp4",
+  "commands": [
+    {
+      "argv": [
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\.runtime\\node_modules\\@oven\\bun-windows-x64\\bin\\bun.exe",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\apps\\cli\\src\\index.ts",
+        "project",
+        "create",
+        "--name",
+        "P1 desktop 2026-10-09T17:55:28.698Z",
+        "--workspace",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-desktop-workspace\\run-1791568528697",
+        "--json"
+      ],
+      "cwd": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker",
+      "exitCode": 0,
+      "status": "succeeded",
+      "ok": true,
+      "project_id": "c261621b-9709-41a3-a70d-ca69f3872a50"
+    },
+    {
+      "argv": [
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\.runtime\\node_modules\\@oven\\bun-windows-x64\\bin\\bun.exe",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\apps\\cli\\src\\index.ts",
+        "import",
+        "video",
+        "--project",
+        "c261621b-9709-41a3-a70d-ca69f3872a50",
+        "--file",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\P0 合成样例 (48帧).mp4",
+        "--workspace",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-desktop-workspace\\run-1791568528697",
+        "--json"
+      ],
+      "cwd": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker",
+      "exitCode": 0,
+      "status": "succeeded",
+      "ok": true,
+      "project_id": "c261621b-9709-41a3-a70d-ca69f3872a50"
+    },
+    {
+      "argv": [
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\.runtime\\node_modules\\@oven\\bun-windows-x64\\bin\\bun.exe",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\apps\\cli\\src\\index.ts",
+        "clip",
+        "create",
+        "--project",
+        "c261621b-9709-41a3-a70d-ca69f3872a50",
+        "--source",
+        "4e252ddd-2519-43fb-bc54-f188ebdcd162",
+        "--name",
+        "CLI 完整48帧动作",
+        "--workspace",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-desktop-workspace\\run-1791568528697",
+        "--json"
+      ],
+      "cwd": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker",
+      "exitCode": 0,
+      "status": "succeeded",
+      "ok": true,
+      "project_id": "c261621b-9709-41a3-a70d-ca69f3872a50"
+    },
+    {
+      "argv": [
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\.runtime\\node_modules\\@oven\\bun-windows-x64\\bin\\bun.exe",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\apps\\cli\\src\\index.ts",
+        "extract",
+        "--project",
+        "c261621b-9709-41a3-a70d-ca69f3872a50",
+        "--clip",
+        "715847bc-ff1e-493a-9a22-e5f17841e049",
+        "--mode",
+        "all",
+        "--wait",
+        "--timeout",
+        "60",
+        "--workspace",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-desktop-workspace\\run-1791568528697",
+        "--json"
+      ],
+      "cwd": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker",
+      "exitCode": 0,
+      "status": "succeeded",
+      "ok": true,
+      "project_id": "c261621b-9709-41a3-a70d-ca69f3872a50",
+      "job_id": "239dd1c3-3294-405c-9028-844fd9871fce"
+    },
+    {
+      "argv": [
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\.runtime\\node_modules\\@oven\\bun-windows-x64\\bin\\bun.exe",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\apps\\cli\\src\\index.ts",
+        "project",
+        "inspect",
+        "--project",
+        "c261621b-9709-41a3-a70d-ca69f3872a50",
+        "--workspace",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-desktop-workspace\\run-1791568528697",
+        "--json"
+      ],
+      "cwd": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker",
+      "exitCode": 0,
+      "status": "succeeded",
+      "ok": true,
+      "project_id": "c261621b-9709-41a3-a70d-ca69f3872a50"
+    },
+    {
+      "argv": [
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\.runtime\\node_modules\\@oven\\bun-windows-x64\\bin\\bun.exe",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\apps\\cli\\src\\index.ts",
+        "project",
+        "inspect",
+        "--project",
+        "c261621b-9709-41a3-a70d-ca69f3872a50",
+        "--workspace",
+        "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-desktop-workspace\\run-1791568528697",
+        "--json"
+      ],
+      "cwd": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker",
+      "exitCode": 0,
+      "status": "succeeded",
+      "ok": true,
+      "project_id": "c261621b-9709-41a3-a70d-ca69f3872a50"
+    }
+  ],
+  "cliExtraction": {
+    "projectId": "c261621b-9709-41a3-a70d-ca69f3872a50",
+    "sourceId": "4e252ddd-2519-43fb-bc54-f188ebdcd162",
+    "clipId": "715847bc-ff1e-493a-9a22-e5f17841e049",
+    "frameCount": 48,
+    "status": "succeeded"
+  },
+  "service": {
+    "url": "http://127.0.0.1:60827",
+    "pid": 7116,
+    "instance_id": "aad3426b-6b07-42e7-8715-55a5069bcacd",
+    "workspace": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-desktop-workspace\\run-1791568528697"
+  },
+  "unauthenticatedApiStatus": 401,
+  "unauthenticatedWsStatus": 401,
+  "hostExit": 0,
+  "gui": {
+    "smokePassed": true,
+    "scenario": {
+      "projectId": "c261621b-9709-41a3-a70d-ca69f3872a50",
+      "steps": [
+        {
+          "action": "click",
+          "text": "导入素材"
+        },
+        {
+          "action": "click",
+          "text": "上传文件"
+        },
+        {
+          "action": "click",
+          "text": "导入 1 个文件"
+        },
+        {
+          "action": "click",
+          "text": "完成，关闭面板"
+        },
+        {
+          "action": "click",
+          "text": "+ 时长"
+        }
+      ],
+      "phase": "P1",
+      "initialFrames": 48,
+      "initialRevision": 99,
+      "protectedApiStatus": 200,
+      "editorScreenshot": {
+        "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p1\\desktop-live\\desktop-p1-editor.png",
+        "size": {
+          "width": 1360,
+          "height": 900
+        },
+        "bytes": 212522
+      },
+      "importDefaults": {
+        "mode": "all",
+        "selectedLabel": "全部原始帧（默认）",
+        "noCheckedMatting": true,
+        "mattingPending": true,
+        "tabs": [
+          {
+            "text": "素材库",
+            "disabled": false
+          },
+          {
+            "text": "上传文件",
+            "disabled": false
+          },
+          {
+            "text": "生成",
+            "disabled": true
+          }
+        ]
+      },
+      "importScreenshot": {
+        "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p1\\desktop-live\\desktop-p1-import-defaults.png",
+        "size": {
+          "width": 1360,
+          "height": 900
+        },
+        "bytes": 311767
+      },
+      "guiUpload": {
+        "clipId": "8f5233f7-f0c7-42d1-9e0b-cc45eb19f505",
+        "sourceId": "42b0dfb3-14ca-408a-8cc4-640392ea2297",
+        "frames": 48,
+        "steps": 48,
+        "statuses": [
+          "ready"
+        ]
+      },
+      "uploadScreenshot": {
+        "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p1\\desktop-live\\desktop-p1-upload-complete.png",
+        "size": {
+          "width": 1360,
+          "height": 900
+        },
+        "bytes": 283481
+      },
+      "edit": {
+        "stepId": "753975ef-0382-4ede-89e6-8c7733d41941",
+        "originalDuration": 1,
+        "savedDuration": 2,
+        "reopened": {
+          "firstStep": "×2",
+          "canvasCount": 1,
+          "projectName": "P1 desktop 2026-10-09T17:55:28.698Z"
+        },
+        "revision": 200,
+        "persisted": true
+      },
+      "reopenedScreenshot": {
+        "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p1\\desktop-live\\desktop-p1-editor-reopened.png",
+        "size": {
+          "width": 1360,
+          "height": 900
+        },
+        "bytes": 202275
+      },
+      "passed": true
+    },
+    "authCookieAttributes": {
+      "name": "sfs_token",
+      "httpOnly": true,
+      "sameSite": "strict",
+      "path": "/"
+    },
+    "websocket": true,
+    "serviceAliveAfterDetach": true,
+    "console": [],
+    "blockedRequests": []
+  },
+  "noTokenInDesktopReport": true,
+  "cliAfterGui": {
+    "projectId": "c261621b-9709-41a3-a70d-ca69f3872a50",
+    "initialRevision": 99,
+    "finalRevision": 200,
+    "sources": 2,
+    "clips": [
+      {
+        "id": "715847bc-ff1e-493a-9a22-e5f17841e049",
+        "status": "extracted",
+        "source_id": "4e252ddd-2519-43fb-bc54-f188ebdcd162"
+      },
+      {
+        "id": "8f5233f7-f0c7-42d1-9e0b-cc45eb19f505",
+        "status": "extracted",
+        "source_id": "42b0dfb3-14ca-408a-8cc4-640392ea2297"
+      }
+    ]
+  },
+  "sameServiceAfterWindowClose": true,
+  "passed": true,
+  "completedAt": "2026-10-09T17:55:45.276Z",
+  "guiCliEquality": {
+    "evidence": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p1\\desktop-live\\desktop-gui-cli-equality.json",
+    "checkedAt": "2026-10-09T18:05:09.131Z",
+    "passed": true,
+    "frameCounts": {
+      "cli": 48,
+      "gui": 48
+    },
+    "originalVideoEqual": true,
+    "totalDuration": {
+      "cli": {
+        "num": 2,
+        "den": 1
+      },
+      "gui": {
+        "num": 2,
+        "den": 1
+      }
+    },
+    "totalDurationEqual": true,
+    "allTimingEqual": true,
+    "allPngBytesEqual": true,
+    "sourceIndicesContinuous": true,
+    "mismatchCount": 0
+  }
+}

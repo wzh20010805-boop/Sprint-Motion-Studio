@@ -9,6 +9,7 @@ import { createGeneratedArtifactCommitter, type ArtifactCommitResult } from "./g
 import { appendFramePool } from "../timeline";
 import { invalidateProjectUndo } from "../undo";
 import { findImageMagick } from "../media";
+import { createClip, extractSource, importVideo, prepareSourceExtraction } from "../pipeline/service";
 
 /** 任务产出目标：项目帧 or 素材库 */
 type JobTarget = { kind: "project"; projectId: string } | { kind: "materials" };
@@ -21,7 +22,7 @@ export interface ExtractPayload {
   /** fps 模式（默认）：整段按帧率抽；timestamps 模式忽略 */
   fps: number;
   /** 缺省 fps；timestamps = 按秒列表定点抽（仅 mp4） */
-  mode?: "fps" | "timestamps";
+  mode?: "all" | "fps" | "timestamps";
   /** 秒（浮点）；mode=timestamps 时必填，服务端排序去重，最多 EXTRACT_TIMESTAMPS_MAX */
   timestamps?: number[];
   autoMatting: boolean;
@@ -221,6 +222,17 @@ export async function extractFrames(
   signal?: AbortSignal
 ) {
   if (signal?.aborted) throw new JobCancelledError();
+  if (p.mode === "all") {
+    if (p.mediaType !== "mp4" || p.target.kind !== "project") throw new Error("完整源帧模式需要视频和项目目标");
+    const source = await importVideo(p.target.projectId, p.stagingFile);
+    const clip = createClip(p.target.projectId, source.id, p.originName?.trim() || "视频动作");
+    const result = await extractSource(prepareSourceExtraction(p.target.projectId, clip.id), progress, signal);
+    if (p.autoMatting) {
+      const frames = db.query("SELECT id FROM frames WHERE track_id=? ORDER BY idx").all(clip.track_id) as Array<{ id: string }>;
+      afterImportFrames(p.target.projectId, frames.map((frame) => frame.id), true, enqueueMatting);
+    }
+    return result;
+  }
   const { stageDir, files } = await extractToStaging(p, progress, signal);
   if (signal?.aborted) throw new JobCancelledError();
   progress(`入库 ${files.length} 项`);

@@ -1,0 +1,971 @@
+{
+  "schema_version": "1.0",
+  "source_id": "cfr-48",
+  "frames": [
+    {
+      "source_frame_id": "cfr-48:000000",
+      "source_index": 0,
+      "file": "raw/frame_000000.png",
+      "pts": "0",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 0,
+        "den": 1
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000001",
+      "source_index": 1,
+      "file": "raw/frame_000001.png",
+      "pts": "512",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 1,
+        "den": 24
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000002",
+      "source_index": 2,
+      "file": "raw/frame_000002.png",
+      "pts": "1024",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 1,
+        "den": 12
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000003",
+      "source_index": 3,
+      "file": "raw/frame_000003.png",
+      "pts": "1536",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 1,
+        "den": 8
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000004",
+      "source_index": 4,
+      "file": "raw/frame_000004.png",
+      "pts": "2048",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 1,
+        "den": 6
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000005",
+      "source_index": 5,
+      "file": "raw/frame_000005.png",
+      "pts": "2560",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 5,
+        "den": 24
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000006",
+      "source_index": 6,
+      "file": "raw/frame_000006.png",
+      "pts": "3072",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 1,
+        "den": 4
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000007",
+      "source_index": 7,
+      "file": "raw/frame_000007.png",
+      "pts": "3584",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 7,
+        "den": 24
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000008",
+      "source_index": 8,
+      "file": "raw/frame_000008.png",
+      "pts": "4096",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 1,
+        "den": 3
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000009",
+      "source_index": 9,
+      "file": "raw/frame_000009.png",
+      "pts": "4608",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 3,
+        "den": 8
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000010",
+      "source_index": 10,
+      "file": "raw/frame_000010.png",
+      "pts": "5120",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 5,
+        "den": 12
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000011",
+      "source_index": 11,
+      "file": "raw/frame_000011.png",
+      "pts": "5632",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 11,
+        "den": 24
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000012",
+      "source_index": 12,
+      "file": "raw/frame_000012.png",
+      "pts": "6144",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 1,
+        "den": 2
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000013",
+      "source_index": 13,
+      "file": "raw/frame_000013.png",
+      "pts": "6656",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 13,
+        "den": 24
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000014",
+      "source_index": 14,
+      "file": "raw/frame_000014.png",
+      "pts": "7168",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 7,
+        "den": 12
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000015",
+      "source_index": 15,
+      "file": "raw/frame_000015.png",
+      "pts": "7680",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 5,
+        "den": 8
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000016",
+      "source_index": 16,
+      "file": "raw/frame_000016.png",
+      "pts": "8192",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 2,
+        "den": 3
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000017",
+      "source_index": 17,
+      "file": "raw/frame_000017.png",
+      "pts": "8704",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 17,
+        "den": 24
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000018",
+      "source_index": 18,
+      "file": "raw/frame_000018.png",
+      "pts": "9216",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 3,
+        "den": 4
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000019",
+      "source_index": 19,
+      "file": "raw/frame_000019.png",
+      "pts": "9728",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 19,
+        "den": 24
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000020",
+      "source_index": 20,
+      "file": "raw/frame_000020.png",
+      "pts": "10240",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 5,
+        "den": 6
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000021",
+      "source_index": 21,
+      "file": "raw/frame_000021.png",
+      "pts": "10752",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 7,
+        "den": 8
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000022",
+      "source_index": 22,
+      "file": "raw/frame_000022.png",
+      "pts": "11264",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 11,
+        "den": 12
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000023",
+      "source_index": 23,
+      "file": "raw/frame_000023.png",
+      "pts": "11776",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 23,
+        "den": 24
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000024",
+      "source_index": 24,
+      "file": "raw/frame_000024.png",
+      "pts": "12288",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 1,
+        "den": 1
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000025",
+      "source_index": 25,
+      "file": "raw/frame_000025.png",
+      "pts": "12800",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 25,
+        "den": 24
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000026",
+      "source_index": 26,
+      "file": "raw/frame_000026.png",
+      "pts": "13312",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 13,
+        "den": 12
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000027",
+      "source_index": 27,
+      "file": "raw/frame_000027.png",
+      "pts": "13824",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 9,
+        "den": 8
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000028",
+      "source_index": 28,
+      "file": "raw/frame_000028.png",
+      "pts": "14336",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 7,
+        "den": 6
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000029",
+      "source_index": 29,
+      "file": "raw/frame_000029.png",
+      "pts": "14848",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 29,
+        "den": 24
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000030",
+      "source_index": 30,
+      "file": "raw/frame_000030.png",
+      "pts": "15360",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 5,
+        "den": 4
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000031",
+      "source_index": 31,
+      "file": "raw/frame_000031.png",
+      "pts": "15872",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 31,
+        "den": 24
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000032",
+      "source_index": 32,
+      "file": "raw/frame_000032.png",
+      "pts": "16384",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 4,
+        "den": 3
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000033",
+      "source_index": 33,
+      "file": "raw/frame_000033.png",
+      "pts": "16896",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 11,
+        "den": 8
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000034",
+      "source_index": 34,
+      "file": "raw/frame_000034.png",
+      "pts": "17408",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 17,
+        "den": 12
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000035",
+      "source_index": 35,
+      "file": "raw/frame_000035.png",
+      "pts": "17920",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 35,
+        "den": 24
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000036",
+      "source_index": 36,
+      "file": "raw/frame_000036.png",
+      "pts": "18432",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 3,
+        "den": 2
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000037",
+      "source_index": 37,
+      "file": "raw/frame_000037.png",
+      "pts": "18944",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 37,
+        "den": 24
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000038",
+      "source_index": 38,
+      "file": "raw/frame_000038.png",
+      "pts": "19456",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 19,
+        "den": 12
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000039",
+      "source_index": 39,
+      "file": "raw/frame_000039.png",
+      "pts": "19968",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 13,
+        "den": 8
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000040",
+      "source_index": 40,
+      "file": "raw/frame_000040.png",
+      "pts": "20480",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 5,
+        "den": 3
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000041",
+      "source_index": 41,
+      "file": "raw/frame_000041.png",
+      "pts": "20992",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 41,
+        "den": 24
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000042",
+      "source_index": 42,
+      "file": "raw/frame_000042.png",
+      "pts": "21504",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 7,
+        "den": 4
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000043",
+      "source_index": 43,
+      "file": "raw/frame_000043.png",
+      "pts": "22016",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 43,
+        "den": 24
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000044",
+      "source_index": 44,
+      "file": "raw/frame_000044.png",
+      "pts": "22528",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 11,
+        "den": 6
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000045",
+      "source_index": 45,
+      "file": "raw/frame_000045.png",
+      "pts": "23040",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 15,
+        "den": 8
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000046",
+      "source_index": 46,
+      "file": "raw/frame_000046.png",
+      "pts": "23552",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 23,
+        "den": 12
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "next_pts",
+      "decode_status": "ok"
+    },
+    {
+      "source_frame_id": "cfr-48:000047",
+      "source_index": 47,
+      "file": "raw/frame_000047.png",
+      "pts": "24064",
+      "time_base": {
+        "num": 1,
+        "den": 12288
+      },
+      "presentation_time": {
+        "num": 47,
+        "den": 24
+      },
+      "display_duration": {
+        "num": 1,
+        "den": 24
+      },
+      "duration_origin": "frame_duration",
+      "decode_status": "ok"
+    }
+  ],
+  "duration": {
+    "num": 2,
+    "den": 1
+  },
+  "warnings": []
+}

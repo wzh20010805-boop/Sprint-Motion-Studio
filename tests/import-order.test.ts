@@ -1,6 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { sortImportFiles, waitForQueuedJob } from "../apps/web/src/hooks/useImportWorkflow";
 
+test("服务重启的 interrupted 任务立即结束等待并保留失败原因", async () => {
+  let polls = 0;
+  const result = await waitForQueuedJob("restart", () => polls < 2, async () => { polls++; return {status:"interrupted",error:"SERVICE_RESTARTED"}; }, async () => {});
+  expect(result).toEqual({status:"interrupted",error:"SERVICE_RESTARTED"});
+  expect(polls).toBe(1);
+});
+
 describe("多文件导入顺序", () => {
   test("按文件名自然升序排列数字帧", () => {
     const files = ["run_12.png", "run_2.png", "run_1.png"].map((name) => new File([], name));

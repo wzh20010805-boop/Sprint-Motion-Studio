@@ -22,7 +22,7 @@ export function sortImportFiles(files: File[]): File[] {
 
 type QueuedJobResult =
   | { status: "done" }
-  | { status: "error" | "cancelled"; error: string | null }
+  | { status: "error" | "cancelled" | "interrupted"; error: string | null }
   | { status: "stale" };
 
 /** 串行导入时等待任务结束；短暂查询失败只重试，不得放行下一文件。 */
@@ -43,7 +43,7 @@ export async function waitForQueuedJob(
     }
     if (!isActive()) return { status: "stale" };
     if (job.status === "done") return { status: "done" };
-    if (job.status === "error" || job.status === "cancelled") {
+    if (job.status === "error" || job.status === "cancelled" || job.status === "interrupted") {
       return { status: job.status, error: job.error };
     }
     await wait();
@@ -124,7 +124,7 @@ export function useImportWorkflow(onDone: () => void) {
             if (job.status === "done") {
               updateItem(index, { state: "done" });
               pending.delete(jobId);
-            } else if (job.status === "error") {
+            } else if (job.status === "error" || job.status === "cancelled" || job.status === "interrupted") {
               updateItem(index, { state: "error", error: job.error });
               pending.delete(jobId);
             }

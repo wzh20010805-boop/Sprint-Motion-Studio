@@ -1,0 +1,38 @@
+{
+  "checkedAt": "2026-10-09T18:04:41.7131780Z",
+  "command": "PowerShell Get-CimInstance Win32_Process by recorded PID, private service descriptor identity comparison",
+  "cwd": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker",
+  "stoppedPids": [],
+  "deletedPaths": [],
+  "attempts": [
+    {
+      "report": "docs/evidence/p1/desktop-attempt1/desktop-p1-smoke.json",
+      "failed": true,
+      "workspace": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-desktop-workspace",
+      "reportedPid": 18276,
+      "reportedInstance": "84030ae7-b0ed-413b-812f-e05306e6fdb0",
+      "descriptorExists": false,
+      "descriptorMatches": false,
+      "processExists": false,
+      "expectedBun": false,
+      "bootstrapCommand": false,
+      "action": "already exited; no stop signal sent",
+      "sourcesPreserved": true
+    },
+    {
+      "report": "docs/evidence/p1/desktop-attempt2/desktop-p1-smoke.json",
+      "failed": true,
+      "workspace": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p1-desktop-workspace\\run-1791568428112",
+      "reportedPid": 7824,
+      "reportedInstance": "e8cb6e65-93ed-4bd0-b54e-161175573563",
+      "descriptorExists": false,
+      "descriptorMatches": false,
+      "processExists": false,
+      "expectedBun": false,
+      "bootstrapCommand": false,
+      "action": "already exited; no stop signal sent",
+      "sourcesPreserved": true
+    }
+  ],
+  "passed": true
+}

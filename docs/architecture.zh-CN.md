@@ -220,3 +220,12 @@ storage/
 - `i18n.ts` + `i18n/zh.ts` / `i18n/en.ts`：界面语言（zh 默认 / en）；文案用稳定 key（如 `common.close`），`t(key)` / `useT()` 查表；localStorage `framebaker-lang` + settings `lang`
 - `notice.ts` + `AppModals`（挂在 App 根部）：全局通知条与确认弹窗，替代浏览器默认 `alert`/`confirm`——任何组件调 `notify(text)` / `await askConfirm(text)`，禁止再用浏览器默认弹窗
 - `api.ts`：类型化 fetch 封装与兼容门面；`api/mediaUrls.ts` 负责帧/素材 URL 构造，`api/ws.ts` 负责 WebSocket 客户端（断线 3s 重连）
+# 小兵工坊 P1 增量架构
+
+保留上游 React/Pixi → Bun/Elysia → SQLite。`apps/cli` 只调用同一 HTTP 服务，Electron 开发宿主通过本地 cookie 进入原 GUI。`runtimeBootstrap.ts` 在动态加载数据库前取得工作区实例锁；`runtime.ts` 负责 loopback 鉴权与锁所有权。CLI 和 GUI 都复用 `.sfs/service.json`，不各开第二个业务数据库写入者。
+
+`SFS_WORKSPACE` 显式选择运行数据；未设置时上游 `storage` 兼容。迁移前 VACUUM INTO 保留 WAL 的一致备份。schema 3 增加来源、精确源帧时序、clips 映射、project revision 和任务 payload/result；clips 复用 existing axes/main tracks。`queue → pipeline/service → probe/extractAll` 单向调用，不反向引用队列。
+
+sources 的复制原视频/PNG/timing 与 projects 的可编辑副本隔离。完整抽帧在唯一暂存目录完成，数量/连续索引/尺寸/全解码校验通过才发布，再检查 base_revision 后事务提交主轨。缓存复用也验证完整时序与 PNG；旧结果、取消或失败不提交伪完整项目。源 PTS 以字符串存整数，有理数约分时使用 BigInt；JSON 的数值须为安全整数。
+
+P1 只维护完整原帧和时序，没有场景抠图、地面参考、统一游戏画布或正式 Cocos 导出。VFR 主轨预览可量化并警告，timing.json 为源时序依据。重启遗留 queued/running 标记 interrupted，参数和中间文件保留；恢复命令属于后续阶段。Electron 严格 CSP 通过已安装 Pixi 的无动态代码生成兼容模块运行画布。

@@ -13,15 +13,121 @@ const backendRoot = packed ? path.join(packageRoot, "runtime", "backend") : path
 const evidenceRoot = path.resolve(process.env.P0_EVIDENCE_DIR || path.join(probeRoot, "artifacts", "evidence"));
 const profile = path.resolve(process.env.P0_PROFILE_DIR || path.join(probeRoot, "artifacts", "profile"));
 const smoke = process.argv.includes("--smoke");
+const externalService = process.env.SFS_SERVICE_URL;
+const externalToken = process.env.SFS_SERVICE_TOKEN;
+const pagePath = process.env.SFS_PROBE_PATH || "/materials";
+if (!/^\/(?:materials|settings|motions|project\/[\w-]+)?$/.test(pagePath)) throw new Error("SFS_PROBE_PATH 必须是受支持的本地页面路径");
 fs.mkdirSync(evidenceRoot, { recursive: true });
 fs.mkdirSync(profile, { recursive: true });
 app.setPath("userData", profile);
 app.commandLine.appendSwitch("disable-background-timer-throttling");
 
 let child, window, origin, quitting = false, childExited = false;
-const report = { startedAt: new Date().toISOString(), command: process.argv, cwd: process.cwd(), packageRoot, packed, runtime, backendRoot, profile, versions: process.versions, events: [], console: [], blockedRequests: [] };
+const report = { startedAt: new Date().toISOString(), command: process.argv, cwd: process.cwd(), packageRoot, packed, runtime, backendRoot, profile, pagePath, serviceManagement: externalService ? "attach-existing" : "owned-p0-child", versions: process.versions, events: [], console: [], blockedRequests: [] };
 const event = (kind, details = {}) => report.events.push({ kind, at: new Date().toISOString(), ...details });
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+const serviceFetch = url => fetch(url, externalToken ? { headers: { Authorization: `Bearer ${externalToken}` } } : undefined);
+async function saveScreenshot(name) {
+  const screenshot = await window.webContents.capturePage();
+  const screenshotPath = path.join(evidenceRoot, name);
+  fs.writeFileSync(screenshotPath, screenshot.toPNG());
+  return { path: screenshotPath, size: screenshot.getSize(), bytes: fs.statSync(screenshotPath).size };
+}
+
+async function runP1EditorScenario() {
+  if (!externalService || !pagePath.startsWith("/project/")) throw new Error("P1 场景需要显式附着项目页面");
+  const projectId = pagePath.slice("/project/".length);
+  const readJson = async endpoint => {
+    const response = await serviceFetch(`${origin}${endpoint}`);
+    if (!response.ok) throw new Error(`P1 场景请求失败 ${response.status}: ${endpoint}`);
+    return response.json();
+  };
+  const scenario = report.p1Scenario = { projectId, steps: [] };
+  const initial = await readJson(`/api/projects/${projectId}/timeline`);
+  const before = await readJson(`/api/v1/projects/${projectId}`);
+  const config = await readJson("/api/config");
+  scenario.phase = config.sfs?.phase;
+  scenario.initialFrames = initial.frames.length;
+  scenario.initialRevision = before.data.project.revision;
+  scenario.protectedApiStatus = await window.webContents.executeJavaScript("fetch('/api/v1/projects').then(response => response.status)");
+  scenario.editorScreenshot = await saveScreenshot("desktop-p1-editor.png");
+  const clickButton = async (selector, text) => {
+    const clicked = await window.webContents.executeJavaScript(`(() => { const button = [...document.querySelectorAll(${JSON.stringify(selector)})].find(b => b.innerText.trim() === ${JSON.stringify(text)}); if (!button || button.disabled) return false; button.click(); return true; })()`);
+    if (!clicked) throw new Error(`找不到可点击的界面按钮: ${text}`);
+    await delay(350);
+    scenario.steps.push({ action: "click", text });
+  };
+  await clickButton(".topbar button", "导入素材");
+  await clickButton(".import-modal .import-tabs button", "上传文件");
+  const importDefaultsScript = `(() => {
+    const modal = document.querySelector('.import-modal');
+    const select = modal?.querySelector('[data-testid="sfs-extraction-mode"] select');
+    return { mode:select?.value, selectedLabel:select?.selectedOptions[0]?.textContent, noCheckedMatting:![...(modal?.querySelectorAll('input[type=checkbox]') || [])].some(input => input.checked), mattingPending:modal?.innerText.includes('等待 P2'), tabs:[...(modal?.querySelectorAll('.import-tabs button') || [])].map(b => ({text:b.innerText,disabled:b.disabled})) };
+  })()`;
+  for (let attempt = 0; attempt < 50; attempt++) {
+    scenario.importDefaults = await window.webContents.executeJavaScript(importDefaultsScript);
+    if (scenario.importDefaults.mattingPending && scenario.importDefaults.tabs.some(tab => tab.text === "生成" && tab.disabled)) break;
+    await delay(100);
+  }
+  scenario.importScreenshot = await saveScreenshot("desktop-p1-import-defaults.png");
+  report.renderer.fullFrameOptionVisible = scenario.importDefaults.mode === "all";
+  if (scenario.phase !== "P1" || scenario.protectedApiStatus !== 200 || scenario.initialFrames !== 48 || scenario.importDefaults.mode !== "all" || !scenario.importDefaults.noCheckedMatting || !scenario.importDefaults.mattingPending) throw new Error("P1 默认导入/鉴权/48帧基线断言失败");
+
+  const video = process.env.SFS_PROBE_VIDEO_FILE;
+  if (video) {
+    if (!path.isAbsolute(video) || !fs.existsSync(video)) throw new Error("SFS_PROBE_VIDEO_FILE 必须是已存在的绝对路径");
+    window.webContents.debugger.attach("1.3");
+    try {
+      const document = await window.webContents.debugger.sendCommand("DOM.getDocument");
+      const { nodeId } = await window.webContents.debugger.sendCommand("DOM.querySelector", { nodeId: document.root.nodeId, selector: ".import-modal input[type=file]" });
+      if (!nodeId) throw new Error("导入文件输入框不存在");
+      await window.webContents.debugger.sendCommand("DOM.setFileInputFiles", { nodeId, files: [video] });
+    } finally { window.webContents.debugger.detach(); }
+    await delay(400);
+    await clickButton(".import-modal .modal-actions button", "导入 1 个文件");
+    const previous = new Set(before.data.clips.map(clip => clip.id));
+    let imported;
+    for (let attempt = 0; attempt < 150; attempt++) {
+      const current = await readJson(`/api/v1/projects/${projectId}`);
+      imported = current.data.clips.find(clip => !previous.has(clip.id) && clip.status === "extracted");
+      if (imported) break;
+      await delay(300);
+    }
+    if (!imported) throw new Error("实际 GUI 视频导入未在 45 秒内完成");
+    const importedTimeline = await readJson(`/api/projects/${projectId}/timeline?axisId=${encodeURIComponent(imported.axis_id)}`);
+    scenario.guiUpload = { clipId: imported.id, sourceId: imported.source_id, frames: importedTimeline.frames.length, steps: importedTimeline.steps.length, statuses: [...new Set(importedTimeline.frames.map(frame => frame.status))] };
+    for (let attempt = 0; attempt < 30; attempt++) {
+      const finished = await window.webContents.executeJavaScript("[...document.querySelectorAll('.import-modal .modal-actions button')].some(b => b.innerText.trim() === '完成，关闭面板')");
+      if (finished) break;
+      await delay(100);
+    }
+    scenario.uploadScreenshot = await saveScreenshot("desktop-p1-upload-complete.png");
+    await clickButton(".import-modal .modal-actions button", "完成，关闭面板");
+    if (scenario.guiUpload.frames !== 48 || scenario.guiUpload.steps !== 48 || scenario.guiUpload.statuses.some(status => status === "matted")) throw new Error("GUI 完整48帧/未抠图状态断言失败");
+  } else await clickButton(".import-modal button", "关闭");
+
+  const clickedCell = await window.webContents.executeJavaScript("(() => { const cell = document.querySelector('.tl-cell.draggable'); if (!cell) return false; cell.click(); return true; })()");
+  if (!clickedCell) throw new Error("找不到真实时间轴帧单元格");
+  const stepId = initial.steps[0].id;
+  const originalDuration = initial.steps[0].duration;
+  await delay(100);
+  await clickButton(".tl-controls button", "+ 时长");
+  let edited;
+  for (let attempt = 0; attempt < 30; attempt++) {
+    const timeline = await readJson(`/api/projects/${projectId}/timeline?axisId=${encodeURIComponent(initial.axis.id)}`);
+    edited = timeline.steps.find(step => step.id === stepId);
+    if (edited?.duration === originalDuration + 1) break;
+    await delay(100);
+  }
+  await window.loadURL(`${origin}${pagePath}`);
+  await delay(900);
+  const reopened = await window.webContents.executeJavaScript("({firstStep:document.querySelector('.tl-step small')?.textContent,canvasCount:document.querySelectorAll('.pixi-wrap canvas').length,projectName:document.querySelector('.proj-name')?.textContent})");
+  const after = await readJson(`/api/v1/projects/${projectId}`);
+  scenario.edit = { stepId, originalDuration, savedDuration: edited?.duration, reopened, revision: after.data.project.revision, persisted: edited?.duration === originalDuration + 1 && reopened.firstStep === `×${originalDuration + 1}` && reopened.canvasCount > 0 };
+  scenario.reopenedScreenshot = await saveScreenshot("desktop-p1-editor-reopened.png");
+  scenario.passed = scenario.edit.persisted && scenario.edit.revision > scenario.initialRevision;
+  if (!scenario.passed) throw new Error("真实页面编辑/保存/重开断言失败");
+}
 
 function startBackend() {
   return new Promise((resolve, reject) => {
@@ -57,6 +163,12 @@ function startBackend() {
 }
 
 async function stopBackend() {
+  if (externalService) {
+    report.externalServicePreserved = true;
+    report.serviceAliveAfterDetach = (await serviceFetch(`${origin}/api/health`)).ok;
+    event("external-service-detached", { serviceAlive: report.serviceAliveAfterDetach });
+    return;
+  }
   if (!child || childExited) return;
   event("backend-stop-requested", { pid: child.pid });
   child.kill();
@@ -68,15 +180,27 @@ async function stopBackend() {
 
 async function run() {
   await app.whenReady();
-  await startBackend();
-  const health = await fetch(`${origin}/api/health`);
+  if (externalService) {
+    const address = new URL(externalService);
+    if (address.protocol !== "http:" || address.hostname !== "127.0.0.1" || !address.port || address.username || address.password || address.search || address.hash || address.pathname !== "/") throw new Error("SFS_SERVICE_URL 必须是明确的 127.0.0.1 HTTP 服务根地址");
+    origin = address.origin;
+    report.backend = { url: `${origin}/`, owned: false };
+    if (externalToken) {
+      await session.defaultSession.cookies.set({ url: `${origin}/`, name: "sfs_token", value: externalToken, httpOnly: true, sameSite: "strict", path: "/" });
+      report.authCookieConfigured = true;
+      const cookie = (await session.defaultSession.cookies.get({ url: `${origin}/`, name: "sfs_token" }))[0];
+      report.authCookieAttributes = { name: cookie.name, httpOnly: cookie.httpOnly, sameSite: cookie.sameSite, path: cookie.path };
+    }
+    event("external-service-attached", { url: `${origin}/`, cookieConfigured: !!externalToken });
+  } else await startBackend();
+  const health = await serviceFetch(`${origin}/api/health`);
   report.health = { status: health.status, body: await health.json() };
-  const html = await (await fetch(`${origin}/materials`)).text();
+  const html = await (await serviceFetch(`${origin}${pagePath}`)).text();
   // 保留上游首屏主题/语言脚本，以内容哈希授权内联代码。
   const hashes = Array.from(html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi))
     .map(match => match[1].replace(/\r\n?/g, "\n")).filter(Boolean)
     .map(script => `'sha256-${createHash("sha256").update(script).digest("base64")}'`);
-  const csp = `default-src 'self'; script-src 'self' ${hashes.join(" ")}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' ${origin.replace("http:", "ws:")}; worker-src 'self' blob:; media-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-src 'none'; form-action 'self'`;
+  const csp = `default-src 'self'; script-src 'self' ${hashes.join(" ")}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' data: blob: ${origin.replace("http:", "ws:")}; worker-src 'self' blob:; media-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-src 'none'; form-action 'self'`;
   report.csp = csp;
   session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
     const allowed = details.url.startsWith(`${origin}/`) || details.url.startsWith(`${origin.replace("http:", "ws:")}/`) || details.url.startsWith("data:") || details.url.startsWith("blob:");
@@ -85,13 +209,13 @@ async function run() {
   });
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => callback({ responseHeaders: { ...details.responseHeaders, "Content-Security-Policy": [csp] } }));
   session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
-  window = new BrowserWindow({ width: 1360, height: 900, show: !smoke, autoHideMenuBar: true, title: "FrameBaker P0 本机探针", webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, nodeIntegrationInWorker: false, webSecurity: true, backgroundThrottling: false } });
+  window = new BrowserWindow({ width: 1360, height: 900, show: !smoke, autoHideMenuBar: true, title: "FrameBaker P0 本机探针", webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, nodeIntegrationInWorker: false, webSecurity: true, backgroundThrottling: false, offscreen: smoke && process.env.SFS_PROBE_SCENARIO === "p1-editor" } });
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   window.webContents.on("will-navigate", (event, target) => { if (new URL(target).origin !== origin) event.preventDefault(); });
   window.webContents.on("console-message", (consoleEvent) => report.console.push({ level: consoleEvent.level, message: consoleEvent.message }));
   window.webContents.on("render-process-gone", (_event, details) => event("renderer-gone", details));
   report.preferences = window.webContents.getLastWebPreferences();
-  await window.loadURL(`${origin}/materials`);
+  await window.loadURL(`${origin}${pagePath}`);
   event("page-loaded", { url: window.webContents.getURL() });
   await delay(1500);
   report.renderer = await window.webContents.executeJavaScript(`(async () => {
@@ -107,14 +231,17 @@ async function run() {
       socket.onopen = () => { clearTimeout(timer); socket.close(); resolve(true); };
       socket.onerror = () => { clearTimeout(timer); resolve(false); };
     });
-    return { title:document.title, rootText:document.querySelector('#root')?.innerText, requireType:typeof require, processType:typeof process, globalType:typeof global, fontsStatus:document.fonts.status, webSocketOk, resources };
+    const rootText = document.querySelector('#root')?.innerText;
+    return { title:document.title, rootText, fullFrameOptionVisible:/完整.*逐帧|完整抽帧|全部帧/.test(rootText || ''), buttonLabels:[...document.querySelectorAll('button')].map(b => b.innerText || b.title).filter(Boolean), requireType:typeof require, processType:typeof process, globalType:typeof global, fontsStatus:document.fonts.status, webSocketOk, resources };
   })()`);
+  if (process.env.SFS_PROBE_SCENARIO === "p1-editor") await runP1EditorScenario();
   const screenshot = await window.webContents.capturePage();
   const screenshotPath = path.join(evidenceRoot, "desktop-framebaker.png");
   fs.writeFileSync(screenshotPath, screenshot.toPNG());
   report.screenshot = { path: screenshotPath, size: screenshot.getSize(), bytes: fs.statSync(screenshotPath).size };
   const r = report.renderer;
   report.smokePassed = report.health.status === 200 && r.rootText?.length > 20 && r.requireType === "undefined" && r.processType === "undefined" && r.webSocketOk && r.resources.every(resource => resource.status === 200 && resource.bytes > 0) && report.preferences.contextIsolation && report.preferences.sandbox && !report.preferences.nodeIntegration && report.screenshot.bytes > 10000 && report.blockedRequests.length === 0 && !report.console.some(message => message.level === "error" || message.level === 3);
+  if (process.env.SFS_PROBE_REQUIRE_FULL_FRAMES === "1") report.smokePassed = report.smokePassed && r.fullFrameOptionVisible;
   event("smoke-completed", { passed: report.smokePassed });
   if (smoke) { window.destroy(); await finish(report.smokePassed ? 0 : 1); }
   else window.on("closed", () => finish(0));
@@ -124,7 +251,7 @@ async function finish(exitCode) {
   if (quitting) return;
   quitting = true;
   try { await stopBackend(); } catch (error) { report.stopError = String(error); exitCode = 1; }
-  if (smoke && !report.portClosedAfterStop) exitCode = 1;
+  if (smoke && (externalService ? !report.serviceAliveAfterDetach : !report.portClosedAfterStop)) exitCode = 1;
   report.completedAt = new Date().toISOString(); report.exitCode = exitCode;
   fs.writeFileSync(path.join(evidenceRoot, "desktop-report.json"), JSON.stringify(report, null, 2));
   console.log(JSON.stringify({ smokePassed: report.smokePassed, portClosedAfterStop: report.portClosedAfterStop, exitCode, evidenceRoot }));

@@ -1,0 +1,866 @@
+{
+  "sample_kind": "synthetic",
+  "frame_count": 61,
+  "size_consistent": true,
+  "all_rgba": false,
+  "fully_opaque_count": 61,
+  "empty_count": 0,
+  "art_quality": "not_evaluated",
+  "matting": "not_executed",
+  "frames": [
+    {
+      "file": "frame_000000.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "63f3a3849f05085611ab20bd9fc9387cab23f5d8eaceb8f9c9e9353f9243335d"
+    },
+    {
+      "file": "frame_000001.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": true,
+      "rgba_sha256": "63f3a3849f05085611ab20bd9fc9387cab23f5d8eaceb8f9c9e9353f9243335d"
+    },
+    {
+      "file": "frame_000002.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": true,
+      "rgba_sha256": "63f3a3849f05085611ab20bd9fc9387cab23f5d8eaceb8f9c9e9353f9243335d"
+    },
+    {
+      "file": "frame_000003.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "87af03b2efeb4fab70f6bb362b33c5a8d7ec1d859f72d138acef132ceb9a45f4"
+    },
+    {
+      "file": "frame_000004.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": true,
+      "rgba_sha256": "87af03b2efeb4fab70f6bb362b33c5a8d7ec1d859f72d138acef132ceb9a45f4"
+    },
+    {
+      "file": "frame_000005.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": true,
+      "rgba_sha256": "87af03b2efeb4fab70f6bb362b33c5a8d7ec1d859f72d138acef132ceb9a45f4"
+    },
+    {
+      "file": "frame_000006.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "1fe9b82b5bea678d80051a34d2124ba7b90a7bcdf09bb1b2a759a9b445c19c88"
+    },
+    {
+      "file": "frame_000007.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "9ea352d918a6b75ad6eaf862e8babac02e0fc49e0b847a0b7372069f3aaf6aad"
+    },
+    {
+      "file": "frame_000008.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": true,
+      "rgba_sha256": "9ea352d918a6b75ad6eaf862e8babac02e0fc49e0b847a0b7372069f3aaf6aad"
+    },
+    {
+      "file": "frame_000009.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "c77c6b897dd093d5bcbee3e0b37460453562992504119e9e7f2bca4b1c1f9033"
+    },
+    {
+      "file": "frame_000010.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": true,
+      "rgba_sha256": "c77c6b897dd093d5bcbee3e0b37460453562992504119e9e7f2bca4b1c1f9033"
+    },
+    {
+      "file": "frame_000011.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "bc379b99dbf652b57fa426daa99493d803e88a0b0732a7406d48f0a3e8254ee6"
+    },
+    {
+      "file": "frame_000012.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "e37f5ba7bb4e2ef0f7c3850ef0f63caa97a4373245b247c2068b110179b64b6a"
+    },
+    {
+      "file": "frame_000013.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": true,
+      "rgba_sha256": "e37f5ba7bb4e2ef0f7c3850ef0f63caa97a4373245b247c2068b110179b64b6a"
+    },
+    {
+      "file": "frame_000014.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "4cd9ca44b2bdddb3c29bff7f30efb8c8e8ecdf4f92f5bfc5c68930dbb24ea45a"
+    },
+    {
+      "file": "frame_000015.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "9e8811ea2fd776e6241688f3e84475f941e320fd6ef5a523c110a425f86fc159"
+    },
+    {
+      "file": "frame_000016.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "f3ac62ef0fe213c1f2b12ac095bfc2dc6a9c8c6452b8ee5728caacc5858e64cc"
+    },
+    {
+      "file": "frame_000017.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "b7bcb34b3c3f625dc457de971858b28063f706f57d72cc149737d6493a2ed794"
+    },
+    {
+      "file": "frame_000018.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "c0273d804d56d2c081d83fd6ecbb150d0046bb50e8d4043c1cbfea922821d0d0"
+    },
+    {
+      "file": "frame_000019.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "f2ee10da9825f580f51edb3b6732cfaf38c15ab4795e68dfff246d1f8b7e5c6c"
+    },
+    {
+      "file": "frame_000020.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "3328104076c8823cc6d81c11fcafee1056a35afeb2d02919068be1e94697310d"
+    },
+    {
+      "file": "frame_000021.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "7b2b0c7e3c5f61f741ce608e91d1c5dadd768996772262f1b0c39668ea5a4bb7"
+    },
+    {
+      "file": "frame_000022.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "25e7f477034107630f5ec45cc6156e7d1b84b49a0bed2556012d24c6f1d51e94"
+    },
+    {
+      "file": "frame_000023.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "7c11c7161ca84fd9f8c0be4e997cce86b62f1baab72049cd00615eb0dc2d32b3"
+    },
+    {
+      "file": "frame_000024.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "340c777f72ef449169b7c6235fb15c2abcc925b7131cf9fe5c147fb81eba2c4c"
+    },
+    {
+      "file": "frame_000025.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "ce3b123ab312a227df03be4a058aa0dab15d6001bd9d41d54f972083a17930da"
+    },
+    {
+      "file": "frame_000026.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "3ae511c3ebdd3833f250134bf8550f9d114285fd2a8e556334dcf31a7a39ab83"
+    },
+    {
+      "file": "frame_000027.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "3be5ab0212702fa2ed67c20d60d88ff8f46cfe549ea1e18ad9b1c11fa9f63aaf"
+    },
+    {
+      "file": "frame_000028.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "4637934bd84adc2eddb573a13ffbf2fc5a0e622a7de6486231ccb2dcfcb2d533"
+    },
+    {
+      "file": "frame_000029.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "c4a704275059c16c2dc33fa9d4dfefe3d2f2ec7efeab9157b72ce9a742795afd"
+    },
+    {
+      "file": "frame_000030.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "fa750596286a6a21aa0a15f42e44476b59d64b3ad37504e5612aa858674f3a83"
+    },
+    {
+      "file": "frame_000031.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "12be5edf933ef7e97ebf6ca60c7829edbedec5a1ee838e09fe315c9f5039a5fd"
+    },
+    {
+      "file": "frame_000032.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "61dbcf119223057a2f1860f15671defe517d41b093785f1c6848e8248bee4f87"
+    },
+    {
+      "file": "frame_000033.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "12e39d697f57a9b9de6d5fabf564973d5c815f74ffc4f79a7fd427a4487b9b36"
+    },
+    {
+      "file": "frame_000034.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "38dfa53a770cbb3afc7d7f5af734d9c96e4a7bac674256f7905ed2299e6f331e"
+    },
+    {
+      "file": "frame_000035.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "f8bbf6dee94b17241afdd11b5f35e16ac6acc17f754292479fb8de76eec74b22"
+    },
+    {
+      "file": "frame_000036.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "3beef24c63b7ba88cb67cc14c8a82e706ed679742c2562ceac6b884fac81f6bf"
+    },
+    {
+      "file": "frame_000037.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "472c483d1bc82cd0e60b0d5ecfe05320fd28d36b7c7dc597654f0f4bc5d19c4b"
+    },
+    {
+      "file": "frame_000038.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "501bd9654dc5e58298b3d6dbb7898e216e0bbfd095a64f90a659c8c053599907"
+    },
+    {
+      "file": "frame_000039.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "461cf3f93687c658158e5c1431cc2c77b04e3ba06f491e2289ce3f61eccc77f0"
+    },
+    {
+      "file": "frame_000040.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "6825f0271d0c380509a9ecc578db5aaa340ebe36072c3e8c19f4dfbed804c550"
+    },
+    {
+      "file": "frame_000041.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "1a16dad0fb57120edfaacecdf104ba4fb0e82c2d0f404675bf1397d98cddd7cd"
+    },
+    {
+      "file": "frame_000042.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "cd2cb8d78004b971136097dfa7605013c898c9778ff3f9d2f0a0ea8b59fdccab"
+    },
+    {
+      "file": "frame_000043.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "4f19a696ce94ed7062be529b700849eb7db3807815fb975f851fc55ad9753f05"
+    },
+    {
+      "file": "frame_000044.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "99efc47bdaa70a42f52e34720bad4387b7e3a516866dcc3681fc2b72324c28e4"
+    },
+    {
+      "file": "frame_000045.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "f2d6ccb09c5cad5377c3bf1661ee633e8015a13bb07cfd9a9658787b0fba2b77"
+    },
+    {
+      "file": "frame_000046.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "0279cd0e1e05d696369b7eb0472272008f8c9fa26d3a96af33f15ea0cd08d04c"
+    },
+    {
+      "file": "frame_000047.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "fc9c8b71c90286562aaa4df82b986fa995b9114d19e72003b57aaac4a855afea"
+    },
+    {
+      "file": "frame_000048.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "72cec10c098ec6cadaca7899625269ec914fa2b7e727116a86dfee004a7ab870"
+    },
+    {
+      "file": "frame_000049.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "f1e5eb9fcefea50730ac1e940747f221ebad8ec68711a359e2b25058ab88bfcc"
+    },
+    {
+      "file": "frame_000050.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "366563b8a537fd73dca0ff710ebec730c04086e202a35ef231fc5da8a3d5b326"
+    },
+    {
+      "file": "frame_000051.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "ff273a02f6b00fb3f88d07dce043cb4e2af3caa548f0e37b03a3abf3c7e50381"
+    },
+    {
+      "file": "frame_000052.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "d2b0f26ba420b61c3f339e9fcab3fd476257bcb998739c28ce9c1ae92aaf0847"
+    },
+    {
+      "file": "frame_000053.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "f7499a4f3157fe881ed5537cd309221d491812d650fb9723f3318c49c7be1d55"
+    },
+    {
+      "file": "frame_000054.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "970a2279abefdb0d8301a89afa469eab9f8907b620dfce3be09a848b61c2d7c5"
+    },
+    {
+      "file": "frame_000055.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "b5904e1c3979c9145d7f44568867c3e391a523257e81d6609fae63eee3d4470f"
+    },
+    {
+      "file": "frame_000056.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "d1af9b55245c1b69909ceb579e95c4e72a38d8d184a7bb94b9822ce61f334c16"
+    },
+    {
+      "file": "frame_000057.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "f6dc462d09d982e760d5edb17155aebbe2c44581c30472c4170eeabbf65db161"
+    },
+    {
+      "file": "frame_000058.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "e563557dda125375bc5aca5d13a3bf83a8fb1d68f1d87582ae3a06972ae2e907"
+    },
+    {
+      "file": "frame_000059.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": false,
+      "rgba_sha256": "0bdb3ef1f92d95951b7d6290abbd2594b0f7737ee2f50cc8d2510fbd75ecd9d5"
+    },
+    {
+      "file": "frame_000060.png",
+      "mode": "RGB",
+      "size": [
+        64,
+        48
+      ],
+      "alpha_min": 255,
+      "alpha_max": 255,
+      "fully_opaque": true,
+      "empty": false,
+      "duplicate_previous": true,
+      "rgba_sha256": "0bdb3ef1f92d95951b7d6290abbd2594b0f7737ee2f50cc8d2510fbd75ecd9d5"
+    }
+  ]
+}
