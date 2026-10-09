@@ -6,7 +6,7 @@
 
 - 工作区 `D:\AIJOB\tools\Sprite Motion Studio`，完整克隆位于 `framebaker` 子目录。
 - `upstream=https://github.com/taotao7/FrameBaker.git`，基准 `f9846c985156f83f750bcc654b56cae2a1960229`；开发分支 `feature/soldier-frame-studio-v1`，无 origin，未推送。上游历史与 MIT 署名保留。
-- P0 本地提交 `e09592c`：环境、上游许可/能力审计、原始回归和桌面可行性证据。P1 提交以本分支后续日志为准。
+- P0 本地提交 `e09592c`：环境、上游许可/能力审计、原始回归和桌面可行性证据。P1 实现与测试提交 `b3451bf`；后续交接文档提交见本分支日志。
 - 固定 Bun 位于父目录 `.runtime`；独立 Python `.venv-image` 仅安装 Pillow/pytest。Rembg、SAM2、MatAnyone、torch、CUDA 均未安装。
 
 ## P0 结论
@@ -38,6 +38,7 @@
 | 编译 CLI 从 C:\Windows\Temp 运行 | exit0，48帧/2秒 | `evidence/p1/compiled-cli.json` |
 | 48/61/120/300完整原始PNG | 全数保留且逐个解码 | `evidence/p1/extraction-report.md`、timing、contact sheet |
 | 真实 Electron/GUI/CLI | exit0，上传48步/48帧，首步时长1→2重开保留，CLI同项目修订99→200 | [p1-desktop.md](p1-desktop.md)，`desktop-live/` |
+| GUI/CLI同视频等价性 | 48个时序记录与全部PNG哈希一致，源索引0–47、总时长2/1秒 | `desktop-live/desktop-gui-cli-equality.json` |
 | API/WS/实例生命周期 | 未鉴权401，Host/Origin检查，同源cookieAPI200/WS打开，关GUI后共享实例仍可用 | CLI回归和桌面报告 |
 
 合成 PNG 为 RGB、全不透明；协调代理已打开48/300帧 contact sheet 和真实 GUI 截图。详见 [质量报告](evidence/p1/quality-report.md)。没有带场景小兵的授权视频，武器/头发/装备/变形等美术问题未验收。
@@ -52,6 +53,8 @@ T01–T04/T06 已有真实媒体测试；T05 中文/空格/括号/元字符的�
 - all-mode 兼容 worker 的结果未持久化：队列接收返回结果；RED→GREEN。
 - 缺失 ffprobe 误报素材错误：依赖错误贯通服务/CLI，真实裁剪 PATH 测试 RED→GREEN。
 - 严格 CSP 下 Pixi 无法建画布：使用同版本安装包兼容模块，禁止字符串代码生成测试与真实 GUI 都通过。
+
+独立只读复审确认上述锁/缓存/interrupted及依赖错误修复，在审查的 P1 范围内没有剩余阻塞，见 [复审记录](evidence/p1/review-final.md)。代码/说明的 whitespace 检查通过；原始失败日志的行尾空白按证据原样保留。
 
 限制：尚无每张源 PNG 的摘要，同尺寸且可解码的人工整图替换不会由结构检查检出；原视频有 SHA256。VFR 整数 tick 预览可量化，原始 timing 精确。P1 没有检查点恢复，重启后需重新提交；孤立 recovery 锁保守拒绝，需要核查 PID/日志。编译 CLI 仍需邻接源码与固定 Bun，P5 未完成。
 
