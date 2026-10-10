@@ -1,0 +1,10 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\background-window.test.ts:
+(pass) 完整抽帧命令在 Windows 显式隐藏后台控制台 [1416.56ms]
+(pass) 兼容任务命令在 Windows 显式隐藏后台控制台 [1226.65ms]
+
+ 2 pass
+ 0 fail
+ 8 expect() calls
+Ran 2 tests across 1 file. [3.01s]

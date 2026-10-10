@@ -1,0 +1,21 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\gui-launch.test.ts:
+14 |     const reportPath = join(workspace,".sfs/gui-evidence/desktop-report.json");
+15 |     let report:any;
+16 |     for(let i=0;i<100;i++) {
+17 |       try { report=JSON.parse(readFileSync(reportPath,"utf8"));break; } catch { await Bun.sleep(100); }
+18 |     }
+19 |     expect(report?.visibleStart?.visible).toBeTrue();
+                                               ^
+error: expect(received).toBeTrue()
+
+Received: false
+
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\gui-launch.test.ts:19:43)
+(fail) 正常GUI启动实际显示窗口，不只创建隐藏进程 [1009.36ms]
+
+ 0 pass
+ 1 fail
+ 2 expect() calls
+Ran 1 test across 1 file. [1095.00ms]

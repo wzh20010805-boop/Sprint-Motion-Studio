@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+- Windows 媒体探测、抽帧、兼容任务命令和 CLI 环境检查显式隐藏后台控制台；新增真实 Win32 启动参数与可见性回归，正常编辑器窗口仍可见。
+
+- 修复 Windows 双击 Start-SFS.cmd 后只有隐藏进程、没有窗口的问题；正常 GUI 启动不再使用 windowsHide，新增真实批处理启动的窗口可见性回归。
+
 - 小兵工坊 P0：固定上游历史，核验 Windows/Bun/FFmpeg/许可和 Electron 桌面路径，保留真实失败证据。
 - P1：完整显示帧、精确 PTS/有理数时长、不可变源素材、迁移前一致备份、共享 GUI/CLI 服务和持久任务；默认全部原始帧，显式旧采样。
 - 隔离服务只监听 loopback，检查 API/WS 令牌、Host、Origin；未准备的抠图明确失败。修复缓存复用校验、失效锁竞争和 interrupted GUI 收尾。

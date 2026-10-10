@@ -1,0 +1,9 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\gui-launch.test.ts:
+(pass) Start-SFS.cmd从其他目录启动时实际显示窗口，不只创建隐藏进程 [801.55ms]
+
+ 1 pass
+ 0 fail
+ 3 expect() calls
+Ran 1 test across 1 file. [896.00ms]

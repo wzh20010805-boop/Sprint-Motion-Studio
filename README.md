@@ -1,4 +1,26 @@
-# FrameBaker
+# Sprint Motion Studio
+
+基于 [FrameBaker](https://github.com/taotao7/FrameBaker) 二次开发的小兵动画素材工坊，保留上游 Git 历史和许可。
+
+当前开发版完成 P0 / P1：导入视频、完整保留原始帧与源时序、共享 GUI / CLI 工作区，以及 Windows 桌面启动。**输出仍有场景背景；自动抠图、角色对齐、Cocos 接入和独立发行包尚未完成。**
+
+完整使用说明见 [README_SFS.md](README_SFS.md)，开发状态和验证记录见 [docs/progress.md](docs/progress.md)。
+
+## Windows 11 快速启动
+
+准备 Node.js / npm、Python 3.11，并确认 FFmpeg / ffprobe 已在 PATH 中。在克隆后的仓库目录打开 PowerShell：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup_sfs.ps1 -IncludeDesktop -IncludeValidationPython
+.\sfs.cmd doctor --json
+.\Start-SFS.cmd
+```
+
+依赖安装到独立目录，不提交本机运行时、虚拟环境、用户素材或工作区数据。首次安装需要网络。MP4 请从项目编辑器的“导入 → 上传文件 → 全部原始帧”导入；素材库的视频入口暂未开放。
+
+## 上游 FrameBaker 说明
+
+以下保留上游说明。当前工具阶段支持范围以 [README_SFS.md](README_SFS.md) 为准。
 
 **Pixel-art frame-by-frame animation editor — a Bun full-stack app.**
 

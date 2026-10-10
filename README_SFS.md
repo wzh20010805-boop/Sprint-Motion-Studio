@@ -6,6 +6,8 @@
 
 ## 本机运行
 
+在 Windows 资源管理器打开 `D:\AIJOB\tools\Sprite Motion Studio\framebaker`，双击 `Start-SFS.cmd`。Windows 路径不需要前面的 `/`。窗口标题为“FrameBaker · 像素动画编辑器”。
+
 在本仓库打开 PowerShell：
 
 ```powershell

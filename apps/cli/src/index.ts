@@ -60,7 +60,7 @@ export async function run(args: string[]) {
       const evidence = join(workspace, ".sfs", "gui-evidence"); mkdirSync(evidence, { recursive: true });
       const log = openSync(join(workspace, ".sfs/gui.log"), "a");
       const child = spawn(electron, [join(root, "probes/desktop"), ...(flags.smoke ? ["--smoke"] : [])], {
-        cwd: root, windowsHide: true, detached: !flags.smoke, stdio: ["ignore", log, log],
+        cwd: root, windowsHide: !!flags.smoke, detached: !flags.smoke, stdio: ["ignore", log, log],
         env: { ...process.env, SFS_SERVICE_URL: service.url, SFS_SERVICE_TOKEN: service.token, P0_EVIDENCE_DIR: evidence, P0_PROFILE_DIR: join(workspace, ".sfs/gui-profile") },
       });
       closeSync(log);

@@ -1,0 +1,23 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\gui-launch.test.ts:
+ 8 |   const launcher = join(import.meta.dir,"../../Start-SFS.cmd");
+ 9 |   const child = Bun.spawn([process.env.ComSpec ?? "cmd.exe","/d","/c",`""${launcher}" --workspace "${workspace}" --json"`],{cwd:process.env.SystemRoot,env:{...process.env,SFS_TEST_VISIBLE_START:"1"},stdout:"pipe",stderr:"pipe"});
+10 |   const [exit,out,err] = await Promise.all([child.exited,new Response(child.stdout).text(),new Response(child.stderr).text()]);
+11 |   let info:any;
+12 |   try {
+13 |     expect(exit,err).toBe(0);
+                          ^
+error: The filename, directory name, or volume label syntax is incorrect.
+
+
+Expected: 0
+Received: 1
+
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\gui-launch.test.ts:13:22)
+(fail) Start-SFS.cmd从其他目录启动时实际显示窗口，不只创建隐藏进程 [29.47ms]
+
+ 0 pass
+ 1 fail
+ 1 expect() calls
+Ran 1 test across 1 file. [125.00ms]

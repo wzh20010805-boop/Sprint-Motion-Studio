@@ -1,0 +1,58 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\background-window.test.ts:
+39 |     });
+40 |     let error = "";
+41 |     child.stdout!.resume();
+42 |     child.stderr!.on("data", chunk => error += chunk);
+43 |     const code = await new Promise<number | null>((resolve, reject) => { child.on("error", reject); child.on("close", resolve); });
+44 |     expect(code, error).toBe(0);
+                             ^
+error: 53 |   if (signal?.aborted)
+54 |     onAbort();
+55 |   try {
+56 |     const [code, stdout, stderr] = await Promise.all([proc.exited, new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+57 |     checkCancelled(signal);
+58 |       throw new Error(`\u547D\u4EE4\u6267\u884C\u5931\u8D25 (${argv[0]}): ${stderr.trim().slice(-4000) || `\u9000\u51FA\u7801 ${code}`}`);
+                 ^
+error: 命令执行失败 (C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe): 退出码 116
+      at runPipelineCommand (B:/~BUN/root/no-console-worker.exe:58:13)
+
+Bun v1.4.2 (Windows x64)
+
+
+Expected: 0
+Received: 1
+
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\background-window.test.ts:44:25)
+(fail) 完整抽帧命令在 Windows 显式隐藏后台控制台 [8247.93ms]
+39 |     });
+40 |     let error = "";
+41 |     child.stdout!.resume();
+42 |     child.stderr!.on("data", chunk => error += chunk);
+43 |     const code = await new Promise<number | null>((resolve, reject) => { child.on("error", reject); child.on("close", resolve); });
+44 |     expect(code, error).toBe(0);
+                             ^
+error: 23 |   signal?.addEventListener("abort", onAbort, { once: true });
+24 |   try {
+25 |     const [code, stderr] = await Promise.all([proc.exited, new Response(proc.stderr).text()]);
+26 |     if (signal?.aborted)
+27 |       throw new JobCancelledError;
+28 |       throw new Error(`\u547D\u4EE4\u6267\u884C\u5931\u8D25 (${argv[0]}): ${stderr.trim().slice(-2000) || `\u9000\u51FA\u7801 ${code}`}`);
+                 ^
+error: 命令执行失败 (C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe): 退出码 116
+      at runCmd (B:/~BUN/root/no-console-worker.exe:28:13)
+
+Bun v1.4.2 (Windows x64)
+
+
+Expected: 0
+Received: 1
+
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\background-window.test.ts:44:25)
+(fail) 兼容任务命令在 Windows 显式隐藏后台控制台 [7232.91ms]
+
+ 0 pass
+ 2 fail
+ 2 expect() calls
+Ran 2 tests across 1 file. [15.86s]

@@ -1,0 +1,21 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\background-window.test.ts:
+22 |   try {
+23 |     const [code, stdout, stderr] = await Promise.all([proc.exited, new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+24 |     checkCancelled(signal);
+25 |     if (code !== 0) throw new Error(`命令执行失败 (${argv[0]}): ${stderr.trim().slice(-4000) || `退出码 ${code}`}`);
+26 |     // ffprobe 遇到部分解码错误可能仍返回 0；错误级别日志也不可当作完整成功。
+27 |     if (stderr.trim()) throw new Error(`媒体解码失败 (${argv[0]}): ${stderr.trim().slice(-4000)}`);
+                                      ^
+error: 媒体解码失败 (C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe): #< CLIXML
+<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04"><Obj S="progress" RefId="0"><TN RefId="0"><T>System.Management.Automation.PSCustomObject</T><T>System.Object</T></TN><MS><I64 N="SourceId">1</I64><PR N="Record"><AV>Preparing modules for first use.</AV><AI>0</AI><Nil /><PI>-1</PI><PC>-1</PC><T>Completed</T><SR>-1</SR><SD> </SD></PR></MS></Obj></Objs>
+      at runPipelineCommand (D:\AIJOB\tools\Sprite Motion Studio\framebaker\apps\server\src\pipeline\probe.ts:27:34)
+      at async <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\framebaker\tests\pipeline\background-window.test.ts:25:11)
+(fail) 完整抽帧命令启动的真实 Windows 子进程没有可见控制台 [828.50ms]
+(pass) 兼容任务命令启动的真实 Windows 子进程没有可见控制台 [488.60ms]
+
+ 1 pass
+ 1 fail
+ 2 expect() calls
+Ran 2 tests across 1 file. [1420.00ms]

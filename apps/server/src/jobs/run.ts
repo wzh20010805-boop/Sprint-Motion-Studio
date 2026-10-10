@@ -14,6 +14,7 @@ export async function runCmd(
 ): Promise<void> {
   if (signal?.aborted) throw new JobCancelledError();
   const proc = Bun.spawn(argv, {
+    windowsHide: true,
     stdout: "pipe",
     stderr: "pipe",
     env: env ? { ...process.env, ...env } : undefined,

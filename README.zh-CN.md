@@ -1,4 +1,8 @@
-# FrameBaker
+# Sprint Motion Studio
+
+本仓库是基于 [FrameBaker](https://github.com/taotao7/FrameBaker) 的小兵动画素材工坊二次开发，保留上游历史和许可。当前 P0 / P1 支持完整视频抽帧和共享 GUI / CLI，原始 PNG 仍含背景，自动抠图、对齐和 Cocos 接入尚未完成。
+
+本工具的启动和使用方法见 [README_SFS.md](README_SFS.md)，进度见 [docs/progress.md](docs/progress.md)。下方保留上游功能说明，当前阶段支持范围以上述文档为准。
 
 **像素风逐帧动画编辑器 —— Bun 全栈应用。**
 

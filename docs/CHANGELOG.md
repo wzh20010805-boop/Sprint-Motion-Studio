@@ -4,6 +4,10 @@ This document records features, changes, and bug fixes by release. Main releases
 
 ## [Unreleased]
 
+- Explicitly hide Windows background consoles for media probing, extraction, legacy jobs and CLI dependency checks. Add native startup-info and visibility regressions while keeping the editor window visible.
+
+- Fix Windows Start-SFS.cmd launching an invisible GUI process: normal GUI launches no longer use windowsHide, with a real batch-launch visibility regression test.
+
 - Soldier Frame Studio P0 audits pinned upstream history, Windows/Bun/FFmpeg/licenses and Electron feasibility, preserving real failure evidence.
 - P1 adds complete display frames, exact PTS/rational timing, immutable sources, consistent migration backups, shared GUI/CLI service and persisted jobs. All frames are default; legacy sampling is explicit.
 - The isolated entry binds loopback and verifies API/WS token, Host and Origin; unavailable matting fails explicitly. Cache reuse, concurrent stale-lock recovery and interrupted GUI finalization are repaired.

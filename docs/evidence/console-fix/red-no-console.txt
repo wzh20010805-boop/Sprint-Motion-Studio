@@ -1,0 +1,10 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\background-window.test.ts:
+(pass) 完整抽帧命令启动的真实 Windows 子进程没有可见控制台 [4663.84ms]
+(pass) 兼容任务命令启动的真实 Windows 子进程没有可见控制台 [4426.59ms]
+
+ 2 pass
+ 0 fail
+ 6 expect() calls
+Ran 2 tests across 1 file. [9.46s]

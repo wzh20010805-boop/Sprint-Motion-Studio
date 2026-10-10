@@ -1,0 +1,19 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\cli.test.ts:
+(pass) doctor输出一个JSON且模型未准备不会冒充可用 [89.85ms]
+(pass) 不支持的抽帧mode在创建服务前返回参数错误 [37.66ms]
+(pass) 未知命令给结构化错误并不把日志混入stdout [35.44ms]
+(pass) 不开GUI也能完成真实48帧流程，复用服务并返回真实失败退出码 [2762.65ms]
+(pass) 缺少ffprobe的真实视频导入返回依赖错误3而不是素材错误2 [456.95ms]
+
+tests\pipeline\runtime.test.ts:
+(pass) 服务实例锁在加载业务数据库之前拒绝第二个写入者 [28.65ms]
+(pass) 服务释放不能移除新实例的描述文件 [15.44ms]
+(pass) 鉴权拒绝未授权API、其他Origin、Host和WebSocket [0.84ms]
+(pass) 两个进程并发恢复失效锁时只有一个持有者 [565.35ms]
+
+ 9 pass
+ 0 fail
+ 52 expect() calls
+Ran 9 tests across 2 files. [4.11s]

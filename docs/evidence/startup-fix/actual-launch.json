@@ -1,0 +1,15 @@
+{
+  "launcher_pid": 32500,
+  "windows": [
+    {
+      "pid": 17736,
+      "window_handle": 397878,
+      "title": "FrameBaker · 像素动画编辑器"
+    }
+  ],
+  "stopped_hidden_pids": [
+    31532,
+    21288
+  ],
+  "visible_window_found": true
+}

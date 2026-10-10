@@ -15,7 +15,7 @@ export function checkCancelled(signal?: AbortSignal) {
 export async function runPipelineCommand(argv: string[], signal?: AbortSignal): Promise<string> {
   checkCancelled(signal);
   if (!argv[0] || !Bun.which(argv[0])) throw Object.assign(new Error(`缺少或无法执行媒体工具：${argv[0]}`), { code: "DEPENDENCY_MISSING" });
-  const proc = Bun.spawn(argv, { stdin: "ignore", stdout: "pipe", stderr: "pipe" });
+  const proc = Bun.spawn(argv, { windowsHide: true, stdin: "ignore", stdout: "pipe", stderr: "pipe" });
   const onAbort = () => { try { proc.kill(); } catch { /* 进程已经结束 */ } };
   signal?.addEventListener("abort", onAbort, { once: true });
   if (signal?.aborted) onAbort();

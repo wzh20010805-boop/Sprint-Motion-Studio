@@ -1,0 +1,15 @@
+{
+  "retained_job_states": [
+    "done"
+  ],
+  "windows": [
+    {
+      "Id": 10432,
+      "MainWindowTitle": "FrameBaker · 像素动画编辑器",
+      "window_handle": 856686
+    }
+  ],
+  "new_service_pid": 35072,
+  "old_service_pid": 26064,
+  "active_jobs_before": 0
+}

@@ -217,6 +217,13 @@ async function run() {
   report.preferences = window.webContents.getLastWebPreferences();
   await window.loadURL(`${origin}${pagePath}`);
   event("page-loaded", { url: window.webContents.getURL() });
+  if (process.env.SFS_TEST_VISIBLE_START === "1") {
+    report.visibleStart = { visible: window.isVisible(), minimized: window.isMinimized(), bounds: window.getBounds() };
+    event("visible-start", report.visibleStart);
+    window.destroy();
+    await finish(report.visibleStart.visible ? 0 : 1);
+    return;
+  }
   await delay(1500);
   report.renderer = await window.webContents.executeJavaScript(`(async () => {
     await document.fonts.ready;

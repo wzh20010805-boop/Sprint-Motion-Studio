@@ -5,7 +5,7 @@ import { repositoryRoot } from "./client";
 async function version(bin: string, flag: string) {
   const path = Bun.which(bin);
   if (!path) return { available: false, path: null, version: null };
-  const child = Bun.spawn([path, flag], { stdout: "pipe", stderr: "pipe" });
+  const child = Bun.spawn([path, flag], { windowsHide: true, stdout: "pipe", stderr: "pipe" });
   const [code, out, err] = await Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()]);
   return { available: code === 0, path, version: (out || err).split(/\r?\n/)[0] };
 }
