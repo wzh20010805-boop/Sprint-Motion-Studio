@@ -49,8 +49,8 @@
 .\sfs.exe doctor --json
 .\sfs.exe project list --json
 .\sfs.exe --help
-.\sfs.exe schemas
-.\sfs.exe mcp stdio --workspace "D:\素材工作区"
+.\sfs.exe schema --name recipe --json
+.\sfs.exe mcp --stdio --workspace "D:\素材工作区"
 ```
 
 完整参数、审核规则和 recipe 示例见 [P3–P5 使用说明](docs/p3-p5-guide.md)。项目提供 [本地 Skill](skills/soldier-frame-studio/SKILL.md)，不会自动修改全局 Codex 配置。
