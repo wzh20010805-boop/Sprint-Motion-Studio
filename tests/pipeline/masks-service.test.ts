@@ -10,11 +10,11 @@ test('真实CPU批量初稿、修笔、冲突、撤销、待人工任务与重�
  import {writeFileSync,readFileSync} from 'node:fs';
  import {createHash} from 'node:crypto';
  import {db,uid,STORAGE_ROOT} from './apps/server/src/db';
- import {runImageWorker,maskState,editMask,undoMask,reviewMask,prepareMatte,matteBatch} from './apps/server/src/pipeline/masks';
+ import {runImageWorker,maskState,editMask,undoMask,reviewMask,prepareMatte,matteBatch,imagePython} from './apps/server/src/pipeline/masks';
  import {createSceneMattingJob,getPersistedJob} from './apps/server/src/queue';
  import {app} from './apps/server/src/app';
  const project=uid();db.query('INSERT INTO projects(id,name,created_at) VALUES(?,?,?)').run(project,'P2 合成场景验收',Date.now());
- const python=join(process.cwd(),'.venv-image/Scripts/python.exe');
+ const python=imagePython();
  const image=join(STORAGE_ROOT,'soldier.png');
  const create=Bun.spawn([python,'-c',"from PIL import Image,ImageDraw; import sys; i=Image.new('RGB',(128,128),(140,190,160)); d=ImageDraw.Draw(i); d.rectangle((0,100,127,127),fill=(90,110,130)); d.ellipse((44,20,84,62),fill=(245,80,160)); d.rectangle((43,59,86,95),fill=(60,200,245)); d.rectangle((43,96,55,120),fill=(90,60,160)); d.rectangle((74,96,86,120),fill=(90,60,160)); d.line((106,12,106,105),fill=(240,230,80),width=2); i.save(sys.argv[1])",image],{stdout:'pipe',stderr:'pipe',windowsHide:true});
  assert.equal(await create.exited,0);

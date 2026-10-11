@@ -41,6 +41,14 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Setup Python for image workers
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.9'
+
+      - name: Prepare isolated image worker and verified CPU model
+        run: ./scripts/ci/prepare-image-worker.ps1
+
       - name: Setup Node for the Electron installer
         if: runner.os == 'Windows'
         uses: actions/setup-node@v4
@@ -67,6 +75,12 @@ jobs:
       - name: Test
         run: |
           bun test tests --reporter=junit --reporter-outfile=fixtures/generated/ci-artifacts/tests.xml 2>&1 | Tee-Object -FilePath fixtures/generated/ci-artifacts/tests.txt
+          exit $LASTEXITCODE
+
+      - name: Python image tests
+        run: |
+          $imagePython = if ($IsWindows) { '.venv-image/Scripts/python.exe' } else { '.venv-image/bin/python' }
+          & $imagePython -m pytest workers/image/tests -q
           exit $LASTEXITCODE
 
       - name: Retain validation evidence

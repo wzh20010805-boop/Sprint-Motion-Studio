@@ -12,7 +12,11 @@
     },
     "apps/cli": {
       "name": "@framebaker/cli",
-      "version": "0.5.0",
+      "version": "1.0.0",
+    },
+    "apps/desktop": {
+      "name": "sprite-motion-studio-desktop",
+      "version": "1.0.0",
     },
     "apps/server": {
       "name": "@framebaker/server",
@@ -148,6 +152,8 @@
     "require-from-string": ["require-from-string@2.0.2", "", {}, "sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw=="],
 
     "scheduler": ["scheduler@0.27.0", "", {}, "sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q=="],
+
+    "sprite-motion-studio-desktop": ["sprite-motion-studio-desktop@workspace:apps/desktop"],
 
     "strtok3": ["strtok3@10.3.5", "", { "dependencies": { "@tokenizer/token": "^0.3.0" } }, "sha512-ki4hZQfh5rX0QDLLkOCj+h+CVNkqmp/CMf8v8kZpkNVK6jGQooMytqzLZYUVYIZcFZ6yDB70EfD8POcFXiF5oA=="],
 

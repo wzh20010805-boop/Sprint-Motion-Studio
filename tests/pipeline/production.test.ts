@@ -11,14 +11,14 @@ test('P3/P4 shared HTTP roots, review gate, immutable export, stale publication,
  import {db,uid,STORAGE_ROOT} from './apps/server/src/db';
  import {createProject,getProject} from './apps/server/src/pipeline/service';
  import {ensureDefaultTimeline} from './apps/server/src/timeline';
- import {maskState,reviewMask,matteBatch,prepareMatte} from './apps/server/src/pipeline/masks';
+ import {maskState,reviewMask,matteBatch,prepareMatte,imagePython} from './apps/server/src/pipeline/masks';
  import {getPersistedJob,cancelJob} from './apps/server/src/queue';
  import {app} from './apps/server/src/app';
  import {importImages} from './apps/server/src/pipeline/images';
  import {submitRecipe} from './apps/server/src/pipeline/recipe';
  const project=createProject('P3 P4 验收'),{axis,track}=ensureDefaultTimeline(project.id);
  const image=join(STORAGE_ROOT,'source.png');
- const python=join(process.cwd(),'.venv-image/Scripts/python.exe');
+ const python=imagePython();
  const p=Bun.spawn([python,'-c',"from PIL import Image,ImageDraw; import sys; i=Image.new('RGB',(64,64),'white'); ImageDraw.Draw(i).rectangle((22,10,42,50),fill='red'); i.save(sys.argv[1])",image],{windowsHide:true});assert.equal(await p.exited,0);
  const ids=Array.from({length:3},()=>uid());for(let i=0;i<3;i++){let s=uid();db.query('INSERT INTO animation_steps(id,axis_id,idx,duration) VALUES(?,?,?,?)').run(s,axis.id,i,i+1);db.query("INSERT INTO frames(id,project_id,track_id,step_id,idx,raw_path,status) VALUES(?,?,?,?,?,?,'raw')").run(ids[i],project.id,track.id,s,i,image);}
  const request=async(path,body)=>{const r=await app.handle(new Request('http://localhost/api/v1'+path,body===undefined?undefined:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}));const text=await r.text();let parsed;try{parsed=JSON.parse(text);}catch{parsed={error:text};}return {code:r.status,...parsed};};
