@@ -15,9 +15,16 @@ concurrency:
 
 jobs:
   validate:
-    name: Typecheck and test
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    name: Typecheck and test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
 
     steps:
       - name: Checkout
@@ -26,13 +33,49 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.3.14
+          bun-version: 1.4.2
+
+      - name: Prepare FFmpeg and ffprobe
+        run: ./scripts/ci/prepare-ffmpeg.ps1
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Setup Node for the Electron installer
+        if: runner.os == 'Windows'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Prepare Windows desktop and isolated Bun
+        if: runner.os == 'Windows'
+        run: ./scripts/setup_sfs.ps1 -IncludeDesktop
+
+      - name: Verify runtime paths and versions
+        run: |
+          Get-Command bun, ffmpeg, ffprobe | Format-Table Name, Source
+          bun --revision
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          bun apps/cli/src/index.ts doctor --json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Typecheck
-        run: bun run typecheck
+        run: |
+          bun run typecheck 2>&1 | Tee-Object -FilePath fixtures/generated/ci-artifacts/typecheck.txt
+          exit $LASTEXITCODE
 
       - name: Test
-        run: bun test tests
+        run: |
+          bun test tests --reporter=junit --reporter-outfile=fixtures/generated/ci-artifacts/tests.xml 2>&1 | Tee-Object -FilePath fixtures/generated/ci-artifacts/tests.txt
+          exit $LASTEXITCODE
+
+      - name: Retain validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-${{ matrix.os }}
+          include-hidden-files: true
+          path: |
+            fixtures/generated/ci-artifacts/
+            fixtures/generated/background-window/**/console.json
+            fixtures/generated/gui-visible-start/**/.sfs/gui-evidence/desktop-report.json
