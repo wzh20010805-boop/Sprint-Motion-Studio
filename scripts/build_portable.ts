@@ -14,7 +14,8 @@ renameSync(join(destination,'electron.exe'),join(destination,'SpriteMotionStudio
 copy(join(root,'apps/desktop'),join(destination,'resources/app'));
  copy(join(root,'skills/soldier-frame-studio'),join(destination,'skills/soldier-frame-studio'));
  copy(join(root,'docs/p3-p5-guide.md'),join(destination,'CLI与Codex接入.md'));
- copy(join(root,'README.md'),join(destination,'项目说明.md'));
+ const projectReadme=readFileSync(join(root,'README.md'),'utf8').replace(/(?<!!)\[([^\]]+)\]\((?!https?:)([^)]+)\)/g,(_all,label,url)=>url.startsWith('docs/media/')?`[${label}](${url})`:`[${label}](https://github.com/wzh20010805-boop/Sprint-Motion-Studio/blob/main/${url})`);
+ writeFileSync(join(destination,'项目说明.md'),projectReadme);
  copy(join(root,'docs/media/sfs'),join(destination,'docs/media/sfs'));
  writeFileSync(join(destination,'GitHub仓库.url'),'[InternetShortcut]\r\nURL=https://github.com/wzh20010805-boop/Sprint-Motion-Studio\r\n');
  writeFileSync(join(destination,'下载更新.url'),'[InternetShortcut]\r\nURL=https://github.com/wzh20010805-boop/Sprint-Motion-Studio/releases/latest\r\n');
