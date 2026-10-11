@@ -1,6 +1,6 @@
 # Third-party notices / 第三方来源与许可登记
 
-2026-10-11 P5登记：便携包实际附固定Electron44.7.0、Bun1.4.2编译运行时、Python3.11.9独立标准库与本工具`.venv-image`依赖快照、Pillow12.3.0、Rembg2.0.76、ONNX Runtime1.31.0和本机FFmpeg8.1 GPL构建。最终依赖版本/构建配置见随包`sfs-package.json`与`licenses/FFmpeg-build.txt`；Python发行元数据及许可保留在site-packages，各二进制许可/Chromium notices/字体OFL随包保留。u2netp权重未附包，其源登记和Apache-2.0许可另附；明确离线导入的测试权重仅在隔离测试用户目录。以下P0/P2“尚未分发依赖”的描述为历史范围。对外发布仍须按FFmpeg实际GPL构建提供对应源码；本轮未公开分发或宣称发布许可审查完成。
+2026-10-11 P5登记：便携包实际附固定Electron44.7.0、Bun1.4.2编译运行时、Python3.11.9独立标准库与本工具`.venv-image`依赖快照、Pillow12.3.0、Rembg2.0.76、ONNX Runtime1.31.0和本机FFmpeg8.1 GPL构建。最终依赖版本/构建配置见随包`sfs-package.json`与`licenses/FFmpeg-build.txt`；Python发行元数据及许可保留在site-packages，各二进制许可/Chromium notices/字体OFL随包保留。u2netp权重未附包，其源登记和Apache-2.0许可另附；明确离线导入的测试权重仅在隔离测试用户目录。以下P0/P2“尚未分发依赖”的描述为历史范围。GitHub Release 同时提供对应 FFmpeg/Bun 源码归档、构建配方与源码取得/重建说明，见 docs/licenses/distribution-sources.md；未宣称独立复现全部静态库构建。旧记录为历史范围。
 
 核对日期：2026-10-10。范围：FrameBaker 固定上游 `f9846c985156f83f750bcc654b56cae2a1960229` 的源码、字体和 `bun.lock` 对应本地依赖。以下是开发阶段清单；后续 Electron/Python/模型/FFmpeg 的实际分发构建还需加入，不能把此清单当完整 Windows 便携包分发清单。
 
@@ -529,7 +529,7 @@ the full license text.
 ```text
 TypeBox
 
-Json Schema Type Builder with Static Type Resolution for TypeScript 
+Json Schema Type Builder with Static Type Resolution for TypeScript
 
 The MIT License (MIT)
 
@@ -1691,7 +1691,7 @@ Apache License
 
 Version 2.0, January 2004
 
-http://www.apache.org/licenses/ 
+http://www.apache.org/licenses/
 
 TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 

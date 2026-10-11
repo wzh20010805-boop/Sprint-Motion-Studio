@@ -16,7 +16,7 @@
     },
     "apps/server": {
       "name": "@framebaker/server",
-      "version": "0.5.0",
+      "version": "1.0.0",
       "dependencies": {
         "@framebaker/shared": "workspace:*",
         "@modelcontextprotocol/server": "^2.0.0",
@@ -26,7 +26,7 @@
     },
     "apps/web": {
       "name": "@framebaker/web",
-      "version": "0.5.0",
+      "version": "1.0.0",
       "dependencies": {
         "@framebaker/shared": "workspace:*",
         "lucide-react": "^0.544.0",
@@ -42,7 +42,7 @@
     },
     "packages/shared": {
       "name": "@framebaker/shared",
-      "version": "0.5.0",
+      "version": "1.0.0",
       "dependencies": {
         "canonicalize": "3.0.0",
       },
