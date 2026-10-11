@@ -1,0 +1,302 @@
+{
+  "startedAt": "2026-10-10T10:52:29.622Z",
+  "command": [
+    "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\desktop\\node_modules\\electron\\dist\\electron.exe",
+    "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\desktop",
+    "--smoke"
+  ],
+  "cwd": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker",
+  "packageRoot": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\desktop\\node_modules\\electron\\dist",
+  "packed": false,
+  "runtime": "D:\\AIJOB\\tools\\Sprite Motion Studio\\.runtime\\node_modules\\@oven\\bun-windows-x64\\bin\\bun.exe",
+  "backendRoot": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\probes\\desktop\\snapshot",
+  "profile": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p2-desktop\\81fff70a-9e7f-420c-8cbd-42fd21bc62fb\\.sfs\\p2-profile",
+  "pagePath": "/project/5e384de6-9f6f-4f62-818f-47e55a3a68e5",
+  "serviceManagement": "attach-existing",
+  "versions": {
+    "node": "24.21.0",
+    "acorn": "8.18.0",
+    "ada": "4.0.0",
+    "amaro": "1.1.11",
+    "ares": "1.34.8",
+    "brotli": "1.2.0",
+    "cldr": "48.0",
+    "icu": "78.2",
+    "llhttp": "9.4.3",
+    "merve": "1.2.2",
+    "modules": "149",
+    "napi": "10",
+    "nbytes": "0.1.4",
+    "ncrypto": "0.0.1",
+    "nghttp2": "1.70.0",
+    "nghttp3": "",
+    "ngtcp2": "",
+    "openssl": "0.0.0",
+    "simdjson": "4.6.7",
+    "simdutf": "7.7.0",
+    "sqlite": "3.53.4",
+    "tz": "2026d",
+    "undici": "7.29.1",
+    "unicode": "17.0",
+    "uv": "1.52.1",
+    "uvwasi": "0.0.23",
+    "v8": "15.2.124.28-electron.0",
+    "zlib": "1.3.2.1-motley",
+    "zstd": "1.6.0",
+    "electron": "44.7.0",
+    "chrome": "152.0.7977.130"
+  },
+  "events": [
+    {
+      "kind": "external-service-attached",
+      "at": "2026-10-10T10:52:29.704Z",
+      "url": "http://127.0.0.1:55364/",
+      "cookieConfigured": true
+    },
+    {
+      "kind": "page-loaded",
+      "at": "2026-10-10T10:52:29.898Z",
+      "url": "http://127.0.0.1:55364/project/5e384de6-9f6f-4f62-818f-47e55a3a68e5"
+    },
+    {
+      "kind": "smoke-completed",
+      "at": "2026-10-10T10:52:43.130Z",
+      "passed": true
+    },
+    {
+      "kind": "external-service-detached",
+      "at": "2026-10-10T10:52:43.138Z",
+      "serviceAlive": true
+    }
+  ],
+  "console": [
+    {
+      "level": "warning",
+      "message": "Canvas2D: Multiple readback operations using getImageData are faster with the willReadFrequently attribute set to true. See: https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-will-read-frequently"
+    },
+    {
+      "level": "warning",
+      "message": "Canvas2D: Multiple readback operations using getImageData are faster with the willReadFrequently attribute set to true. See: https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-will-read-frequently"
+    }
+  ],
+  "blockedRequests": [],
+  "backend": {
+    "url": "http://127.0.0.1:55364/",
+    "owned": false
+  },
+  "authCookieConfigured": true,
+  "authCookieAttributes": {
+    "name": "sfs_token",
+    "httpOnly": true,
+    "sameSite": "strict",
+    "path": "/"
+  },
+  "health": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "name": "Sprite Motion Studio",
+      "instance_id": "bdf6da1b-bc66-4c3f-abd7-3c318aa2759b",
+      "pid": 24828
+    }
+  },
+  "csp": "default-src 'self'; script-src 'self' 'sha256-MB902kHKpse3SwX9SJ5zYFq5S4eMmQ+3mm4rGBeKEzo='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' data: blob: ws://127.0.0.1:55364; worker-src 'self' blob:; media-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-src 'none'; form-action 'self'",
+  "preferences": {
+    "allowRunningInsecureContent": false,
+    "contextIsolation": true,
+    "disableDialogs": false,
+    "disablePopups": false,
+    "enableBlinkFeatures": "",
+    "experimentalFeatures": false,
+    "javascript": true,
+    "nodeIntegration": false,
+    "nodeIntegrationInSubFrames": false,
+    "nodeIntegrationInWorker": false,
+    "safeDialogs": false,
+    "safeDialogsMessage": "",
+    "sandbox": true,
+    "webSecurity": true,
+    "webviewTag": false
+  },
+  "renderer": {
+    "title": "小兵素材工坊 · Sprite Motion Studio",
+    "rootText": "荧光小兵 · P2 合成验收\n3 帧\n场景抠图与修正\n导入素材\n播放预览\n导出动画\n帧资产\n拖动缩略图到下方轨道单元格；资产可重复使用\nCtrl+点击 多选 · Shift+点击 范围选 · 右键 菜单\n#1\nraw\n#2\nraw\n#3\nraw\n100%\n缩放\n100%\n旋转\n0°\n透明\n100%\n×1\n攻击特效\n烈焰\n利刃\n笔宽 18\n删除特效\n缩放 100%\n透明 100%\n选中任意单元格即可绘制；拖动特效改变位置，复制到其他步骤继续调整\nSpace\n+ 拖动：移动画布\n动画轴\nDefault\n轨道：后 → 前\n添加轨道\n添加步骤\n删除步骤\n− 时长\n+ 时长\n顶层优先显示\n#1\n×1\n#2\n×1\n#3\n×1\nMain",
+    "fullFrameOptionVisible": false,
+    "buttonLabels": [
+      "返回项目列表",
+      "场景抠图与修正",
+      "导入素材",
+      "播放预览",
+      "导出动画",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "复制帧",
+      "删除帧",
+      "标记关键帧",
+      "100%",
+      "100%",
+      "0°",
+      "100%",
+      "烈焰",
+      "利刃",
+      "删除特效",
+      "Default",
+      "添加动画轴",
+      "删除动画轴",
+      "添加轨道",
+      "添加步骤",
+      "删除步骤",
+      "− 时长",
+      "+ 时长",
+      "隐藏轨道",
+      "锁定轨道",
+      "上移图层",
+      "下移图层"
+    ],
+    "requireType": "undefined",
+    "processType": "undefined",
+    "globalType": "undefined",
+    "fontsStatus": "loaded",
+    "webSocketOk": true,
+    "resources": [
+      {
+        "pathname": "/api/health",
+        "status": 200,
+        "bytes": 106,
+        "contentType": "application/json;charset=utf-8"
+      },
+      {
+        "pathname": "/pixi.min.js",
+        "status": 200,
+        "bytes": 813505,
+        "contentType": "text/javascript; charset=utf-8"
+      },
+      {
+        "pathname": "/fonts/fusion-pixel-12px-proportional-zh_hans.otf.woff2",
+        "status": 200,
+        "bytes": 712624,
+        "contentType": "font/woff2"
+      },
+      {
+        "pathname": "/imageops/imageOps.worker.js",
+        "status": 200,
+        "bytes": 17675,
+        "contentType": "text/javascript; charset=utf-8"
+      }
+    ]
+  },
+  "p2Scenario": {
+    "screenshots": [
+      {
+        "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p2\\desktop\\2026-10-10T10-52-29.144Z\\p2-editor-light.png",
+        "size": {
+          "width": 1360,
+          "height": 900
+        },
+        "bytes": 93351
+      },
+      {
+        "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p2\\desktop\\2026-10-10T10-52-29.144Z\\p2-cutout-brush-light.png",
+        "size": {
+          "width": 1360,
+          "height": 900
+        },
+        "bytes": 153279
+      },
+      {
+        "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p2\\desktop\\2026-10-10T10-52-29.144Z\\p2-black-inspection.png",
+        "size": {
+          "width": 1360,
+          "height": 900
+        },
+        "bytes": 143572
+      },
+      {
+        "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p2\\desktop\\2026-10-10T10-52-29.144Z\\p2-white-inspection.png",
+        "size": {
+          "width": 1360,
+          "height": 900
+        },
+        "bytes": 142383
+      },
+      {
+        "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p2\\desktop\\2026-10-10T10-52-29.144Z\\p2-alpha-inspection.png",
+        "size": {
+          "width": 1360,
+          "height": 900
+        },
+        "bytes": 140542
+      },
+      {
+        "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p2\\desktop\\2026-10-10T10-52-29.144Z\\p2-cutout-dark.png",
+        "size": {
+          "width": 1360,
+          "height": 900
+        },
+        "bytes": 141945
+      },
+      {
+        "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p2\\desktop\\2026-10-10T10-52-29.144Z\\p2-home-light.png",
+        "size": {
+          "width": 1360,
+          "height": 900
+        },
+        "bytes": 243801
+      },
+      {
+        "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p2\\desktop\\2026-10-10T10-52-29.144Z\\p2-home-dark.png",
+        "size": {
+          "width": 1360,
+          "height": 900
+        },
+        "bytes": 298139
+      },
+      {
+        "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p2\\desktop\\2026-10-10T10-52-29.144Z\\p2-materials-dark.png",
+        "size": {
+          "width": 1360,
+          "height": 900
+        },
+        "bytes": 223008
+      },
+      {
+        "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p2\\desktop\\2026-10-10T10-52-29.144Z\\p2-settings-dark.png",
+        "size": {
+          "width": 1360,
+          "height": 900
+        },
+        "bytes": 155840
+      }
+    ],
+    "checks": [
+      "Pointer region selection",
+      "Batch Rembg in GUI creates 3 persistent masks",
+      "Actual pointer stroke, save and page reload preserve manual mask",
+      "Persisted undo restores automatic mask"
+    ],
+    "reviewState": true,
+    "shape": {
+      "fits": true,
+      "font": "\"Segoe UI\", \"Microsoft YaHei UI\", \"Microsoft YaHei\", sans-serif",
+      "panelRadius": "28px 35px 24px 30px"
+    },
+    "passed": true
+  },
+  "screenshot": {
+    "path": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p2\\desktop\\2026-10-10T10-52-29.144Z\\desktop-framebaker.png",
+    "size": {
+      "width": 1360,
+      "height": 900
+    },
+    "bytes": 155840
+  },
+  "smokePassed": true,
+  "externalServicePreserved": true,
+  "serviceAliveAfterDetach": true,
+  "completedAt": "2026-10-10T10:52:43.138Z",
+  "exitCode": 0
+}

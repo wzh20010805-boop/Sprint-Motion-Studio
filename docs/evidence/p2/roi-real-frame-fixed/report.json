@@ -1,0 +1,36 @@
+{
+  "source": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\workspaces\\default\\projects\\ab89e225-ec8a-4ecf-bd05-ef0956e95ad5\\raw\\ad729650-26de-4e76-a05d-d9675ec84849\\81923145-7cd0-4f0e-8884-e6d6c28db82e\\frame_000008.png",
+  "source_sha256": "71a25c470c46765bfe0207d015f1e837e20b59158201cd3465c4a86591dd65d8",
+  "checks": [
+    {
+      "case": "wrong-background",
+      "rejected": "REGION_NO_FOREGROUND: 帧 1 的区域几乎全是背景。请框住角色及装备，或使用完整画面重新生成；上一版保留。",
+      "no_foreground_written": true
+    },
+    {
+      "case": "character",
+      "result": {
+        "frames": [
+          {
+            "id": "frame9",
+            "width": 1280,
+            "height": 720,
+            "method": "edge_color",
+            "reasons": [],
+            "foreground_fraction": 0.1405002170138889,
+            "visible_fraction": 0.13765299479166668,
+            "soft_pixels": 3102,
+            "alpha_range": [
+              0,
+              255
+            ]
+          }
+        ],
+        "session_count": 1
+      },
+      "hair_face_boots_shield_sword_retained": true
+    }
+  ],
+  "source_unchanged": true,
+  "elapsed_seconds": 1.9689999999973224
+}

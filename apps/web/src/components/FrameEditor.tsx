@@ -6,6 +6,7 @@ import { attackBrushBodyScale, attackEffectBounds, attackEffectLocalPoint, attac
 import { fitScaleForBounds, transformedFrameBounds } from "../frameGeometry";
 import { useT } from "../i18n";
 import { canvasColors, useTheme } from "../theme";
+import { textureEvictions } from '../textureBudget';
 
 const { Application, Assets, Container, Graphics, Sprite, Texture } = (
   window as typeof window & { PIXI: typeof Pixi }
@@ -58,6 +59,18 @@ interface PixiCtx {
 export default function FrameEditor({ frame, composite, effect, effects, editable, effectEditable, prev, next, v, zoom, fitRequest, onion, showGrid, playing, brushMode, brushColor, brushSize, attackBrush, onPatch, onEffectChange, onCanvasBlank }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const pixi = useRef<PixiCtx | null>(null);
+  const textureCache=useRef(new Map<string,{texture:Pixi.Texture;used:number}>());
+  const textureClock=useRef(0);
+  const desiredTextures=useRef(new Set<string>());
+  desiredTextures.current=new Set([frame,prev,next,...composite].filter((f):f is Frame=>!!f).map(f=>frameImageUrl(f.id,v)));
+  const trimTextures=()=>{
+    const p=pixi.current,active=new Set(desiredTextures.current);
+    const visible=p?[p.main,p.prevS,p.nextS,...p.compositeLayer.children].filter(s=>s instanceof Sprite&&s.visible) as Pixi.Sprite[]:[];
+    for(const [url,value] of textureCache.current)if(visible.some(sprite=>sprite.texture===value.texture))active.add(url);
+    const ages=new Map([...textureCache.current].map(([url,value])=>[url,value.used]));
+    for(const url of textureEvictions(ages,active,8)){textureCache.current.delete(url);void Assets.unload(url).catch(()=>{});}
+  };
+  const loadTexture=async(f:Frame)=>{const url=frameImageUrl(f.id,v);const texture:Pixi.Texture=await Assets.load(url);if(!pixi.current){void Assets.unload(url).catch(()=>{});throw new Error('编辑器已关闭');}textureCache.current.set(url,{texture,used:++textureClock.current});return texture;};
   const [ready, setReady] = useState(false);
   const [spaceHeld, setSpaceHeld] = useState(false);
   const [panning, setPanning] = useState(false);
@@ -295,6 +308,8 @@ export default function FrameEditor({ frame, composite, effect, effects, editabl
         pixi.current.app.destroy(true, { children: true });
         pixi.current = null;
       }
+      for(const url of textureCache.current.keys())void Assets.unload(url).catch(()=>{});
+      textureCache.current.clear();
       setReady(false);
     };
   }, []);
@@ -337,13 +352,15 @@ export default function FrameEditor({ frame, composite, effect, effects, editabl
       }
       try {
         // 图片 URL 带 .png 后缀（服务端双路由别名），Assets 按扩展名命中 texture parser
-        const tex: Pixi.Texture = await Assets.load(frameImageUrl(f.id, v));
-        if (dead) return;
+        const tex: Pixi.Texture = await loadTexture(f);
+        if (dead) {trimTextures();return;}
         tex.source.scaleMode = "nearest"; // 像素风：最近邻缩放
         sprite.texture = tex;
         applyTransform(sprite, f, isMain);
         if (isMain) p.spriteFrames.set(sprite, f);
-        sprite.visible = isMain ? true : onionRef.current;
+        // 异步纹理可能晚于“切到播放”的隐藏 effect 完成，必须读取当前播放状态。
+        sprite.visible = isMain ? true : onionRef.current && !playingRef.current;
+        trimTextures();
       } catch {
         sprite.visible = false;
       }
@@ -373,8 +390,8 @@ export default function FrameEditor({ frame, composite, effect, effects, editabl
     const others = composite.filter((f) => f.id !== frame?.id);
     Promise.all(others.map(async (f) => {
       try {
-        const tex: Pixi.Texture = await Assets.load(frameImageUrl(f.id, v));
-        if (dead) return null;
+        const tex: Pixi.Texture = await loadTexture(f);
+        if (dead) {trimTextures();return null;}
         tex.source.scaleMode = "nearest";
         const s = new Sprite(tex); s.anchor.set(0.5); s.position.set(f.offset_x,f.offset_y); s.scale.set(f.scale); s.rotation=f.rotation; s.alpha=f.opacity; s.eventMode="none";
         p.spriteFrames.set(s, f);
@@ -388,6 +405,7 @@ export default function FrameEditor({ frame, composite, effect, effects, editabl
       let oi=0;
       for(const f of composite){if(f.id===frame?.id)p.compositeLayer.addChild(p.main);else {const s=sprites[oi++];if(s)p.compositeLayer.addChild(s);}}
       if (!initialFitDoneRef.current && updateFit()) initialFitDoneRef.current = true;
+      trimTextures();
     });
     return () => { dead = true; };
   }, [composite, frame?.id, ready, updateFit, v]);

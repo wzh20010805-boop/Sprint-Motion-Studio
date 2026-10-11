@@ -50,7 +50,7 @@ export default function MaterialImportModal({ initialTab, initialReferenceMateri
   useModalEscClose(onClose);
   const [tab, setTab] = useState<"upload" | "cli">(initialTab);
   const [fps, setFps] = useState(8);
-  const [autoMatting, setAutoMatting] = useState(true); // 默认勾选抠图去背
+  const [autoMatting, setAutoMatting] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [providerId, setProviderId] = useState("");
   const [model, setModel] = useState("");
@@ -66,6 +66,7 @@ export default function MaterialImportModal({ initialTab, initialReferenceMateri
   const [cropDismissed, setCropDismissed] = useState(false); // 「是否需要剪裁」确认行已回答
   const fileRef = useRef<HTMLInputElement>(null);
   const cfg = useServerConfig();
+  const sfsLocal = !!cfg?.sfs;
   const providerSelection = resolveProviderSelection(cfg?.gen.providers ?? [], providerId, model, { videoOnly: mediaKind === "video", preferI2v: mediaKind === "video" && references.length > 0 });
   const hasProvider = !!providerSelection.providerId;
   const workflow = useImportWorkflow(onDone);
@@ -85,7 +86,7 @@ export default function MaterialImportModal({ initialTab, initialReferenceMateri
       const fd = new FormData();
       fd.append("file", file);
       fd.append("fps", String(fps));
-      fd.append("autoMatting", String(autoMatting));
+      fd.append("autoMatting", String(sfsLocal ? false : autoMatting));
       if (folderId) fd.append("folderId", folderId);
       const r = await api.uploadMaterial(fd);
       if ("jobId" in r) {
@@ -165,12 +166,12 @@ export default function MaterialImportModal({ initialTab, initialReferenceMateri
           <button type="button" className={`tab ${tab === "upload" ? "active" : ""}`} onClick={() => { setTab("upload"); resetAll(); }}>
             <Upload size={14} /> {t("msg.upload_files")}
           </button>
-          <button type="button" className={`tab ${tab === "cli" ? "active" : ""}`} onClick={() => { setTab("cli"); resetAll(); }}>
+          <button type="button" disabled={sfsLocal || !cfg} className={`tab ${tab === "cli" ? "active" : ""}`} onClick={() => { setTab("cli"); resetAll(); }}>
             <Sparkles size={14} /> {t("msg.generate")}
           </button>
         </div>
 
-        {tab === "upload" ? (
+        {tab === "upload" || sfsLocal ? (
           <>
             <div className="form-row">
               <label>{t("msg.multi_select_png_jpg_1_material_each_gif_mp4_split_into")}</label>
@@ -230,14 +231,14 @@ export default function MaterialImportModal({ initialTab, initialReferenceMateri
               </div>
             )}
 
-            {hasVideo && (
+            {hasVideo && !sfsLocal && (
               <div className="form-row">
                 <label>{t("msg.video_extract_fps_fps_applies_to_all_videos", { fps })}</label>
                 <input type="range" min={1} max={24} value={fps} onChange={(e) => setFps(Number(e.target.value))} />
               </div>
             )}
 
-            <MattingOption checked={autoMatting} onChange={setAutoMatting} />
+            {sfsLocal ? <div className="hint" data-testid="sfs-library-retention">{t("sfs.libraryRetention")}</div> : <MattingOption checked={autoMatting} onChange={setAutoMatting} />}
 
             {finished && (
               <div className="up-summary">
@@ -255,7 +256,7 @@ export default function MaterialImportModal({ initialTab, initialReferenceMateri
                   type="button"
                   whileTap={{ scale: 0.95 }}
                   className="px-btn accent"
-                  disabled={items.length === 0 || submitting}
+                  disabled={items.length === 0 || submitting || !cfg}
                   onClick={submitUpload}
                 >
                   <Upload size={14} /> {submitting ? t("msg.uploading") : t("msg.upload_n_files", { n: items.length || "" })}

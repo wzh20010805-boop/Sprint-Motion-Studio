@@ -1,5 +1,7 @@
 # Third-party notices / 第三方来源与许可登记
 
+2026-10-11 P5登记：便携包实际附固定Electron44.7.0、Bun1.4.2编译运行时、Python3.11.9独立标准库与本工具`.venv-image`依赖快照、Pillow12.3.0、Rembg2.0.76、ONNX Runtime1.31.0和本机FFmpeg8.1 GPL构建。最终依赖版本/构建配置见随包`sfs-package.json`与`licenses/FFmpeg-build.txt`；Python发行元数据及许可保留在site-packages，各二进制许可/Chromium notices/字体OFL随包保留。u2netp权重未附包，其源登记和Apache-2.0许可另附；明确离线导入的测试权重仅在隔离测试用户目录。以下P0/P2“尚未分发依赖”的描述为历史范围。对外发布仍须按FFmpeg实际GPL构建提供对应源码；本轮未公开分发或宣称发布许可审查完成。
+
 核对日期：2026-10-10。范围：FrameBaker 固定上游 `f9846c985156f83f750bcc654b56cae2a1960229` 的源码、字体和 `bun.lock` 对应本地依赖。以下是开发阶段清单；后续 Electron/Python/模型/FFmpeg 的实际分发构建还需加入，不能把此清单当完整 Windows 便携包分发清单。
 
 ## FrameBaker
@@ -1801,4 +1803,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+# P2 local additions (2026-10-10)
+
+Rembg 2.0.76 CPU and ONNX Runtime 1.31.0 are installed only in this tool's isolated `.venv-image` environment. The u2netp model was fetched from the [official Rembg model release](https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx), with MD5 `8e83ca70e441ab06c318d82300c84806` and SHA256 `309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8`. Model cache and virtual environment are not included in Git or a redistributable package. Original project/model notices must be retained when P5 packages these dependencies. See [Rembg](https://github.com/danielgatis/rembg) and [U-2-Net](https://github.com/xuebinqin/U-2-Net).
+
+`CandyDoodle.tsx` is an original local vector illustration generated for this project; the redesigned UI uses system fonts rather than adding a third-party font dependency. Existing upstream copyright and bundled font notices remain retained.
 

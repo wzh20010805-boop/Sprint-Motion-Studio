@@ -1,0 +1,13 @@
+{
+  "job_id": "428ffb4c-c628-4660-a58c-e990aaeac4ce",
+  "status": "waiting_user",
+  "frame_count": 31,
+  "methods": {
+    "edge_color": 31
+  },
+  "originals_unchanged": true,
+  "old_revisions_retained": true,
+  "frame9_shield_opaque": true,
+  "frame9_rgba": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\workspaces\\default\\projects\\ab89e225-ec8a-4ecf-bd05-ef0956e95ad5\\masks\\1fba7129-3804-4300-9ed2-bfdc3d267a8f\\1bb4bb72-ad18-4d23-8d8f-0bbcce74f76c\\foreground.png",
+  "frame9_preview": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\workspaces\\default\\projects\\ab89e225-ec8a-4ecf-bd05-ef0956e95ad5\\masks\\1fba7129-3804-4300-9ed2-bfdc3d267a8f\\1bb4bb72-ad18-4d23-8d8f-0bbcce74f76c\\preview.png"
+}

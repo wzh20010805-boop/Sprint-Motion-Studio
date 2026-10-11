@@ -60,7 +60,7 @@ const MaterialCard = memo(function MaterialCard({
       onContextMenu={(e) => onContextMenu(e, m.id)}
     >
       <div className="thumb">
-        {m.kind === "video" ? (
+        {m.kind === "video" && !/\.gif$/i.test(m.raw_path || '') ? (
           <video src={materialFileUrl(m.id, imgV, "raw")} muted playsInline preload="metadata" draggable={false} />
         ) : (
           <img src={materialImageUrl(m.id, imgV, "processed", 320)} alt="" draggable={false} loading="lazy" decoding="async" />
@@ -123,6 +123,7 @@ export default function MaterialsPage() {
   const [zoom, setZoom] = useFileZoom();
   const theme = useTheme();
   const cfg = useServerConfig();
+  const sfsLocal = !!cfg?.sfs;
   const openMaterialEditor = useMaterialEditor();
   useModalEscClose(() => setRenameTarget(null), Boolean(renameTarget) && !renameBusy);
 
@@ -588,6 +589,7 @@ export default function MaterialsPage() {
           {
             label: t("msg.batch_matte_n", { n: selectedIds.size }),
             icon: <Wand2 size={13} />,
+            disabled: sfsLocal,
             onClick: () => void requestBatchMatting([...selectedIds]),
           },
           {
@@ -632,9 +634,12 @@ export default function MaterialsPage() {
             ...(ctxMat.kind === "video"
               ? ([
                   {
-                    label: t("videoExtract.open"),
+                    label: sfsLocal ? t('sfs.libraryExtractAll') : t("videoExtract.open"),
                     icon: <Film size={13} />,
-                    onClick: () => setExtractId(ctxMat.id),
+                    onClick: () => {
+                      if (!sfsLocal) { setExtractId(ctxMat.id); return; }
+                      void api.extractMaterial(ctxMat.id, {}).then(() => toast(t('sfs.libraryExtractQueued'))).catch(e => notify((e as Error).message));
+                    },
                   },
                 ] satisfies CtxMenuItem[])
               : ([
@@ -686,6 +691,7 @@ export default function MaterialsPage() {
                   {
                     label: ctxMat.status === "matted" ? t("msg.re_matte") : t("msg.matting"),
                     icon: <Wand2 size={13} />,
+                    disabled: sfsLocal,
                     onClick: () => void matteOne(ctxMat.id, ctxMat.status === "matted"),
                   },
                   ...(ctxMat.status === "matted"
@@ -780,7 +786,7 @@ export default function MaterialsPage() {
               <Package size={28} /> {t("msg.materials")}
             </h1>
             <p className="subtitle">
-              {t("msg.count_materials_generate_upload_matte_review_import_mod", {
+              {t(sfsLocal ? 'sfs.librarySummary' : "msg.count_materials_generate_upload_matte_review_import_mod", {
                 count: visible.length,
                 mod: isMac ? "Cmd" : "Ctrl",
               })}
@@ -802,6 +808,7 @@ export default function MaterialsPage() {
                 whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.96 }}
                 className="px-btn accent"
+                disabled={sfsLocal || !cfg}
                 onClick={() => setImportTab("cli")}
               >
                 <Sparkles size={16} /> {t("msg.ai_generate")}
@@ -815,7 +822,7 @@ export default function MaterialsPage() {
           {materials.length === 0 ? (
             <div className="empty">
               <Package size={32} />
-              <p>{t("msg.materials_empty_upload_or_ai_generate_some_first")}</p>
+              <p>{t(sfsLocal ? 'sfs.libraryEmpty' : "msg.materials_empty_upload_or_ai_generate_some_first")}</p>
             </div>
           ) : visible.length === 0 ? (
             <div className="empty">
@@ -870,7 +877,7 @@ export default function MaterialsPage() {
                 </IconBtn>
                 <IconBtn
                   title={t("msg.batch_matte_raw_only")}
-                  disabled={busy}
+                  disabled={busy || sfsLocal}
                   onClick={() => void requestBatchMatting([...selectedIds])}
                 >
                   <Wand2 size={14} />

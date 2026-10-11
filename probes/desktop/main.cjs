@@ -209,7 +209,7 @@ async function run() {
   });
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => callback({ responseHeaders: { ...details.responseHeaders, "Content-Security-Policy": [csp] } }));
   session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
-  window = new BrowserWindow({ width: 1360, height: 900, show: !smoke, autoHideMenuBar: true, title: "FrameBaker P0 本机探针", webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, nodeIntegrationInWorker: false, webSecurity: true, backgroundThrottling: false, offscreen: smoke && process.env.SFS_PROBE_SCENARIO === "p1-editor" } });
+  window = new BrowserWindow({ width: 1360, height: 900, show: !smoke, autoHideMenuBar: true, title: "小兵素材工坊 · Sprite Motion Studio", webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, nodeIntegrationInWorker: false, webSecurity: true, backgroundThrottling: false, offscreen: smoke && ["p1-editor", "playback-range", "p2-masks", "onion-preview", "material-retention"].includes(process.env.SFS_PROBE_SCENARIO) } });
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   window.webContents.on("will-navigate", (event, target) => { if (new URL(target).origin !== origin) event.preventDefault(); });
   window.webContents.on("console-message", (consoleEvent) => report.console.push({ level: consoleEvent.level, message: consoleEvent.message }));
@@ -242,6 +242,12 @@ async function run() {
     return { title:document.title, rootText, fullFrameOptionVisible:/完整.*逐帧|完整抽帧|全部帧/.test(rootText || ''), buttonLabels:[...document.querySelectorAll('button')].map(b => b.innerText || b.title).filter(Boolean), requireType:typeof require, processType:typeof process, globalType:typeof global, fontsStatus:document.fonts.status, webSocketOk, resources };
   })()`);
   if (process.env.SFS_PROBE_SCENARIO === "p1-editor") await runP1EditorScenario();
+  if (process.env.SFS_PROBE_SCENARIO === 'p2-masks') report.p2Scenario=await require('./p2-scenario.cjs')({window,origin,pagePath,serviceFetch,saveScreenshot,delay});
+  if (process.env.SFS_PROBE_SCENARIO === 'onion-preview') report.onionScenario=await require('./onion-scenario.cjs')({window,saveScreenshot,delay});
+  if (process.env.SFS_PROBE_SCENARIO === 'material-retention') report.materialRetentionScenario=await require('./material-retention-scenario.cjs')({window,origin,pagePath,serviceFetch,saveScreenshot,delay});
+  if (process.env.SFS_PROBE_SCENARIO === "playback-range") {
+    report.playbackScenario = await require("./playback-scenario.cjs")({ window, origin, pagePath, serviceFetch, saveScreenshot, delay });
+  }
   const screenshot = await window.webContents.capturePage();
   const screenshotPath = path.join(evidenceRoot, "desktop-framebaker.png");
   fs.writeFileSync(screenshotPath, screenshot.toPNG());

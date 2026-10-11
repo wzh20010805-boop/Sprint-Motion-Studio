@@ -34,7 +34,7 @@ describe("P1 shared service", () => {
       assert.equal(backup.query('SELECT name FROM projects').get().name,'WAL preserved');
       assert.equal(backup.query("SELECT name FROM pragma_table_info('projects') WHERE name='revision'").get(),null);
       assert.equal(db.query('SELECT revision FROM projects').get().revision,0);
-      assert.equal(db.query('SELECT version FROM schema_migrations WHERE version=3').get().version,3);
+      assert.equal(db.query('SELECT version FROM schema_migrations WHERE version=4').get().version,4);
       const second = migratePipeline(db,root);
       assert.equal(second.backupPath,null);
       assert.equal(readdirSync(join(root,'backups')).filter(x=>x.endsWith('.db')).length,1);

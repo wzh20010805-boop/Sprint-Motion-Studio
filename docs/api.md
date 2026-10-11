@@ -4,7 +4,7 @@ Base URL: `http://localhost:3000`; unless noted otherwise, all endpoints use the
 
 Conventions:
 
-- All ids are UUID strings
+- IDs are opaque strings: ordinary entities use UUIDs; automatically retained library assets use deterministic lineage digest IDs
 - Frame `tags` / `metadata` are parsed as JSON in API output (stored as strings in DB)
 - Error responses: non-2xx + plain text error message
 - Write operations trigger WS broadcast (`/ws`, message format `{ "type": string, "payload": any }`, types listed at the end)
@@ -588,4 +588,44 @@ Responses contain schema_version "1.0", ok, status, project_id, requires_user_ac
 
 Legacy `/api/import/upload` defaults MP4 to the same complete-frame service; explicit mode=fps preserves old sampling. Source PNGs still include scene backgrounds. Exact timing is independent of integer timeline ticks; preview quantization reports PREVIEW_TIMING_QUANTIZED. Source files use zero-based frame_000000.png; game export naming belongs to P4.
 
-The isolated entry disables generation, provider/cloud diagnostics, broad upstream MCP and unavailable matting. Legacy material-library video sampling is disabled; import video from a project. `/api/config` adds sfs.phase=P1. Thin MCP integration remains P4 scope.
+The isolated entry disables generation, provider/cloud diagnostics and broad upstream MCP. Desktop project and library video/GIF imports both use complete extraction; `/api/config` currently reports sfs.phase=P2. Upload-time auto-matting returns 409/USE_P2_MATTE; import into a project and use the P2 mask API. Thin MCP integration remains P4 scope.
+
+### Desktop reusable library retention (2026-10-11)
+
+- `POST /api/import/upload`: completed image jobs retain independent library copies. Video/GIF import retains the original; extraction commits register every original frame. Desktop imports always use all frames, ignoring legacy `mode=fps`.
+- `POST /api/materials/upload`: images return `{materialId}`; video/GIF returns `{materialId,jobId,mode:"all"}`. Original media, every display frame and exact rational timing are retained. `folderId` applies to both the original and its frames. Invalid media returns400; missing dependencies503. Failed files remain available for diagnosis.
+- `POST /api/materials/:id/extract`: desktop `{}` queues all-frame extraction and returns `{jobId,mode:"all"}`. Existing source frames reuse their deterministic IDs. Legacy `fps` does not sample; nonempty `timestamps` returns409 and `autoMatting:true` returns409/USE_P2_MATTE.
+- `GET /api/materials`: includes video/GIF originals (`kind=video`) and reusable PNGs. Metadata preserves `source_id/source_frame_id/source_index/timing`. Project frame pickers show images; original videos can be previewed/extracted in the library.
+- `POST /api/materials/batch-import`: existing `ids/projectId/target` semantics copy independent project files. Project edits/deletion do not affect library originals. Without `target`, assets enter the frame pool; an axis/track target places them on its timeline.
+- On first upgraded startup, existing P1 source videos, complete frames and legacy imported project images are retained under `STORAGE_ROOT/materials`. A persisted marker prevents deleted library records from being resurrected on restart. Retention preserves imported originals; later P2 project corrections do not automatically overwrite library assets.
+
+Desktop upload controls disable upload-time matting, FPS sampling and cloud generation. Non-isolated upstream sampling remains compatible; legacy examples below do not indicate desktop capabilities.
+# SFS P2 local mask API
+
+2026-10-10 fix: `region` selects the area to keep; pixels outside become transparent. Nearly uniform background-only regions fail with `REGION_NO_FOREGROUND`; empty or almost invisible automatic masks fail with `MATTE_NO_FOREGROUND` (HTTP 422 / failed queue job). The entire batch retains its previous heads, with staging preserved. Frame diagnostics include `method: edge_color|rembg|brush|existing` and `visible_fraction` (alpha > 128), plus `LOW_CONFIDENCE`. Empty/weak masks cannot be reviewed. Nearly uniform image borders select connected background-color removal; other scenes use the local model. Detached equipment remains eligible foreground.
+
+The authenticated isolated desktop service exposes `POST /api/v1/matte` with `project_id`, `frame_ids`, optional `region: [x,y,width,height]` and `base_revision`. A shared queue job returns `waiting_user`, `requires_user_action: true`, model provenance, anomaly IDs and local preview/mask/RGBA paths. One CPU Rembg session serves a batch; no implicit model download occurs.
+
+`GET /api/v1/masks/:frameId` returns the current version, project revision and immutable history. `GET /api/v1/masks/:frameId/image?kind=raw|mask|rgba|preview&version=...` serves only recorded local paths. `POST .../strokes` accepts `version_id`, `revision`, and `strokes: [{mode: "erase"|"restore", size, points:[[x,y],...]}]`. `POST .../undo` and `POST .../review` require the same version/revision pair. Coordinates and brush diameters are in the full original image, with no largest-component filtering. `GET /api/v1/projects/:id/masks` provides review/anomaly state after reopening. Invalid input returns 400, stale revisions 409, missing dependencies/models 503. CLI and GUI share these endpoints; formal export and MCP remain later phases. See [P2 guide](p2-guide.md).
+## SFS P3–P5 production API (2026-10-11)
+
+Authenticated local shared service; all JSON responses use the existing v1 envelope. Project/axis IDs identify the primary track ordered by animation-step index.
+
+| Endpoint | Contract |
+| --- | --- |
+| POST `/api/v1/images/import` | Multipart `projectId`, `files[]` (1–2000 PNG), optional `name`; retain originals/alpha, natural filename order, never auto-approve |
+| GET `/api/v1/alignment` | Query `project_id`, `axis_id`; config, revision and approval |
+| POST `/api/v1/alignment` | IDs, `config`, exact `base_revision`; update character canvas/anchor/scale and action roots |
+| POST `/api/v1/alignment/check` | IDs; all frame bounds/empty checks through the same compositor |
+| GET `/api/v1/preview/:id` | `axis_id` query; source-derived RGBA canvas PNG, checked cache |
+| POST `/api/v1/review/apply` | IDs, current `base_revision`, explicit human `confirmation` and `source`; all masks must already be reviewed |
+| POST `/api/v1/export` | IDs; optional `draft`, `base_revision`, `max_texture`, `gap`, `margin`, `timing` (`source_pts`/`constant`); durable job |
+| POST `/api/v1/pipeline` | IDs, recipe schema1.0 and optional `clip_id`; next incomplete stage, `continue_required` |
+| POST `/api/v1/jobs/:id/resume` | New job from current inputs; only interrupted, failed or cancelled jobs |
+| GET `/api/v1/exports/:id/file` | Allowlisted `path`: assets.zip, manifest/report/checksums/readme, sequence/grid PNG, contact sheet or preview MP4 |
+
+Formal export requires exact reviewed revision and hashes of raw, mask, foreground and parameters. Export writes a new staging directory and validates the snapshot again before immutable publication. Missing files return INPUT_NOT_FOUND; concurrent edits return REVISION_CONFLICT/STALE_JOB_RESULT. Draft output is visibly marked. PNG/grid output uses shared scale, untrimmed cells, straight RGBA, no rotation/deduplication and rational frame durations.
+
+Token-mode `/mcp` exposes exactly nine SFS tools (inspect_capabilities, inspect_project, import_source, submit_pipeline, get_job, cancel_job, get_review_artifacts, apply_review_patch, export_assets). SDK Streamable HTTP and CLI stdio bridge share internal validated services. The broad upstream MCP remains for tokenless upstream development only. Source import accepts explicitly supplied bounded base64 bytes, never arbitrary server filesystem paths. CLI heartbeat prevents idle shutdown while an MCP client is connected.
+
+CLI schemas are available offline through `schemas --name alignment|recipe|manifest --json`. See [calling guide](p3-p5-guide.md). HTTP editing, GUI, CLI and MCP share one workspace service; packaged startup resolves sibling runtimes and writable user data.

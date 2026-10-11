@@ -4,7 +4,7 @@ Base URL：`http://localhost:3000`，除标注外均为 `/api` 前缀。请求/�
 
 约定：
 
-- 所有 id 为 UUID 字符串
+- id 为不透明字符串；常规对象用 UUID，自动保留的库素材用固定谱系摘要 ID
 - 帧的 `tags` / `metadata` 在 API 输出中已解析为 JSON（DB 中为字符串）
 - 错误响应：非 2xx + 纯文本中文错误信息
 - 写操作触发 WS 广播（`/ws`，消息格式 `{ "type": string, "payload": any }`，type 见文末）
@@ -588,4 +588,41 @@ FrameBaker 正在 http://localhost:3000 运行，MCP 端点为 /mcp（Streamable
 
 上游 `/api/import/upload` 的 MP4 默认转入同一完整源帧服务；仅明确 `mode=fps` 使用旧采样。源 PNG 为完整未抠图画面，不得把抽帧成功称为透明处理成功。精确时序独立于上游整数 tick，预览量化会报告 `PREVIEW_TIMING_QUANTIZED`。源帧采用 `frame_000000.png` 零起始索引；未来游戏动作导出命名属 P4。
 
-隔离入口禁用生成/provider/云体检/宽权限 MCP 及未准备抠图；素材库视频采样入口禁用，请从项目上传视频。`/api/config` 增加 `sfs.phase=P1` 能力提示。P1 不增加高权限 MCP；薄 MCP 属 P4。
+隔离入口禁用生成/provider/云体检/宽权限 MCP。桌面视频/GIF 的项目导入和素材库上传均采用完整抽帧；`/api/config` 当前返回 `sfs.phase=P2`。上传自动抠图返回409/USE_P2_MATTE，应导入项目后使用P2遮罩接口。薄 MCP 属 P4。
+
+### 桌面素材库自动保留（2026-10-11）
+
+- `POST /api/import/upload`：图片任务完成时同时生成独立库副本；视频/GIF 原件导入时保留到素材库，完整抽帧提交时把每个源帧登记入库。桌面入口忽略旧 `mode=fps`，统一保留全部原始帧。
+- `POST /api/materials/upload`：图片返回 `{materialId}`；视频/GIF 返回 `{materialId,jobId,mode:"all"}`。保留原视频，并把全部显示帧及精确有理数时序保留到库中；`folderId` 同时作用于原件及帧。视频验证失败返回400，缺少依赖返回503；失败文件仍保留。
+- `POST /api/materials/:id/extract`：桌面请求 `{}` 即完整抽帧，返回 `{jobId,mode:"all"}`；已有同源帧复用固定ID，不重复登记。旧 `fps` 不参与采样，非空 `timestamps` 返回409，`autoMatting:true` 返回409/USE_P2_MATTE。
+- `GET /api/materials`：包含视频/GIF 原件（`kind=video`）及可复用PNG。`metadata.source_id/source_frame_id/source_index/timing` 保留完整源谱系。项目帧选择器只展示图片，原视频在素材库预览/抽帧。
+- `POST /api/materials/batch-import`：沿用 `ids/projectId/target`；复制到目标项目，编辑或删除项目不改变库中原文件。未提供 `target` 时进入帧池，提供轴/轨道时进入时间轴。
+- 服务首次升级启动时一次性补登记已有的P1源视频/完整帧及旧项目图片；库文件均保存到 `STORAGE_ROOT/materials`。补登记标记防止用户主动删除素材后再次自动添加。保留的是导入原素材；项目后续P2修正不会自动覆盖库原件。
+
+桌面上传界面关闭自动抠图、FPS采样及云生成入口。上游非隔离模式的采样接口继续兼容，以下旧接口示例不代表桌面开放能力。
+# SFS P2 本地遮罩接口
+
+2026-10-10修正：`region` 是保留区域，框外透明。区域几乎全是纯背景返回 `REGION_NO_FOREGROUND`，自动结果为空/仅弱透明噪声返回 `MATTE_NO_FOREGROUND`（HTTP 422 / 队列任务failed），不会提交整批遮罩或覆盖旧头版本；中间文件保留。帧报告新增 `method: edge_color|rembg|brush|existing`、`visible_fraction`，以alpha>128的前景检测 `LOW_CONFIDENCE`。空/弱遮罩不能通过review。边缘近纯色用与外边连通的背景色法，其他场景使用本地模型，不删除分离装备。
+
+受鉴权的隔离桌面服务支持 `POST /api/v1/matte`：`project_id`、`frame_ids`、可选 `region: [x,y,width,height]` 与 `base_revision`。共享队列初稿完成后返回 `waiting_user`、`requires_user_action: true`、模型登记、异常帧和本地预览/遮罩/RGBA路径。同批使用一个CPU Rembg session，Worker不隐式下载模型。
+
+`GET /api/v1/masks/:frameId` 返回当前遮罩、项目修订与不可变历史。`GET .../image?kind=raw|mask|rgba|preview&version=...` 仅提供已登记路径。`POST .../strokes` 接收 `version_id`、`revision` 和 `strokes: [{mode: "erase"|"restore", size, points:[[x,y],...]}]`。`POST .../undo`、`POST .../review` 需要同样的版本/修订对。所有坐标和笔刷直径使用完整原图，不删除分离连通块。`GET /api/v1/projects/:id/masks` 供重开后读取审核/异常状态。参数错误400、版本冲突409、依赖/模型缺失503。GUI与CLI共用，正式导出与MCP仍属于后续阶段。见 [P2说明](p2-guide.md)。
+## SFS P3–P5 正式管线接口（2026-10-11）
+
+所有接口通过同一鉴权本地服务，JSON沿用v1信封；主轨按动画步索引排序。详见[使用与调用说明](p3-p5-guide.md)。
+
+| 接口 | 契约 |
+| --- | --- |
+| POST `/api/v1/images/import` | multipart projectId、files、name；1–2000张PNG，保留原件Alpha、自然文件名排序、需人工确认 |
+| GET/POST `/api/v1/alignment` | 查询/保存 project_id、axis_id、config；保存要求base_revision |
+| POST `/api/v1/alignment/check` | 全动作空帧/越界检查，与正式合成同Worker |
+| GET `/api/v1/preview/:id?axis_id=...` | 公共画布RGBA PNG；输入与输出摘要校验缓存 |
+| POST `/api/v1/review/apply` | 当前base_revision、用户明确confirmation和source；每帧遮罩必须先确认 |
+| POST `/api/v1/export` | draft、base_revision、max_texture、gap、margin、timing可选；返回持久任务 |
+| POST `/api/v1/pipeline` | recipe schema1.0、可选clip_id；提交下一未完成阶段，不自动审核 |
+| POST `/api/v1/jobs/:id/resume` | 中断/失败/取消任务以当前输入创建新任务 |
+| GET `/api/v1/exports/:id/file?path=...` | 白名单ZIP、清单、报告、校验和、Cocos说明、序列/图集PNG、联系表和MP4 |
+
+正式导出必须与审核修订及原图/遮罩/前景/参数摘要一致。发布前再次核验，导出到新目录而非覆盖旧成功版本；原文件失效报INPUT_NOT_FOUND，修订冲突报REVISION_CONFLICT/STALE_JOB_RESULT。草稿明确标记；不去重、不逐帧裁边、不旋转，Alpha与有理数时长保持一致。
+
+鉴权模式 `/mcp` 仅公开九工具：inspect_capabilities、inspect_project、import_source、submit_pipeline、get_job、cancel_job、get_review_artifacts、apply_review_patch、export_assets。SDK HTTP与CLI stdio桥共用业务校验；原上游广工具仅在无令牌开发模式可用。import_source不读取服务器任意路径，接收有上限的明确提供字节。stdio客户端健康租约防止空闲停服。

@@ -1,0 +1,10 @@
+{
+  "ok": true,
+  "model_import": "explicit local fixture copy, not bundled/downloaded",
+  "sha256": "309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8",
+  "matting_status": "waiting_user",
+  "session_count": 1,
+  "frame_count": 3,
+  "mcp_tools": 9,
+  "mcp_project": "873054a8-76cb-405e-a574-8ca6fc1aa8ab"
+}

@@ -1,0 +1,12 @@
+{
+  "exe": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\dist\\发行便携版\\小兵素材工坊 1.0.0\\runtime\\python\\python.exe",
+  "args": [
+    "-c",
+    "import sys; import PIL,numpy,onnxruntime,rembg; print(sys.prefix); print(PIL.__version__); print(onnxruntime.__version__)"
+  ],
+  "cwd": "C:/Windows/Temp",
+  "PATH": "C:\\Windows\\System32;C:\\Windows",
+  "code": 0,
+  "out": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\dist\\发行便携版\\小兵素材工坊 1.0.0\\runtime\\python\r\n12.3.0\r\n1.31.0\r\n",
+  "err": ""
+}

@@ -8,6 +8,7 @@ import { broadcast } from "../ws";
 import { JobCancelledError } from "../jobs/run";
 import { probeVideo } from "./probe";
 import { extractAll, validateSourceArtifacts } from "./extractAll";
+import { retainSourceOriginal, retainSourceFrames } from '../materialRetention';
 
 export class PipelineError extends Error {
   constructor(public code: string, message: string, public httpStatus = 400) { super(message); this.name = "PipelineError"; }
@@ -51,7 +52,9 @@ export function inspectProject(projectId: string) {
   const project = getProject(projectId);
   const sources = (db.query("SELECT * FROM sources WHERE project_id=? ORDER BY created_at,id").all(projectId) as SourceRow[]).map(sourceRecord);
   const clips = db.query(`SELECT c.*,a.name,a.fps,p.revision FROM clips c JOIN animation_axes a ON a.id=c.axis_id JOIN projects p ON p.id=c.project_id WHERE c.project_id=? ORDER BY c.created_at,c.id`).all(projectId) as ClipRecord[];
-  return { project, sources, clips };
+  const editor_frames=db.query('SELECT id,idx,track_id,step_id,status,metadata FROM frames WHERE project_id=? ORDER BY idx,id').all(projectId);
+  const axes=db.query('SELECT id,name,fps FROM animation_axes WHERE project_id=? ORDER BY idx').all(projectId);
+  return { project, sources, clips, axes, editor_frames };
 }
 
 /** 原视频只写入新的来源目录一次；格式由文件内容和 ffprobe 确认。 */
@@ -63,7 +66,7 @@ export async function importVideo(projectId: string, input: string | { name: str
   const capacity = statfsSync(STORAGE_ROOT);
   if (Number(capacity.bavail) * Number(capacity.bsize) < bytes.byteLength * 2) throw new PipelineError("INSUFFICIENT_DISK", "工作区可用空间不足");
   const magic = Buffer.from(bytes.subarray(0, 16));
-  const ext = magic.subarray(4, 8).toString("ascii") === "ftyp" ? "mp4" : magic.length >= 4 && magic.readUInt32BE(0) === 0x1a45dfa3 ? "webm" : "bin";
+  const ext = magic.subarray(4, 8).toString("ascii") === "ftyp" ? "mp4" : magic.subarray(0, 3).toString('ascii') === 'GIF' ? 'gif' : magic.length >= 4 && magic.readUInt32BE(0) === 0x1a45dfa3 ? "webm" : "bin";
   const id = uid(); const sourceDirectory = join(STORAGE_ROOT, "sources", id);
   mkdirSync(sourceDirectory, { recursive: true });
   const originalPath = join(sourceDirectory, `original.${ext}`);
@@ -83,7 +86,9 @@ export async function importVideo(projectId: string, input: string | { name: str
     getProject(projectId);
     db.query("INSERT INTO sources(id,project_id,original_name,original_path,sha256,byte_size,probe_json,status,created_at) VALUES(?,?,?,?,?,?,?,'imported',?)").run(id, projectId, originalName, originalPath, sha256, bytes.byteLength, JSON.stringify(probe), createdAt);
     db.query("UPDATE projects SET revision=revision+1 WHERE id=?").run(projectId);
+    retainSourceOriginal({ id, original_name: originalName, original_path: originalPath, sha256, probe });
   })();
+  broadcast('materials_changed', {});
   return getSource(projectId, id);
 }
 
@@ -177,7 +182,9 @@ export async function extractSource(payload: SourceExtractPayload, progress: (te
     }
     db.query("UPDATE sources SET status='extracted' WHERE id=?").run(source.id);
     db.query("UPDATE clips SET status='extracted' WHERE id=?").run(clip.id);
+    retainSourceFrames(source.id, directory, timing, source.original_name.replace(/\.[^.]+$/, ''));
   })();
+  broadcast('materials_changed', {});
   invalidateProjectUndo(payload.projectId);
   broadcast("timeline_changed", { projectId: payload.projectId });
   broadcast("frames_changed", { projectId: payload.projectId });

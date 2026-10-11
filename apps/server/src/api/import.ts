@@ -15,7 +15,7 @@ export const importApi = new Elysia({ prefix: "/api" })
       if (!project) return status(404, "项目不存在");
 
       // MP4 默认完整抽帧；明确指定 fps 才沿用旧采样工作流。
-      if (body.type === "mp4" && body.mode !== "fps") {
+      if (body.type !== "image" && (process.env.SFS_SERVICE_TOKEN || body.mode !== "fps")) {
         try {
           const source = await importVideo(body.projectId, { name: body.file.name, bytes: new Uint8Array(await body.file.arrayBuffer()) });
           const clip = createClip(body.projectId, source.id, body.file.name.replace(/\.[^.]+$/, "") || "视频动作");
@@ -47,6 +47,7 @@ export const importApi = new Elysia({ prefix: "/api" })
           mediaType: body.type,
           fps,
           autoMatting,
+          originName: origName.replace(/\.[^.]+$/, ''),
           target: { kind: "project", projectId: body.projectId },
         },
       });

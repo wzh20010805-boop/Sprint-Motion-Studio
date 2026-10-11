@@ -22,3 +22,14 @@ docs/evidence/p1/service-fixtures/
 docs/evidence/p1/review-queue-all-*/
 docs/evidence/p1/desktop-pixi-csp-red-harness-error.log
 dist/
+.models/
+workers/image/**/__pycache__/
+.pytest_cache/
+docs/evidence/material-retention/project-*/
+docs/evidence/material-retention/library-*/
+docs/evidence/material-retention/upgrade-*/
+docs/evidence/material-retention/**/backups/
+docs/evidence/**/.sfs/
+docs/evidence/**/*.db
+docs/evidence/**/*.db-shm
+docs/evidence/**/*.db-wal

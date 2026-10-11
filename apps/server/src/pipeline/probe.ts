@@ -14,8 +14,9 @@ export function checkCancelled(signal?: AbortSignal) {
 /** 仅终止本次启动的进程；两条管道同时读取以免长视频阻塞。 */
 export async function runPipelineCommand(argv: string[], signal?: AbortSignal): Promise<string> {
   checkCancelled(signal);
-  if (!argv[0] || !Bun.which(argv[0])) throw Object.assign(new Error(`缺少或无法执行媒体工具：${argv[0]}`), { code: "DEPENDENCY_MISSING" });
-  const proc = Bun.spawn(argv, { windowsHide: true, stdin: "ignore", stdout: "pipe", stderr: "pipe" });
+  const executable=argv[0]?Bun.which(argv[0],{PATH:process.env.PATH}):null;
+  if (!executable) throw Object.assign(new Error(`缺少或无法执行媒体工具：${argv[0]}`), { code: "DEPENDENCY_MISSING" });
+  const proc = Bun.spawn([executable,...argv.slice(1)], { windowsHide: true, stdin: "ignore", stdout: "pipe", stderr: "pipe" });
   const onAbort = () => { try { proc.kill(); } catch { /* 进程已经结束 */ } };
   signal?.addEventListener("abort", onAbort, { once: true });
   if (signal?.aborted) onAbort();

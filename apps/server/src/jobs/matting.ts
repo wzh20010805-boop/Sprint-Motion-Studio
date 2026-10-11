@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, renameSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, renameSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { MattingEngine } from "@framebaker/shared";
 import { db, getFrame, getMaterial, REPO_ROOT, STORAGE_ROOT, uid } from "../db";
@@ -28,7 +28,7 @@ export function bundledRembg(): string | null {
 
 const IS_WIN = process.platform === "win32";
 const SETUP_SCRIPT = IS_WIN ? "scripts/setup_matting.ps1" : "scripts/setup_matting.sh";
-const NO_ENGINE_HINT = `未安装抠图引擎，已原样复制：请先执行 ${SETUP_SCRIPT}`;
+const NO_ENGINE_HINT = `未安装抠图引擎，请先执行 ${SETUP_SCRIPT}；原图保留，未生成透明结果`;
 
 export function getMattingInfo(): MattingInfo {
   const { cliBin, envTemplate, model } = getMattingSettings();
@@ -43,7 +43,7 @@ export function getMattingInfo(): MattingInfo {
  * a. 设置页结构化 CLI（命令 + 参数名映射，免模板）或 env FRAMEBAKER_MATTING_CLI 遗留模板（占位符 {input} {output}，可选 {model}）
  * b. <repo>/.venv-matting 内置 rembg（scripts/setup_matting.sh / .ps1 安装，POSIX 为 bin/rembg，Windows 为 Scripts/rembg.exe）
  * c. PATH 中的 rembg
- * d. passthrough 复制（返回警告提示安装）
+ * d. 明确失败，不生成伪透明文件
  * 返回警告文案（无警告为 null）；b/c 会注入 U2NET_HOME=<repo>/storage/models
  */
 async function runMatting(input: string, output: string, signal?: AbortSignal): Promise<string | null> {
@@ -78,8 +78,7 @@ async function runMatting(input: string, output: string, signal?: AbortSignal): 
     return null;
   }
 
-  copyFileSync(input, output);
-  return NO_ENGINE_HINT;
+  throw Object.assign(new Error(NO_ENGINE_HINT), { code: 'DEPENDENCY_MISSING' });
 }
 
 /** 抠图：项目帧。返回警告文案（null = 真抠图） */

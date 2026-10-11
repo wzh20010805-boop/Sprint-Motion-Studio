@@ -4,7 +4,7 @@ import { cancelJob, createSourceExtractionJob, getPersistedJob } from "../queue"
 import { createClip, createProject, getProject, importVideo, inspectProject, PipelineError, validateId } from "./service";
 
 export function pipelineEnvelope(data: unknown = {}, options: { status?: string; projectId?: string; jobId?: string; warnings?: string[]; artifacts?: unknown[]; ok?: boolean; error?: { code: string; message: string } | null } = {}) {
-  return { schema_version: "1.0", ok: options.ok ?? true, status: options.status ?? "succeeded", ...(options.jobId ? { job_id: options.jobId } : {}), project_id: options.projectId ?? null, requires_user_action: false, data, artifacts: options.artifacts ?? [], warnings: options.warnings ?? [], error: options.error ?? null };
+  return { schema_version: "1.0", ok: options.ok ?? true, status: options.status ?? "succeeded", ...(options.jobId ? { job_id: options.jobId } : {}), project_id: options.projectId ?? null, requires_user_action: options.status === 'waiting_user', data, artifacts: options.artifacts ?? [], warnings: options.warnings ?? [], error: options.error ?? null };
 }
 
 export function pipelineErrorResponse(error: unknown, projectId?: string) {

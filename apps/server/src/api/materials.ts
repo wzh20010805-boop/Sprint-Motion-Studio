@@ -12,6 +12,7 @@ import { broadcast } from "../ws";
 import { appendFramePool, importFrameCellsToTarget, validateFrameImportTarget, type NewFrameCell } from "../timeline";
 import { getThumbnailPath, isImagePath, parseThumbnailSize, serveMediaFile } from "../media";
 import { beginProjectUndo } from "../undo";
+import { uploadLibraryVideo } from '../materialRetention';
 
 function baseName(filename: string): string {
   const n = filename.split("/").pop() ?? filename;
@@ -66,7 +67,7 @@ function prepareMaterialFrame(m: MaterialRow, projectId: string): NewFrameCell {
   const processedSrc = m.processed_path && existsSync(m.processed_path) ? m.processed_path : null;
   const inputSrc = processedSrc ?? (m.raw_path && existsSync(m.raw_path) ? m.raw_path : null);
   if (!inputSrc) throw new Error(`素材文件缺失: ${m.id}`);
-  if (/\.(mp4|mov|webm|avi)$/i.test(inputSrc)) {
+  if (/\.(mp4|mov|webm|avi|gif)$/i.test(inputSrc)) {
     throw new Error(`「${m.name}」是视频素材，请先抽帧再导入项目`);
   }
   const frameId = uid();
@@ -116,7 +117,7 @@ const materialImageHandler = ({
       ? "video/webm"
       : lower.endsWith(".mov")
         ? "video/quicktime"
-        : "image/png";
+      : lower.endsWith('.gif') ? 'image/gif' : "image/png";
   const size = parseThumbnailSize(query.size);
   if (size && contentType.startsWith("image/") && isImagePath(path)) {
     return getThumbnailPath(path, size).then((thumbnail) =>
@@ -150,12 +151,19 @@ export const materialsApi = new Elysia({ prefix: "/api" })
   // 上传素材：单图 → 直接入库；GIF/MP4 → 队列拆帧，每帧一个素材
   .post(
     "/materials/upload",
-    async ({ body }) => {
+    async ({ body, status }) => {
       const origName = body.file.name ?? "素材";
       const ext = extOf(origName);
       const autoMatting = body.autoMatting === "true";
 
       if (ext === "gif" || ext === "mp4" || ext === "mov" || ext === "webm") {
+        if (process.env.SFS_SERVICE_TOKEN) {
+          try {
+            const materialId = await uploadLibraryVideo(origName, new Uint8Array(await body.file.arrayBuffer()), body.folderId || null);
+            const jobId = createJob('', 'extract_frames', { extract: { libraryMaterialId: materialId, stagingFile: '', mediaType: ext === 'gif' ? 'gif' : 'mp4', fps: 24, mode: 'all', autoMatting: false, target: { kind: 'materials' } } });
+            return { materialId, jobId, mode: 'all' };
+          } catch (error) { return status((error as { code?: string }).code === 'DEPENDENCY_MISSING' ? 503 : 400, (error as Error).message); }
+        }
         const stagingId = uid();
         const dir = join(STORAGE_ROOT, "staging", stagingId);
         mkdirSync(dir, { recursive: true });
@@ -345,6 +353,11 @@ export const materialsApi = new Elysia({ prefix: "/api" })
       const isGif = /\.(gif)$/i.test(m.raw_path);
       const isVideo = /\.(mp4|mov|webm|avi)$/i.test(m.raw_path);
       if (!isGif && !isVideo) return status(400, "仅视频/GIF 素材可抽帧");
+
+      if (process.env.SFS_SERVICE_TOKEN) {
+        const jobId = createJob('', 'extract_frames', { extract: { libraryMaterialId: m.id, stagingFile: '', mediaType: isGif ? 'gif' : 'mp4', fps: 24, mode: 'all', autoMatting: false, target: { kind: 'materials' } } });
+        return { jobId, mode: 'all' };
+      }
 
       const rawTs = Array.isArray(body.timestamps) ? body.timestamps : null;
       if (rawTs) {

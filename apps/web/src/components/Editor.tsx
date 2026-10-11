@@ -11,6 +11,7 @@ import FrameEditor from "./FrameEditor";
 import Timeline from "./Timeline";
 import ImportModal from "./ImportModal";
 import PlaybackBar from "./PlaybackBar";
+import { advancePlaybackTick, normalizePlaybackRange, type PlaybackRange } from "../playbackRange";
 import BatchBar from "./BatchBar";
 import CanvasToolbar from "./CanvasToolbar";
 import AttackEffectToolbar from "./AttackEffectToolbar";
@@ -21,6 +22,8 @@ import SplitDivider from "./SplitDivider";
 import IconBtn from "./IconBtn";
 import ThemeToggle from "./ThemeToggle";
 import NoticeHistory from "./NoticeHistory";
+import MaskWorkshop from './MaskWorkshop';
+import AlignmentWorkshop from './AlignmentWorkshop';
 import { exportAnimation, type AnimationExportFormat } from "../export";
 import { DEFAULT_ATTACK_COLOR } from "../attackEffect";
 import { useT } from "../i18n";
@@ -59,12 +62,15 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
   activeIdRef.current = activeId;
   const undoingRef = useRef(false);
   const [showImport, setShowImport] = useState(false);
+  const [showMasks, setShowMasks] = useState(false);
+  const [showAlignment, setShowAlignment] = useState(false);
   const [replaceCrop, setReplaceCrop] = useState<{ frameId: string; image: Blob; title: string } | null>(null);
   // 播放预览：就在 Pixi 画布内播放（不换容器）。showPreview=播放模式，paused=暂停
   const [showPreview, setShowPreview] = useState(false);
   const [paused, setPaused] = useState(false);
   const [fps, setFps] = useState(8);
   const [cursor, setCursor] = useState(0);
+  const [previewRange, setPreviewRange] = useState<PlaybackRange | null>(null);
   const [fitRequest, setFitRequest] = useState(0);
   const playTick = useRef(0);
   const shellRef = useRef<HTMLDivElement>(null);
@@ -116,8 +122,12 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
   const patchRevisions = useRef(new Map<string, number>());
   const effectChains = useRef(new Map<string, Promise<void>>());
   const steps = timeline?.steps ?? [];
+  const { start: rangeStart, end: rangeEnd } = normalizePlaybackRange(steps.length, previewRange);
   const tracks = timeline?.tracks ?? [];
   const allFrames = timeline?.frames ?? [];
+  const maskFrames = (allFrames.length && activeTrackId !== null ? allFrames : frames).filter(f=>!!f.raw_path);
+  const productionTrack=tracks.find(track=>track.is_primary);
+  const productionFrames=steps.flatMap(step=>allFrames.filter(f=>f.track_id===productionTrack?.id&&f.step_id===step.id));
   const allEffects = timeline?.effects ?? [];
 
   const loadFrames = useCallback(async (preferredTrackId?: string) => {
@@ -393,7 +403,7 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
     if (!showPreview) {
       // 从当前编辑帧开始播
       const idx = steps.findIndex((step) => step.id === activeStepId);
-      setCursor(idx >= 0 ? idx : 0);
+      setCursor(idx >= rangeStart && idx <= rangeEnd ? idx : rangeStart);
       playTick.current = 0;
       setPaused(false);
       // 播放预览始终从自动适应倍率开始，不继承编辑时的手动放大，避免被控制条遮挡。
@@ -402,7 +412,21 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
       setBrushMode(false);
     }
     setShowPreview((s) => !s);
-  }, [showPreview, steps, activeStepId]);
+  }, [showPreview, steps, activeStepId, rangeStart, rangeEnd]);
+
+  const changePreviewRange = useCallback((requested: PlaybackRange | null) => {
+    const normalized = normalizePlaybackRange(steps.length, requested);
+    setPreviewRange(requested === null ? null : normalized);
+    setCursor(normalized.start);
+    playTick.current = 0;
+  }, [steps.length]);
+
+  // 范围只属于当前动作的预览，不写入项目或导出设置。
+  useEffect(() => {
+    setPreviewRange(null);
+    setCursor(0);
+    playTick.current = 0;
+  }, [timeline?.axis.id]);
 
   // 深链/测试钩子：?autoplay=1 进入项目后自动开始播放
   const autoPlayed = useRef(false);
@@ -418,23 +442,23 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
   useEffect(() => {
     if (!showPreview || paused || steps.length === 0) return;
     const id = setInterval(() => {
-      playTick.current += 1;
-      const dur = Math.max(1, steps[cursor]?.duration ?? 1);
-      if (playTick.current >= dur) {
-        playTick.current = 0;
-        setCursor((c) => (c + 1) % steps.length);
-      }
+      const next = advancePlaybackTick(steps, { cursor, tick: playTick.current }, { start: rangeStart, end: rangeEnd });
+      playTick.current = next.tick;
+      setCursor(next.cursor);
     }, 1000 / fps);
     return () => clearInterval(id);
-  }, [showPreview, paused, fps, steps, cursor]);
+  }, [showPreview, paused, fps, steps, cursor, rangeStart, rangeEnd]);
 
   // 帧数变化时防止游标越界
   useEffect(() => {
-    if (cursor >= steps.length) {
-      setCursor(0);
+    if (cursor < rangeStart || cursor > rangeEnd) {
+      setCursor(rangeStart);
       playTick.current = 0;
     }
-  }, [steps.length, cursor]);
+    // 删帧后的缩小范围成为新范围，随后加帧也不恢复已失效的帧号。
+    setPreviewRange((current) => steps.length === 0 ? null : current && (current.start !== rangeStart || current.end !== rangeEnd)
+      ? { start: rangeStart, end: rangeEnd } : current);
+  }, [steps.length, rangeStart, rangeEnd, cursor]);
 
   // 进入播放时预载全部帧贴图：切换只换 sprite.texture，零闪烁
   useEffect(() => {
@@ -686,6 +710,7 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
         <span className="proj-name">{project?.name ?? "…"}</span>
         <span className="frame-count">{t("msg.n_frames", { n: allFrames.length + (timeline?.poolFrames.length ?? 0) })}</span>
         <div className="spacer" />
+        <button className="px-btn accent-cyan" disabled={!maskFrames.length} onClick={()=>setShowMasks(true)}><Scan size={16}/>{t('p2.title')}</button>
         <motion.button type="button" whileTap={{ scale: 0.95 }} className="px-btn" onClick={() => setShowImport(true)}>
           <Upload size={14} /> {t("msg.import_materials")}
         </motion.button>
@@ -702,7 +727,7 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
           whileTap={{ scale: 0.95 }}
           className="px-btn accent"
           disabled={allFrames.length === 0 && allEffects.length === 0}
-          onClick={() => setShowExport(true)}
+          onClick={() => setShowAlignment(true)}
         >
           <Download size={14} /> {t("exportAnimation.button")}
         </motion.button>
@@ -794,6 +819,8 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
                     cursor={cursor}
                     total={steps.length}
                     zoom={zoom}
+                    range={previewRange === null ? null : { start: rangeStart, end: rangeEnd }}
+                    onRangeChange={changePreviewRange}
                     onTogglePause={() => setPaused((p) => !p)}
                     onFpsChange={(nextFps) => {
                       setFps(nextFps);
@@ -848,6 +875,8 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
       </div>
 
       {/* 帧右键菜单（帧列表/时间轴共用，单帧 or 多选批量） */}
+      {showMasks && <MaskWorkshop projectId={projectId} frames={maskFrames} initialId={activeId} onClose={()=>setShowMasks(false)} onChanged={()=>{void loadFrames();setV(x=>x+1);}}/>}
+      {showAlignment && axisId && <AlignmentWorkshop projectId={projectId} axisId={axisId} frames={productionFrames} fps={fps} onClose={()=>setShowAlignment(false)}/>}
       <AnimatePresence>
         {ctxMenu && (ctxBatch || ctxFrame) && (
           <ContextMenu x={ctxMenu.x} y={ctxMenu.y} items={ctxItems} onClose={() => setCtxMenu(null)} />

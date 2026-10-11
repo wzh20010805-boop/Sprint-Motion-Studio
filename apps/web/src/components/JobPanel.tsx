@@ -4,12 +4,14 @@ import { CheckCircle2, Clock, ListTodo, Square, X, XCircle } from "lucide-react"
 import { api, wsClient, type Job } from "../api";
 import { useT } from "../i18n";
 import { askConfirm, notify } from "../notice";
+import { productionRequest } from '../productionApi';
 
 const TYPE_LABEL: Record<Job["type"], string> = {
   extract_frames: "job.extract",
   generate_frames: "msg.generate",
   matting: "msg.matting",
   image_layers: "layers.action",
+  export_assets: "正式素材导出",
 };
 
 const DONE_TTL = 6000; // 完成/取消任务停留 6s 后自动移除
@@ -79,9 +81,10 @@ const JobItem = memo(function JobItem({
             <X size={12} />
           </button>
         )}
+        {['error','interrupted','cancelled'].includes(job.status)&&<button className="px-btn" onClick={()=>void productionRequest(`/jobs/${job.id}/resume`,{}).catch(e=>notify(e.message))}>{t('恢复')}</button>}
       </div>
       <div
-        className={`px-progress ${job.status === "done" ? "done" : ""} ${job.status === "error" || job.status === "interrupted" ? "error" : ""} ${job.status === "cancelled" ? "error" : ""}`}
+        className={`px-progress ${job.status === 'waiting_user' ? 'waiting' : ''} ${job.status === "done" ? "done" : ""} ${job.status === "error" || job.status === "interrupted" ? "error" : ""} ${job.status === "cancelled" ? "error" : ""}`}
       >
         <div className="bar" />
       </div>
@@ -255,7 +258,7 @@ export default function JobPanel({ syncOnEnter = false }: { syncOnEnter?: boolea
   const syncJobs = useCallback(async () => {
     const before = jobsRef.current;
     const list = await api.listJobs();
-    const active = list.filter(isActive).slice(0, MAX_ITEMS);
+    const active = list.filter(job=>isActive(job)||job.status==='waiting_user').slice(0, MAX_ITEMS);
     setJobs((prev) => {
       const next = { ...prev };
       for (const job of list) {
@@ -306,7 +309,7 @@ export default function JobPanel({ syncOnEnter = false }: { syncOnEnter?: boolea
           patchJob(id, { progress: (p.progress as string) ?? null });
           break;
         case "job_done":
-          patchJob(id, { status: "done", progress: (p.progress as string) ?? "完成", error: null });
+          patchJob(id, { status: p.status === 'waiting_user' ? 'waiting_user' : 'done', progress: (p.progress as string) ?? "完成", error: null });
           break;
         case "job_error":
           patchJob(id, { status: "error", error: (p.error as string) ?? null });

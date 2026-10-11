@@ -10,13 +10,19 @@ import { extractSource, getSource, PipelineError, prepareSourceExtraction, type 
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { STORAGE_ROOT } from "./db";
+import { matteBatch, prepareMatte } from './pipeline/masks';
+import type { MatteRequest } from '@framebaker/shared';
+import type { ExportRequest } from '@framebaker/shared';
+import { exportAssets,prepareExport,type ExportPayload } from './pipeline/export';
 
 export interface JobPayload {
+  productionExport?: ExportPayload;
   extract?: ExtractPayload;
   generate?: GeneratePayload;
   matting?: { target: "frame" | "material"; id: string };
   imageLayers?: ImageLayersPayload;
   sourceExtract?: SourceExtractPayload;
+  sceneMatting?: MatteRequest & { base_revision: number };
 }
 
 // 内存缓存仅服务本次队列；完整参数与结果持久化，重启后明确标记 interrupted。
@@ -53,8 +59,8 @@ export function createJob(projectId: string, type: JobType, payload: JobPayload)
     projectId,
     type,
     Date.now(), Date.now(), JSON.stringify(payload), payload.sourceExtract?.clipId ?? null,
-    payload.sourceExtract?.baseRevision ?? null, source?.sha256 ?? null,
-    payload.sourceExtract ? "ffmpeg-passthrough" : null, logPath
+    payload.sourceExtract?.baseRevision ?? payload.sceneMatting?.base_revision ?? payload.productionExport?.revision ?? null, source?.sha256 ?? payload.productionExport?.fingerprint ?? null,
+    payload.sourceExtract ? "ffmpeg-passthrough" : payload.sceneMatting ? 'rembg-cpu/u2netp' : payload.productionExport ? 'pillow-straight-alpha' : null, logPath
   );
   payloads.set(id, payload);
   waiting.push(id);
@@ -68,6 +74,28 @@ export function createSourceExtractionJob(projectId: string, clipId: string, bas
   const active = db.query("SELECT id FROM jobs WHERE status IN ('queued','running') AND (clip_id=? OR json_extract(payload,'$.sourceExtract.sourceId')=?) LIMIT 1").get(clipId, sourceExtract.sourceId);
   if (active) throw new PipelineError("EXTRACTION_BUSY", "动作或源素材已有抽帧任务", 409);
   return createJob(projectId, "extract_frames", { sourceExtract });
+}
+
+export function createSceneMattingJob(request: MatteRequest): string {
+  const prepared = prepareMatte(request);
+  if (db.query("SELECT id FROM jobs WHERE project_id=? AND status IN ('queued','running') LIMIT 1").get(request.project_id)) throw new PipelineError('PROJECT_BUSY','项目已有任务，请完成或取消后再抠图',409);
+  return createJob(request.project_id, 'matting', { sceneMatting: prepared });
+}
+
+export function createExportJob(request:ExportRequest):string {
+ if(db.query("SELECT 1 FROM jobs WHERE project_id=? AND status IN ('queued','running')").get(request.project_id))throw new PipelineError('PROJECT_BUSY','项目已有任务，请完成或取消后导出',409);
+ return createJob(request.project_id,'export_assets',{productionExport:prepareExport(request)});
+}
+
+export function resumeJob(id:string):string {
+ const job=getPersistedJob(id);
+ if(!job)throw new PipelineError('JOB_NOT_FOUND','任务不存在',404);
+ if(!['interrupted','error','cancelled'].includes(String(job.status)))throw new PipelineError('JOB_NOT_RESUMABLE','只能恢复中断、失败或取消的任务',409);
+ const p=job.payload;
+ if(p.productionExport)return createExportJob({...p.productionExport.request,base_revision:undefined});
+ if(p.sourceExtract)return createSourceExtractionJob(String(job.project_id),p.sourceExtract.clipId);
+ if(p.sceneMatting)return createSceneMattingJob({...p.sceneMatting,base_revision:undefined});
+ throw new PipelineError('JOB_NOT_RESUMABLE','此旧版任务没有受支持的恢复参数',409);
 }
 
 export function getPersistedJob(id: string): (Record<string, unknown> & { payload: JobPayload; result: unknown | null }) | null {
@@ -216,7 +244,9 @@ async function runJob(id: string) {
   broadcast("job_running", { id, projectId: job.project_id });
   try {
     if (signal.aborted) throw new JobCancelledError();
-    if (job.type === "extract_frames" && payload.sourceExtract) {
+    if (payload.productionExport) {
+      result = await exportAssets(payload.productionExport,report,signal);
+    } else if (job.type === "extract_frames" && payload.sourceExtract) {
       result = await extractSource(payload.sourceExtract, report, signal);
     } else if (job.type === "extract_frames" && payload.extract) {
       result = await extractFrames(payload.extract, report, enqueueMatting, signal);
@@ -225,6 +255,8 @@ async function runJob(id: string) {
       result = generated;
       if (payload.generate.followUp && generated.artifacts[0]?.kind === "image") generatedReferenceId = generated.artifacts[0].id;
       if (generated.warning) completionProgress = `完成（${generated.warning}）`;
+    } else if (job.type === "matting" && payload.sceneMatting) {
+      result = await matteBatch(payload.sceneMatting, report, signal);
     } else if (job.type === "matting" && payload.matting) {
       if (signal.aborted) throw new JobCancelledError();
       const warn = await matte(payload.matting.target, payload.matting.id, signal);
@@ -237,8 +269,10 @@ async function runJob(id: string) {
     if (signal.aborted) throw new JobCancelledError();
     if (generatedReferenceId && payload.generate) enqueueGeneratedFollowUp(payload.generate, generatedReferenceId);
     db.query("UPDATE jobs SET result=?,checkpoint=? WHERE id=?").run(result === null ? null : JSON.stringify(result), JSON.stringify({ stage: "complete" }), id);
-    setJob(id, "done", completionProgress);
-    broadcast("job_done", { id, projectId: job.project_id, type: job.type, progress: completionProgress });
+    const needsReview = !!payload.sceneMatting;
+    db.query('UPDATE jobs SET requires_user_action=? WHERE id=?').run(needsReview ? 1 : 0,id);
+    setJob(id, needsReview ? 'waiting_user' : 'done', needsReview ? '抠图初稿已生成，请检查武器与边缘' : completionProgress);
+    broadcast("job_done", { id, projectId: job.project_id, type: job.type, status: needsReview ? 'waiting_user' : 'done', progress: needsReview ? '抠图初稿已生成，请检查武器与边缘' : completionProgress });
   } catch (err) {
     if (err instanceof JobCancelledError || signal.aborted) {
       setJob(id, "cancelled", "已取消", null);

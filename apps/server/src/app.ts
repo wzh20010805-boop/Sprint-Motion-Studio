@@ -21,14 +21,18 @@ import { beginProjectUndo, finishProjectUndo, undoProject } from "./undo";
 import { timelineApi } from "./api/timeline";
 import { attackEffectsApi } from "./api/attackEffects";
 import { mcpHandler } from "./mcp";
+import { sfsMcpHandler } from './mcp/sfs';
 import { cancelJob, getQueueConcurrency } from "./queue";
 import { broadcast } from "./ws";
 import { pipelineApi } from "./pipeline/api";
+import { masksApi } from './pipeline/masksApi';
+import { productionApi } from './pipeline/productionApi';
 
 // imageOps worker 打包结果：生产缓存一次，开发每次重建（跟随源码改动）
 let imageOpsWorkerCode: string | null = null;
 
 async function buildImageOpsWorker(): Promise<string> {
+  if(process.env.SFS_ASSET_DIR)return readFileSync(join(process.env.SFS_ASSET_DIR,'imageOps.worker.js'),'utf8');
   if (imageOpsWorkerCode && process.env.NODE_ENV === "production") return imageOpsWorkerCode;
   const result = await Bun.build({
     entrypoints: [join(import.meta.dir, "..", "..", "web", "src", "imageops", "imageOps.worker.ts")],
@@ -40,8 +44,8 @@ async function buildImageOpsWorker(): Promise<string> {
   return imageOpsWorkerCode;
 }
 
-const pixiBundlePath = join(import.meta.dir, "..", "..", "web", "node_modules", "pixi.js", "dist", "pixi.min.js");
-const pixiCspPolyfillPath = join(import.meta.dir, "..", "..", "web", "node_modules", "pixi.js", "dist", "packages", "unsafe-eval.min.js");
+const pixiBundlePath = process.env.SFS_ASSET_DIR ? join(process.env.SFS_ASSET_DIR,'pixi.min.js') : join(import.meta.dir, "..", "..", "web", "node_modules", "pixi.js", "dist", "pixi.min.js");
+const pixiCspPolyfillPath = process.env.SFS_ASSET_DIR ? join(process.env.SFS_ASSET_DIR,'unsafe-eval.min.js') : join(import.meta.dir, "..", "..", "web", "node_modules", "pixi.js", "dist", "packages", "unsafe-eval.min.js");
 let pixiGzipCache: { version: string; body: Uint8Array } | null = null;
 
 function acceptsGzip(value: string | null): boolean {
@@ -58,6 +62,8 @@ function acceptsGzip(value: string | null): boolean {
 }
 
 export const app = new Elysia()
+  .use(productionApi)
+  .use(masksApi)
   // 不在全局 hook 读取 body：MCP 需要直接消费原始 Request stream。
   .onBeforeHandle(({ request }) => beginProjectUndo(request, undefined))
   .onAfterHandle(({ request, set, responseValue }) => {
@@ -220,7 +226,7 @@ export const app = new Elysia()
   .get("/fonts/:name", ({ params, status }) => {
     const name = params.name;
     if (!/^[\w.-]+$/.test(name)) return status(400, "非法文件名");
-    const file = Bun.file(join(import.meta.dir, "..", "..", "web", "public", "fonts", name));
+    const file = Bun.file(process.env.SFS_ASSET_DIR?join(process.env.SFS_ASSET_DIR,'fonts',name):join(import.meta.dir, "..", "..", "web", "public", "fonts", name));
     return new Response(file, {
       headers: {
         "Content-Type": name.endsWith(".woff2") ? "font/woff2" : "text/plain; charset=utf-8",
@@ -252,6 +258,6 @@ export const app = new Elysia()
   .use(animationAssetsApi)
   .use(settingsApi)
   // MCP（Model Context Protocol）端点：Streamable HTTP 传输（SDK v2 自动处理 POST/GET/DELETE）
-  .all("/mcp", ({ request }) => mcpHandler.fetch(request));
+  .all("/mcp", ({ request }) => (process.env.SFS_SERVICE_TOKEN?sfsMcpHandler:mcpHandler).fetch(request));
 
 export type App = typeof app;

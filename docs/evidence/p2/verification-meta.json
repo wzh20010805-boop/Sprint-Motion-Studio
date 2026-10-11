@@ -1,0 +1,42 @@
+{
+  "date": "2026-10-10",
+  "cwd": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker",
+  "timezone": "Asia/Shanghai",
+  "bun": "1.4.2",
+  "commands": [
+    {
+      "command": "bun run test",
+      "log": "tests-final.txt",
+      "passed": 255,
+      "failed": 0,
+      "exit": 0
+    },
+    {
+      "command": ".venv-image/Scripts/python.exe -m pytest workers/image/tests -q",
+      "log": "python-tests.txt",
+      "passed": 5,
+      "failed": 0,
+      "exit": 0
+    },
+    {
+      "command": "bun run typecheck",
+      "log": "typecheck-final.txt",
+      "exit": 0
+    },
+    {
+      "command": "bun run build:cli",
+      "log": "cli-build.txt",
+      "exit": 0
+    },
+    {
+      "command": "dist/sfs.exe doctor --json",
+      "log": "compiled-doctor.json",
+      "exit": 0
+    },
+    {
+      "command": "bun scripts/verify_p2.ts",
+      "log": "desktop/2026-10-10T11-03-39.895Z/desktop-report.json",
+      "exit": 0
+    }
+  ]
+}

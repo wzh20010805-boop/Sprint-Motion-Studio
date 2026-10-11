@@ -21,11 +21,11 @@ export default function TopNav({ current, onNav }: Props) {
 
   return (
     <nav className="top-nav">
-      <button type="button" className="brand" onClick={() => onNav("home")} aria-label="FrameBaker">
+      <button type="button" className="brand" onClick={() => onNav("home")} aria-label={t('candy.brand')}>
         <span className="brand-mark">
           <Clapperboard size={16} />
         </span>
-        <span>FrameBaker</span>
+        <span>{t('candy.brand')}<small>SPRITE MOTION STUDIO</small></span>
       </button>
       <div className="nav-tabs">
         {tabs.map(({ id, icon: Icon, label }) => (

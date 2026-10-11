@@ -1,0 +1,27 @@
+{
+  "project_id": "ab89e225-ec8a-4ecf-bd05-ef0956e95ad5",
+  "axis_id": "3de65fa9-6d15-48b1-9223-e6a67011f0e2",
+  "fps_before": 24,
+  "fps": 12,
+  "original_frames": 31,
+  "final_frames": 32,
+  "first_frame_id": "c200ff6d-4e67-48d0-aaa4-e66f79acfad0",
+  "closing_frame_id": "2cc80327-23e3-40a0-abec-482988491a97",
+  "first_and_closing_pixels_equal": true,
+  "pose_equal": {
+    "offset_x": 0,
+    "offset_y": 0,
+    "scale": 1,
+    "rotation": 0,
+    "opacity": 1,
+    "duration": 1
+  },
+  "original_steps_retained_in_order": true,
+  "original_raw_sha256_unchanged": true,
+  "first_rgba_sha256": "ca6ba6260b0a3419cf33a449ed965025d1aab7ac5e80065f1e03356606aad915",
+  "closing_rgba_sha256": "ca6ba6260b0a3419cf33a449ed965025d1aab7ac5e80065f1e03356606aad915",
+  "backup": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\workspaces\\default\\backups\\before-loop-12fps-20261010-235056.db",
+  "mask_job_id": "2ca8d7c1-45ad-4d36-b995-68a4bd51d330",
+  "duration_seconds_with_closing_frame": 2.6666666666666665,
+  "evidence": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\loop-12fps\\20261010-235056"
+}

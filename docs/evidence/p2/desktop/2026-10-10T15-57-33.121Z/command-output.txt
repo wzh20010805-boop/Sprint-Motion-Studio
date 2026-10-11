@@ -1,0 +1,16 @@
+
+{"exitCode":1,"evidenceRoot":"D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p2\\desktop\\2026-10-10T15-57-33.121Z"}
+
+AssertionError [ERR_ASSERTION]: Playback must not contain onion skins after async image loading
+
+false !== true
+
+    at module.exports (D:\AIJOB\tools\Sprite Motion Studio\framebaker\probes\desktop\onion-scenario.cjs:29:10)
+    at async run (D:\AIJOB\tools\Sprite Motion Studio\framebaker\probes\desktop\main.cjs:246:80) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: 'strictEqual',
+  diff: 'simple'
+}

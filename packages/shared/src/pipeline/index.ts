@@ -48,3 +48,6 @@ export interface ExtractionResult {
   probe: VideoProbe;
   warnings: string[];
 }
+export * from './masks';
+export * from './alignment';
+export * from './schemas';

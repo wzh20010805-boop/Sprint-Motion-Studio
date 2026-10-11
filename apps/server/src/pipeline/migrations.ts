@@ -2,7 +2,7 @@ import type { Database } from "bun:sqlite";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-export const PIPELINE_SCHEMA_VERSION = 3;
+export const PIPELINE_SCHEMA_VERSION = 4;
 
 /** VACUUM INTO 读取当前连接的完整快照，包括尚在 WAL 中的已提交数据。 */
 export function backupBeforeMigrations(db: Database, root: string): string | null {
@@ -11,7 +11,7 @@ export function backupBeforeMigrations(db: Database, root: string): string | nul
   if (!db.query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' LIMIT 1").get()) return null;
   const directory = join(root, "backups");
   mkdirSync(directory, { recursive: true });
-  const path = join(directory, `before-schema-3-${Date.now()}-${crypto.randomUUID()}.db`);
+  const path = join(directory, `before-schema-${PIPELINE_SCHEMA_VERSION}-${Date.now()}-${crypto.randomUUID()}.db`);
   db.exec(`VACUUM INTO '${path.replaceAll("'", "''")}'`);
   return path;
 }
@@ -55,6 +55,13 @@ export function migratePipeline(db: Database, root: string, existingBackup?: str
       );
       CREATE INDEX IF NOT EXISTS idx_clips_project ON clips(project_id);
       CREATE INDEX IF NOT EXISTS idx_jobs_clip_active ON jobs(clip_id,status);
+      CREATE TABLE IF NOT EXISTS mask_versions (
+        id TEXT PRIMARY KEY, frame_id TEXT NOT NULL, parent_id TEXT, kind TEXT NOT NULL,
+        mask_path TEXT NOT NULL, rgba_path TEXT NOT NULL, preview_path TEXT NOT NULL,
+        raw_path TEXT NOT NULL, raw_sha256 TEXT NOT NULL, info TEXT NOT NULL, created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_mask_versions_frame ON mask_versions(frame_id,created_at);
+      CREATE TABLE IF NOT EXISTS mask_heads (frame_id TEXT PRIMARY KEY, version_id TEXT NOT NULL, reviewed INTEGER NOT NULL DEFAULT 0);
     `);
     // GUI 的实际修改也推进同一修订；无变化的启动归一化 UPDATE 不制造虚假冲突。
     const targets: Array<[string, string, string]> = [
@@ -66,13 +73,13 @@ export function migratePipeline(db: Database, root: string, existingBackup?: str
     for (const [table, newProject, oldProject] of targets) {
       const cols = db.query(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
       const changed = cols.filter((col) => col.name !== "id").map((col) => `OLD.${col.name} IS NOT NEW.${col.name}`).join(" OR ") || "0";
-      db.exec(`CREATE TRIGGER sfs_${table}_insert AFTER INSERT ON ${table} BEGIN UPDATE projects SET revision=revision+1 WHERE id=${newProject}; END;
-        CREATE TRIGGER sfs_${table}_delete AFTER DELETE ON ${table} BEGIN UPDATE projects SET revision=revision+1 WHERE id=${oldProject}; END;
-        CREATE TRIGGER sfs_${table}_update AFTER UPDATE ON ${table} WHEN ${changed} BEGIN UPDATE projects SET revision=revision+1 WHERE id IN (${newProject},${oldProject}); END;`);
+      db.exec(`CREATE TRIGGER IF NOT EXISTS sfs_${table}_insert AFTER INSERT ON ${table} BEGIN UPDATE projects SET revision=revision+1 WHERE id=${newProject}; END;
+        CREATE TRIGGER IF NOT EXISTS sfs_${table}_delete AFTER DELETE ON ${table} BEGIN UPDATE projects SET revision=revision+1 WHERE id=${oldProject}; END;
+        CREATE TRIGGER IF NOT EXISTS sfs_${table}_update AFTER UPDATE ON ${table} WHEN ${changed} BEGIN UPDATE projects SET revision=revision+1 WHERE id IN (${newProject},${oldProject}); END;`);
     }
     const projectCols = db.query("PRAGMA table_info(projects)").all() as Array<{ name: string }>;
     const projectChanged = projectCols.filter((entry) => !["id", "revision"].includes(entry.name)).map((entry) => `OLD.${entry.name} IS NOT NEW.${entry.name}`).join(" OR ") || "0";
-    db.exec(`CREATE TRIGGER sfs_projects_update AFTER UPDATE ON projects WHEN ${projectChanged} BEGIN UPDATE projects SET revision=revision+1 WHERE id=NEW.id; END;`);
+    db.exec(`CREATE TRIGGER IF NOT EXISTS sfs_projects_update AFTER UPDATE ON projects WHEN ${projectChanged} BEGIN UPDATE projects SET revision=revision+1 WHERE id=NEW.id; END;`);
     db.query("INSERT INTO schema_migrations(version,applied_at) VALUES(?,?)").run(PIPELINE_SCHEMA_VERSION, Date.now());
   })();
   const metadataPath = join(root, "workspace.json");

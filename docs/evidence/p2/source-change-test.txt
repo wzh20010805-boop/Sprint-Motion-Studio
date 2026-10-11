@@ -1,0 +1,9 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\masks-service.test.ts:
+(pass) 真实CPU批量初稿、修笔、冲突、撤销、待人工任务与重启持久化 [9071.68ms]
+
+ 1 pass
+ 0 fail
+ 13 expect() calls
+Ran 1 test across 1 file. [9.27s]

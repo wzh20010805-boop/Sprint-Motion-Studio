@@ -1,0 +1,6 @@
+{
+  "workspace": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\material-retention-desktop\\96d72e59-b162-464c-a3f4-1a676eb4b642",
+  "project": "bdda5ba7-8c36-4c51-a7c0-bb9460c64b6d",
+  "command": "bun scripts/verify_material_retention.ts",
+  "exit": 0
+}

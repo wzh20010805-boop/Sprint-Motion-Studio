@@ -10,6 +10,7 @@ import { appendFramePool } from "../timeline";
 import { invalidateProjectUndo } from "../undo";
 import { findImageMagick } from "../media";
 import { createClip, extractSource, importVideo, prepareSourceExtraction } from "../pipeline/service";
+import { extractLibraryVideo, retainImportedMaterial } from '../materialRetention';
 
 /** 任务产出目标：项目帧 or 素材库 */
 type JobTarget = { kind: "project"; projectId: string } | { kind: "materials" };
@@ -17,6 +18,8 @@ type JobTarget = { kind: "project"; projectId: string } | { kind: "materials" };
 export { EXTRACT_TIMESTAMPS_MAX };
 
 export interface ExtractPayload {
+  /** 桌面素材库完整抽帧，来源为已经保留的独立原视频。 */
+  libraryMaterialId?: string;
   stagingFile: string;
   mediaType: "gif" | "mp4" | "image";
   /** fps 模式（默认）：整段按帧率抽；timestamps 模式忽略 */
@@ -222,6 +225,7 @@ export async function extractFrames(
   signal?: AbortSignal
 ) {
   if (signal?.aborted) throw new JobCancelledError();
+  if (p.libraryMaterialId) return extractLibraryVideo(p.libraryMaterialId, progress, signal);
   if (p.mode === "all") {
     if (p.mediaType !== "mp4" || p.target.kind !== "project") throw new Error("完整源帧模式需要视频和项目目标");
     const source = await importVideo(p.target.projectId, p.stagingFile);
@@ -251,11 +255,13 @@ export async function extractFrames(
       const id = uid();
       const rawPath = `${rawDir}/frame_${String(start + i).padStart(4, "0")}.png`;
       renameSync(`${stageDir}/${file}`, rawPath);
-      appendFramePool(projectId,{id,raw_path:rawPath,status:p.autoMatting?"matting":"ready",source});
+      const materialId = retainImportedMaterial({ key: 'frame:' + id, name: files.length > 1 ? `${p.originName || '素材'} #${i + 1}` : p.originName || '素材', rawPath, source, metadata: { fromFrame: id } });
+      appendFramePool(projectId,{id,raw_path:rawPath,status:p.autoMatting?"matting":"ready",source,metadata:JSON.stringify({ fromMaterial: materialId })});
       frameIds.push(id);
     });
     cleanupStaging(stageDir, p.stagingFile);
     afterImportFrames(p.target.projectId, frameIds, p.autoMatting, enqueueMatting);
+    broadcast('materials_changed', {});
   } else {
     const ids = saveMaterials(stageDir, files, p);
     cleanupStaging(stageDir, p.stagingFile);

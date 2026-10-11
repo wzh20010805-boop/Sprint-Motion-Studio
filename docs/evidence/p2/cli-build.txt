@@ -1,0 +1,3 @@
+$ bun build apps/cli/src/index.ts --compile --target=bun-windows-x64 --outfile dist/sfs.exe
+   [6ms]  bundle  4 modules
+ [219ms] compile  dist/sfs.exe

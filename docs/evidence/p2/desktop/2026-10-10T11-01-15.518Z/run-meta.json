@@ -1,0 +1,7 @@
+{
+  "workspace": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\p2-desktop\\970bf45c-a1b2-4844-89d4-0dc2ece698dc",
+  "project": "6d4de3e8-327e-4e58-a6bb-cfd46120aa87",
+  "command": "bun scripts/verify_p2.ts",
+  "bun": "1.4.2",
+  "exit": 0
+}

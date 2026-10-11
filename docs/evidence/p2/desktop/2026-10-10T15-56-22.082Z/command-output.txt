@@ -1,0 +1,16 @@
+
+{"exitCode":1,"evidenceRoot":"D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\docs\\evidence\\p2\\desktop\\2026-10-10T15-56-22.082Z"}
+
+AssertionError [ERR_ASSERTION]: Editor must actually show a visual onion-skin difference
+
+true !== false
+
+    at module.exports (D:\AIJOB\tools\Sprite Motion Studio\framebaker\probes\desktop\onion-scenario.cjs:24:10)
+    at async run (D:\AIJOB\tools\Sprite Motion Studio\framebaker\probes\desktop\main.cjs:246:80) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: true,
+  expected: false,
+  operator: 'strictEqual',
+  diff: 'simple'
+}

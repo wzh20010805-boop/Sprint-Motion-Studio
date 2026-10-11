@@ -1,262 +1,77 @@
-# Sprint Motion Studio
+# Sprint Motion Studio · 小兵动画素材工坊
 
-基于 [FrameBaker](https://github.com/taotao7/FrameBaker) 二次开发的小兵动画素材工坊，保留上游 Git 历史和许可。
+基于 [FrameBaker](https://github.com/taotao7/FrameBaker) 二次开发的 Windows 动画素材工具。现在的界面采用糖果配色与手绘边框，支持视频完整抽帧、抠图修正、地面基准对齐、审核导出，以及共享工作区的 CLI / MCP。
 
-当前开发版完成 P0 / P1：导入视频、完整保留原始帧与源时序、共享 GUI / CLI 工作区，以及 Windows 桌面启动。**输出仍有场景背景；自动抠图、角色对齐、Cocos 接入和独立发行包尚未完成。**
+**[下载 Windows 便携安装包](https://github.com/wzh20010805-boop/Sprint-Motion-Studio/releases/latest)** · [使用说明](docs/p3-p5-guide.md) · [开发与验证记录](docs/evidence/p2-p5/report.md) · [二次开发说明](README_SFS.md)
 
-完整使用说明见 [README_SFS.md](README_SFS.md)，开发状态和验证记录见 [docs/progress.md](docs/progress.md)。
+## 当前界面
 
-## Windows 11 快速启动
+以下截图由当前 Windows 便携版实际运行拍摄，展示此前导入的「5s奔跑视频制作.mp4」及其逐帧角色素材。
 
-准备 Node.js / npm、Python 3.11，并确认 FFmpeg / ffprobe 已在 PATH 中。在克隆后的仓库目录打开 PowerShell：
+| 动画编辑器 · 抠图后的奔跑角色 | 素材库 · 保留视频与完整原帧 |
+| --- | --- |
+| ![当前小兵动画编辑器](docs/media/sfs/editor.png) | ![当前素材库](docs/media/sfs/library.png) |
+
+## 奔跑案例
+
+使用此前导入的原视频展示实际来源，用项目现有帧生成动作预览。原视频保留背景，抠图修正后的角色以棋盘格显示；示例不代表所有帧已经通过人工质量审核。
+
+| 导入的原视频 | 当前项目的抠图帧预览 |
+| --- | --- |
+| ![小兵原视频](docs/media/sfs/source-run.gif) | ![小兵抠图动作预览](docs/media/sfs/run-loop.gif) |
+
+| 遮罩修正 | 地面基准与统一画布 |
+| --- | --- |
+| ![遮罩擦除和恢复](docs/media/sfs/mask-workshop.png) | ![地面基准与逐帧偏移](docs/media/sfs/alignment-workshop.png) |
+
+[下载此案例的原视频](docs/media/sfs/source-run.mp4)。展示媒体用于说明本项目工作流程；沿用用户此前提供的素材，不属于项目 MIT 源码许可授权的素材库。
+
+## 可以做什么
+
+- 导入 MP4 / GIF 或 PNG 序列，保留原文件、完整显示帧与源时序。
+- 本地 CPU 自动抠图、框选角色，擦除 / 恢复遮罩，撤销并逐帧检查透明边缘。
+- 调整公共画布、比例、地面根点及逐帧偏移，通过预览核对动作。
+- 经审核导出透明 PNG 序列、规则多页图集、manifest、联系表、背景 MP4 与完整 ZIP；未审核内容可以显式导出草稿。
+- GUI、CLI 与九工具 MCP 共用同一工作区、修订号与导出逻辑。
+
+## Windows 安装与启动
+
+1. 从 [Releases](https://github.com/wzh20010805-boop/Sprint-Motion-Studio/releases/latest) 下载 `SpriteMotionStudio-win-x64-1.0.0.zip`。
+2. 解压到可写目录，双击 `SpriteMotionStudio.exe` 或 `START.cmd`。这是便携安装包，无需另装 Node.js、Bun 或 Python。
+3. 自动抠图需在「素材工坊」菜单离线导入或明确下载 u2netp 模型。模型没有随包附带，其余本地操作可断网运行。
+4. 工作区默认存入当前用户 LocalAppData 下的 `SpriteMotionStudio/workspaces/default`，可通过菜单切换到已有工作区。
+
+包内附 SHA256 校验清单、许可、CLI / Codex 接入说明与示例媒体。本版已完成本机 Windows 启动、换目录、受限 PATH、300 帧纹理预算及 GUI / CLI 输出一致性验证；干净 Windows 虚拟机与真实美术质量验收尚未完成。二进制未签名。
+
+## CLI 与 Codex
 
 ```powershell
+.\sfs.exe doctor --json
+.\sfs.exe project list --json
+.\sfs.exe --help
+.\sfs.exe schemas
+.\sfs.exe mcp stdio --workspace "D:\素材工作区"
+```
+
+完整参数、审核规则和 recipe 示例见 [P3–P5 使用说明](docs/p3-p5-guide.md)。项目提供 [本地 Skill](skills/soldier-frame-studio/SKILL.md)，不会自动修改全局 Codex 配置。
+
+## 从源码开发
+
+```powershell
+git clone https://github.com/wzh20010805-boop/Sprint-Motion-Studio.git
+cd Sprint-Motion-Studio
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup_sfs.ps1 -IncludeDesktop -IncludeValidationPython
 .\sfs.cmd doctor --json
 .\Start-SFS.cmd
 ```
 
-依赖安装到独立目录，不提交本机运行时、虚拟环境、用户素材或工作区数据。首次安装需要网络。MP4 请从项目编辑器的“导入 → 上传文件 → 全部原始帧”导入；素材库的视频入口暂未开放。
+源码启动需要 FFmpeg / ffprobe；安装说明见 [README_SFS.md](README_SFS.md)。开发检查：`bun test tests`、`bun run typecheck`、`python -m pytest workers/image/tests`。用户工作区、模型、虚拟环境及构建输出不提交到 Git。
 
-## 上游 FrameBaker 说明
+## 来源与许可
 
-以下保留上游说明。当前工具阶段支持范围以 [README_SFS.md](README_SFS.md) 为准。
+保留 [FrameBaker](https://github.com/taotao7/FrameBaker) 的上游历史与 [MIT 许可](LICENSE)。Windows 包中的运行时、FFmpeg、字体和 Python 依赖各自遵循其许可证，详见 [第三方说明](THIRD_PARTY_NOTICES.md) 和 [依赖源码与重建说明](docs/licenses/distribution-sources.md)。上游界面和演示案例已由本项目实拍界面与用户此前提供的奔跑案例替换。
 
-**Pixel-art frame-by-frame animation editor — a Bun full-stack app.**
-
-Import sprites from anywhere (GIF/MP4 frame extraction, PNG upload, external CLI generation), cut out backgrounds with the built-in rembg matting engine, review results in the materials library, then edit frames on a PixiJS onion-skin canvas, arrange the timeline, preview playback, and export a spritesheet.
-
-> ✅ **Multi-axis / multi-track MVP:** animation variants, compositing tracks, shared steps, composite preview and export are available — along with skeletal binding, on-character motion editing, and freeform part warping.
-
-![Bun](https://img.shields.io/badge/Bun-1.3-14151A?logo=bun)
-![Elysia](https://img.shields.io/badge/Elysia-1.4-6f61c0)
-![React](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)
-![Core unit coverage](https://img.shields.io/badge/core%20unit%20coverage-100%25-brightgreen)
-![License](https://img.shields.io/badge/License-MIT-green)
-
-**English** | [中文](README.zh-CN.md)
-
-![Playback preview demo](docs/media/demo.gif)
-
-### Skeletal Motion Workflow
-
-Assemble a character from parts, then edit motions directly on the bound character: drag bones or part control-point grids on the canvas, keyframe translation/rotation/scale/bend/warp per track, and preview the result live on the project board.
-
-| Motion workspace & live preview | On-character motion editor |
-| --- | --- |
-| ![Skeletal motion workspace with live preview](docs/media/skeletal-action-workspace.png) | ![Editing a motion on the bound character](docs/media/skeletal-action-editor.png) |
-
-![Per-bone and per-part keyframe tracks on the motion timeline](docs/media/skeletal-action-timeline.png)
-
-### Skeletal Parts Workflow
-
-Generate and matte a reference-locked character parts sheet, then refine its grid with per-cell movement, direct divider resizing, merge/split controls, quality checks, and per-cell erase editing before creating skeletal materials.
-
-| Character parts material | Interactive parts-grid editor |
-| --- | --- |
-| ![Generated and matted character parts material](docs/media/skeletal-parts-preview.png) | ![Interactive skeletal parts-grid editor](docs/media/skeletal-grid-editor.png) |
-
-| Frame editor | Materials library |
-| --- | --- |
-| ![Frame editor](docs/media/editor.png) | ![Materials library](docs/media/library.png) |
-
-| Playback preview | Dark theme (Magnetic Night) |
-| --- | --- |
-| ![Playback preview](docs/media/preview.png) | ![Dark theme](docs/media/library-dark.png) |
-
-| Video material (custom pixel-style player) | Frame extract editor (VIDEO CUT LAB) |
-| --- | --- |
-| ![Video material detail](docs/media/video-material.png) | ![Frame extract editor](docs/media/video-cut-lab.png) |
-
-## Scene Layering Demo
-
-Scene layering reconstructs a flat image as independently editable, hideable, and movable RGBA layers. The demo material below was generated inside FrameBaker with `wan2.7-image`, then actually decomposed by the standalone `Qwen-Image-Layered` configuration using **4 layers / 50 steps / CFG 4**.
-
-| Generated flat scene | Scene-layer result |
-| --- | --- |
-| ![Generated moonlit alchemist scene](docs/media/scene-layering-source.png) | ![Background, props, ground, and whole-character layers](docs/media/scene-layering-layers.png) |
-
-- **L1 background:** sky and castle; **L2 props:** crystals, potion, and chest; **L3 ground:** grass platform; **L4 subject:** the complete alchemist character and moon.
-- This is semantic layer reconstruction, not strict pixel-label segmentation: the model may group the moon with the character or spread similar objects across layers, but every output remains independently compositable and editable.
-- **Scene layering does not promise head, torso, arm, or leg parts.** Character rig decomposition requires a separate mask/segmentation workflow and must not be represented by these outputs.
-- Full scenes skip pre-matting by default to preserve background and depth context. Enable background removal only when recursively refining an already isolated foreground.
-
-**The original scene and all four layer outputs as they appear in the materials library:**
-
-![Scene-layer outputs in the FrameBaker materials library](docs/media/scene-layering-library.png)
-
-## Features
-
-- **Multi-source import** — GIF / MP4 frame extraction via ffmpeg (adjustable fps), multi-select PNG upload, external generator CLI (`FRAMEBAKER_GEN_CLI`)
-- **Video materials & frame extract editor** — generated/uploaded videos get a custom pixel-style player (checkerboard backdrop, click-to-play, themed scrubber); the "VIDEO CUT LAB" editor scrubs to an exact frame and marks it, or fills a time range at a target fps, then extracts up to 64 frames as image materials in one batch (optionally matted on the way out)
-- **Built-in matting** — rembg works out of the box (u2net by default, custom models supported); custom CLI template optional; before/after compare slider to review cutouts
-- **Scene layering** — standalone Qwen-Image-Layered configuration decomposes flat art into RGBA background, whole-subject, prop, and foreground layers; recursive refinement is supported without pretending to produce character body parts
-- **Materials library** — a first-class staging area: generate or upload, matte, compare, then import into any project — single or batch
-- **Frame editor** — PixiJS v8 canvas with onion skin, grid, viewport zoom, draggable offsets, scale / rotation / opacity controls, crop-and-replace, per-frame duration, and keyframes
-- **Timeline & batch ops** — drag to reorder, Cmd/Ctrl+Click and Shift+Click multi-select, batch delete / duplicate / set duration
-- **Humanoid motion rig** — choose a CC0 Quaternius Universal Animation Library action sampled at 8–16 frames and get immediate playback, tune motion range / arm swing / leg stride / body bounce / lean across the entire clip, then optionally fine-tune individual FK joints before pose-sheet export
-- **Spritesheet export** — pure client-side canvas packing with frame transforms baked into aligned cells → `*.spritesheet.png` + `*.json`
-- **Cassette Futurism themes** — dark "Magnetic Night" / light "Beige Terminal"; follows system preference until you pick one (tri-state toggle)
-- **Live sync** — WebSocket broadcasts for job progress and frame/material changes
-- **Adjustable layout** — drag the split dividers to resize the frame list and timeline (persisted)
-- **MCP server** — built-in [Model Context Protocol](https://modelcontextprotocol.io) endpoint (`POST /mcp`, Streamable HTTP) exposing 48 tools for AI assistants (Claude Desktop, Cursor, Windsurf) to manage projects, frames, materials, generation, matting, jobs, and settings programmatically
-
-## System Requirements
-
-- **Windows 10/11, macOS, or Linux** — Windows has been verified on real hardware for server startup, frontend serving, APIs, SQLite storage, and ffmpeg detection
-- **Bun 1.3+** — required; reopen your terminal after installation and verify that `bun --version` works
-- **ffmpeg** — only required for GIF/MP4 frame extraction; PNG imports and editing do not need it
-- **uv (recommended) or Python 3** — only needed for the bundled matting engine; uv can download an isolated Python without a system Python installation
-- A modern browser with WebGL (PixiJS v8 canvas)
-
-### Windows prerequisites (PowerShell)
-
-```powershell
-# 1. Install Bun (or see https://bun.sh/docs/installation)
-powershell -c "irm bun.sh/install.ps1 | iex"
-
-# 2. Install ffmpeg when GIF/MP4 extraction is needed
-winget install ffmpeg
-
-# 3. Install uv when matting is needed (or install Python from python.org and add it to PATH)
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-
-# Reopen PowerShell after installation, then verify:
-bun --version
-ffmpeg -version
-uv --version
-```
-
-> `setup_matting.ps1` prefers uv and creates an isolated Python 3.12 environment; it falls back to Python from `PATH` when uv is unavailable. The Microsoft Store `python.exe` app execution alias is not a Python installation.
-
-## Quick Start
-
-```bash
-bun install
-bun dev          # dev mode (--hot) → http://localhost:3000
-# or
-bun start        # production
-```
-
-- ffmpeg is required for frame extraction: `brew install ffmpeg` (macOS) / `winget install ffmpeg` (Windows)
-- **Matting engine** (optional; install once per new environment):
-  ```bash
-  ./scripts/setup_matting.sh            # macOS / Linux (CPU, default)
-  ./scripts/setup_matting.sh --gpu      # macOS / Linux (NVIDIA GPU via onnxruntime-gpu)
-  # Windows (PowerShell):
-  powershell -ExecutionPolicy Bypass -File scripts\setup_matting.ps1           # CPU
-  powershell -ExecutionPolicy Bypass -File scripts\setup_matting.ps1 -Gpu      # GPU
-  ```
-  Creates `.venv-matting/` and installs `rembg[cli,cpu]` (or `rembg[cli,gpu]`); on Windows it prefers uv-managed Python 3.12. The u2net model downloads automatically to `storage/models` on first use. Skipping this leaves matting in passthrough mode (copies the original image with a warning).
-
-  **GPU mode** requires an NVIDIA GPU and a matching CUDA Toolkit installation. `onnxruntime-gpu` version must align with your CUDA version (e.g. onnxruntime-gpu 1.16 ↔ CUDA 11.8, 1.17+ ↔ CUDA 12.x). If you get DLL load errors, verify CUDA is installed and the version matches. To switch between CPU and GPU, delete `.venv-matting/` and re-run the script with the other flag.
-- Type check: `bun run typecheck`
-- Unit tests: `bun run test`
-- Core unit-test coverage report: `bun run test:coverage` (currently covers shared rules, frame geometry, and ZIP export)
-
-### Windows Notes & Gotchas
-
-The project runs on Windows but there are several platform-specific things to be aware of:
-
-1. **`bun dev` uses `--watch`, not `--hot`** — Bun 1.3 on Windows has a bug where browser HMR reorders PixiJS 8's circular-dependency initialization, causing a blank canvas. The dev script therefore uses `--watch` (server auto-restart on file changes, but no frontend HMR). **You must manually refresh the browser** after editing frontend code. macOS/Linux keep full HMR.
-
-2. **PixiJS is loaded from CDN, not from the npm package** — `apps/web/index.html` includes a `<script>` tag pointing to `cdn.jsdelivr.net/npm/pixi.js@8.19.0/dist/pixi.min.js`. This bypasses Bun's bundler, which mis-handles PixiJS's circular imports on Windows. The browser's first load needs internet access to `cdn.jsdelivr.net`; subsequent loads use the cache. If you need offline use, download `pixi.min.js` to `apps/web/public/` and point the `<script>` there.
-
-3. **Server dev mode is disabled on Windows** — `apps/server/src/index.ts` sets `development: false` on `win32` to prevent Bun's HTML dev server from injecting HMR scripts that trigger the same PixiJS bug. This does not affect production (`bun start`).
-
-4. **Run `bun install` after every fresh checkout or dependency change** — Bun's isolated workspace layout means the local `@framebaker/shared` package is only resolvable after `bun install`. Without it, Bun may load third-party packages from its global cache but fail to resolve the workspace, causing import errors.
-
-5. **PowerShell environment variables** — Use `$env:PORT=8080; bun dev` (semicolon, not `&&`). The `&&` operator is not supported in older PowerShell versions. Bash syntax `PORT=8080 bun dev` works on macOS/Linux.
-
-6. **PowerShell execution policy for setup scripts** — `setup_matting.ps1` requires `-ExecutionPolicy Bypass` (e.g. `powershell -ExecutionPolicy Bypass -File scripts\setup_matting.ps1`). The script is written in ASCII to be parseable by Windows PowerShell 5.1 without a UTF-8 BOM.
-
-7. **Microsoft Store `python.exe` is not a real Python** — Windows ships an "App execution alias" called `python.exe` that opens the Microsoft Store instead of running Python. Install Python from [python.org](https://www.python.org/downloads/) (and check "Add to PATH"), or install [uv](https://docs.astral.sh/uv/) which can download an isolated Python without a system install. `setup_matting.ps1` prefers uv and only falls back to PATH Python when uv is absent.
-
-8. **Backslash paths for Windows scripts** — Use `scripts\setup_matting.ps1`, not `scripts/setup_matting.ps1`, when running from PowerShell or cmd.
-
-## Matting Engine Resolution
-
-Detected on demand (see `GET /api/config`):
-
-1. `FRAMEBAKER_MATTING_CLI` — custom command template (`{input}` `{output}`, optional `{model}`)
-2. Bundled rembg in `<repo>/.venv-matting` (`bin/rembg` on POSIX, `Scripts/rembg.exe` on Windows) — installed by `scripts/setup_matting.sh` / `setup_matting.ps1` (engine = `rembg-bundled`)
-3. `rembg` found in `PATH` (engine = `rembg-path`)
-4. None — passthrough copy with an install hint (engine = `none`)
-
-rembg runs as `rembg i -m <MODEL> input output`; the model defaults to `u2net` and is cached in `storage/models` (`U2NET_HOME` is injected).
-
-## Environment Variables
-
-| Variable | Description |
-| --- | --- |
-| `PORT` | Server port, default `3000` |
-| `FRAMEBAKER_GEN_CLI` | Generator CLI template; placeholders `{prompt}` `{output}` `{index}` `{reference}`. Example: `FRAMEBAKER_GEN_CLI='mygen --prompt "{prompt}" --ref {reference} -o {output}' bun dev`. `{reference}` resolves to the reference image picked in the UI (a material or project frame, resolved server-side by id — picking one while the template lacks `{reference}`, or vice versa, fails fast with HTTP 400) |
-| `FRAMEBAKER_MATTING_CLI` | Custom matting CLI template; placeholders `{input}` `{output}` (optional `{model}`). Takes precedence over the bundled rembg |
-| `FRAMEBAKER_MATTING_MODEL` | rembg model name, default `u2net` (e.g. `birefnet-general-lite`, `isnet-general-use`) |
-
-## Project Structure
-
-Bun workspaces monorepo:
-
-- `apps/server` (`@framebaker/server`) — Elysia API + in-memory job queue + bun:sqlite; also serves the frontend via Bun's HTML import
-- `apps/web` (`@framebaker/web`) — React 19 + pixi.js v8 + motion + lucide-react
-- `packages/shared` (`@framebaker/shared`) — types & constants shared by both ends
-- `scripts/` — setup scripts plus synchronized SemVer release management
-- `docs/` — documentation, including the dedicated [changelog](docs/CHANGELOG.md)
-- `storage/` — runtime data (SQLite, frames, materials, rembg models; gitignored)
-
-## Docs
-
-- [docs/guide.md](docs/guide.md) — user guide (settings page, provider setup, crop tool, material processing, editor)
-- [docs/architecture.md](docs/architecture.md) — architecture diagram, modules, data flows, storage layout
-- [docs/api.md](docs/api.md) — API reference with request/response examples, WebSocket events, MCP endpoint
-- [docs/roadmap.md](docs/roadmap.md) — shipped features and planned work
-- [docs/CHANGELOG.md](docs/CHANGELOG.md) — versioned feature and bug-fix history
-- [docs/VERSIONING.md](docs/VERSIONING.md) — `MAJOR.WEEK.BUG` policy used by main releases
-
-## MCP (AI Assistant Integration)
-
-FrameBaker includes a built-in MCP server that lets AI assistants control the full application via the [Model Context Protocol](https://modelcontextprotocol.io).
-
-**Endpoint:** `POST /mcp` (Streamable HTTP, JSON-RPC 2.0, protocol version `2024-11-05`)
-
-Start the server (`bun dev` or `bun start`), then configure your AI client:
-
-**Claude Desktop** (macOS `~/Library/Application Support/Claude/claude_desktop_config.json`, Windows `%APPDATA%\Claude\claude_desktop_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "framebaker": {
-      "url": "http://localhost:3000/mcp"
-    }
-  }
-}
-```
-
-**Claude Code** (CLI): `claude mcp add framebaker --transport http http://localhost:3000/mcp`
-
-**Cursor** (`.cursor/mcp.json`): `{ "mcpServers": { "framebaker": { "url": "http://localhost:3000/mcp" } } }`
-
-**Windsurf** (`~/.codeium/windsurf/mcp_config.json`): `{ "mcpServers": { "framebaker": { "serverUrl": "http://localhost:3000/mcp" } } }`
-
-The server exposes **48 tools** covering projects, frames, materials, generation, matting, folders, jobs, and system config. See [docs/api.md](docs/api.md) for the full tool list and examples.
-
-## License
-
-[MIT](LICENSE) © 2026 taotao7
-
-The UI font is **Fusion Pixel 12px** (`apps/web/public/fonts/`), licensed under the SIL Open Font License 1.1 — see `apps/web/public/fonts/OFL.txt`.
-
-### Acknowledgements and third-party projects
-
-- [Universal Animation Library](https://quaternius.com/packs/universalanimationlibrary.html) by Quaternius — CC0 1.0 Universal. FrameBaker samples, orthographically projects and retargets the Standard GLB clips `Idle_Loop`, `Walk_Loop`, `Sprint_Loop`, `Sword_Attack`, `Hit_Chest`, `Death01`, `Jump_Start`, and `Jump_Land` into its bundled 2D local-rotation presets. The jump preset combines the launch and landing clips with a compact game-style root arc. The original GLB is not bundled.
-- [huchenlei/sd-webui-openpose-editor](https://github.com/huchenlei/sd-webui-openpose-editor) by Chenlei Hu — MIT License. Its pose manipulation workflow and COCO-18 conventions were evaluated during motion-workspace design. The professional editor was intentionally not embedded in the final simple workflow, and no upstream source is bundled.
-- [ZhUyU1997/open-pose-editor](https://github.com/ZhUyU1997/open-pose-editor) by Yu Zhu — MIT License. Its transform-gizmo and pose-preview workflow was studied while designing the optional per-joint fine-tuning interaction; its source code is not bundled.
-
-## Known Limitations
-
-Job queue is in-memory (unfinished jobs are lost on restart); GIF frame delays are ignored; single-image imports are stored byte-for-byte (PNG recommended); spritesheet export does no trimming; no authentication — local use only. See the [roadmap](docs/roadmap.md) for planned improvements.
+## 最近版本
 
 <!-- latest-changelog:start -->
 ## Latest Changes

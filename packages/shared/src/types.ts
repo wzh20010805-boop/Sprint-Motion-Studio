@@ -20,14 +20,14 @@ export const FRAME_SOURCES = [
 ] as const;
 export type FrameSource = (typeof FRAME_SOURCES)[number];
 
-export const JOB_TYPES = ["extract_frames", "generate_frames", "matting", "image_layers"] as const;
+export const JOB_TYPES = ["extract_frames", "generate_frames", "matting", "image_layers", "export_assets"] as const;
 export type JobType = (typeof JOB_TYPES)[number];
 
 /** Qwen-Image-Layered /images/layers 当前服务端允许的单次图层数 */
 export const IMAGE_LAYER_COUNT_MIN = 1;
 export const IMAGE_LAYER_COUNT_MAX = 4;
 
-export const JOB_STATUSES = ["queued", "running", "done", "error", "cancelled", "interrupted"] as const;
+export const JOB_STATUSES = ["queued", "running", "done", "error", "cancelled", "interrupted", "waiting_user"] as const;
 export type JobStatus = (typeof JOB_STATUSES)[number];
 
 export const MATERIAL_STATUSES = ["raw", "matted"] as const;
@@ -373,7 +373,7 @@ export interface MattingSettings {
 /** GET /api/config 响应 */
 export interface ServerConfig {
   /** 隔离 SFS 入口的阶段能力；上游入口不带此字段。 */
-  sfs?: { phase: "P1"; extraction_mode: "all"; matting_ready: false };
+  sfs?: { phase: "P1" | "P2"; extraction_mode: "all"; matting_ready: boolean };
   matting: {
     engine: MattingEngine;
     model: string;

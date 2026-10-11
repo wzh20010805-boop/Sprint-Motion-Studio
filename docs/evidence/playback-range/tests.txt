@@ -1,0 +1,331 @@
+$ bun test tests
+bun test v1.4.2 (744846f84)
+
+tests\animation-editing.test.ts:
+(pass) 连续时间轨道编辑 > 插入后排序，并在接近时间覆盖且沿用插值 [0.30ms]
+(pass) 连续时间轨道编辑 > 删除最后一个 key 时移除空轨道 [0.17ms]
+(pass) 连续时间轨道编辑 > Z 角度写入规范四元数并可采样往返 [0.38ms]
+(pass) 连续时间轨道编辑 > 附件更换父骨骼时保持二维世界变换 [0.14ms]
+(pass) 连续时间轨道编辑 > 事件添加会 trim 并按时间排序，删除使用排序后的明确索引 [0.58ms]
+(pass) 连续时间轨道编辑 > 循环接缝在 duration 写入 t=0 值并保留插值 [0.39ms]
+(pass) MotionClip v2 cubic 时间曲线 > v1 保持原语义并拒绝 v2 字段 [0.12ms]
+(pass) MotionClip v2 cubic 时间曲线 > v1/v2 JSON schema 分别接受自己的格式并交叉拒绝 [72.43ms]
+(pass) MotionClip v2 cubic 时间曲线 > 显式迁移无损，读取和采样不会改写 v1 [0.33ms]
+(pass) MotionClip v2 cubic 时间曲线 > cubic-bezier 对 Vec3 lerp 与四元数 slerp 使用同一有界时间量 [0.61ms]
+(pass) MotionClip v2 cubic 时间曲线 > 校验控制点与末尾 null，并在插入删除时维持片段归属 [0.27ms]
+(pass) MotionClip v2 cubic 时间曲线 > 片段定位在末尾禁用，并且采样严格服从 clip 版本 [0.26ms]
+(pass) 自由变形 warp 轨道 > step 插值取片段起始值，采样还原 grid 与 points [0.12ms]
+(pass) 自由变形 warp 轨道 > linear 中点逐元素插值 [0.06ms]
+(pass) 自由变形 warp 轨道 > 校验拒绝骨骼目标的 warp 轨道 [0.05ms]
+(pass) 自由变形 warp 轨道 > 校验拒绝非法 warp 轨道：value 长度不自洽 [0.08ms]
+(pass) 自由变形 warp 轨道 > 校验拒绝非法 warp 轨道：keyframe 长度不一致 [0.04ms]
+(pass) 自由变形 warp 轨道 > 校验拒绝非法 warp 轨道：位移超出范围 [0.02ms]
+
+tests\animation-package-v2.test.ts:
+(pass) fbanim v2 运行时包 > 构建并验证角色、动作和纹理闭包 [34.52ms]
+(pass) fbanim v2 运行时包 > 相同输入生成完全确定的条目 [2.63ms]
+(pass) fbanim v2 运行时包 > 包版本 2 独立承载 MotionClip schema v2 并保持曲线 [1.32ms]
+(pass) fbanim v2 运行时包 > 静态 warp 与 warp 轨道随包往返逐字段一致 [1.43ms]
+(pass) fbanim v2 运行时包 > 历史包版本 1 同样按资产 schemaVersion 承载 v2 动作 [2.66ms]
+(pass) fbanim v2 运行时包 > 拒绝篡改摘要、路径穿越和缺失纹理 [1.40ms]
+(pass) fbanim v2 运行时包 > 拒绝改名的内容寻址路径和非规范资产 JSON [1.46ms]
+
+tests\attack-effect.test.ts:
+(pass) 逐帧攻击特效 > 整体变换可在世界坐标与局部坐标间往返 [0.11ms]
+(pass) 逐帧攻击特效 > 包围盒包含缩放后的笔锋半径 [0.26ms]
+(pass) 逐帧攻击特效 > 压感平滑并过滤过密采样点 [0.08ms]
+(pass) 逐帧攻击特效 > 笔锋沿绘制方向从宽起势到窄收尾 [0.06ms]
+(pass) 逐帧攻击特效 > 五种笔刷纹理稳定且旧笔画缺省为利刃 [0.76ms]
+
+tests\builtin-animation-assets-api.test.ts:
+(pass) 内置动画资产 API > 启动迁移安装正确骨架和严格六组动作 [1.02ms]
+(pass) 内置动画资产 API > 固定动作不能修改、删除、冒名创建或伪造标记 [18.10ms]
+(pass) 内置动画资产 API > 动作资产 API 拒绝项目专属的角色绑定 [0.16ms]
+(pass) 内置动画资产 API > 复制品保留完整攻击数据、移除内置标记并可继续修改删除 [7.22ms]
+
+tests\builtin-animation-labels.test.ts:
+(pass) 内置骨架显示名称国际化 > 内置骨架与关节按当前语言显示 [0.09ms]
+(pass) 内置骨架显示名称国际化 > 自定义名称和未知内置关节保持原文 [0.03ms]
+
+tests\builtin-animation-seed.test.ts:
+(pass) 内置动画启动迁移 > 空库安装后重复执行完全幂等 [5.07ms]
+(pass) 内置动画启动迁移 > 旧 UUID 骨骼上的自定义动作按 semantic 无损迁移 [4.82ms]
+(pass) 内置动画启动迁移 > 比运行程序更新的目录版本会拒绝降级且不写入 [2.21ms]
+(pass) 内置动画启动迁移 > 清理自动生成名称中的开发历史措辞但保留普通用户命名 [1.41ms]
+
+tests\builtin-motions.test.ts:
+(pass) 内置人形骨骼与六组动作 > 动作目录固定为产品支持的六组，不混入后加的 jump [0.03ms]
+(pass) 内置人形骨骼与六组动作 > 稳定骨架和六个动作全部通过通用动画 schema [1.08ms]
+(pass) 内置人形骨骼与六组动作 > 未修正骨骼的通用 FK 骨端与基准标量 FK 完全一致 [5.18ms]
+(pass) 内置人形骨骼与六组动作 > 重定向后的臂部姿态保持自然：静态动作前臂下垂、run 屈肘不翻转 [3.13ms]
+(pass) 内置人形骨骼与六组动作 > 循环动作显式闭合到首帧，非循环动作停在最后采样 [0.27ms]
+
+tests\character-binding.test.ts:
+(pass) CharacterBinding v1 > accepts a valid Region binding [0.06ms]
+(pass) CharacterBinding v1 > accepts finite project joint adjustments for existing bones [0.04ms]
+(pass) CharacterBinding v1 > rejects invalid project joint adjustment: missing bone [0.03ms]
+(pass) CharacterBinding v1 > rejects invalid project joint adjustment: NaN [0.01ms]
+(pass) CharacterBinding v1 > rejects invalid project joint adjustment: infinity [0.01ms]
+(pass) CharacterBinding v1 > rejects invalid project joint adjustment: angle beyond π [0.02ms]
+(pass) CharacterBinding v1 > adds project joint adjustments after motion sampling and before FK [0.20ms]
+(pass) CharacterBinding v1 > accepts bounded deterministic attachment deformation [0.09ms]
+(pass) CharacterBinding v1 > rejects out-of-range attachment deformation [0.06ms]
+(pass) CharacterBinding v1 > accepts a valid static attachment warp [0.08ms]
+(pass) CharacterBinding v1 > rejects invalid static attachment warp: grid 列数越界 [0.05ms]
+(pass) CharacterBinding v1 > rejects invalid static attachment warp: grid 行数越界 [0.03ms]
+(pass) CharacterBinding v1 > rejects invalid static attachment warp: points 长度不符 [0.03ms]
+(pass) CharacterBinding v1 > rejects invalid static attachment warp: 位移超出 [-2, 2] [0.03ms]
+(pass) CharacterBinding v1 > rejects invalid static attachment warp: points 含非有限值 [0.02ms]
+(pass) CharacterBinding v1 > rejects duplicate attachment [0.06ms]
+(pass) CharacterBinding v1 > rejects duplicate slot [0.04ms]
+(pass) CharacterBinding v1 > rejects duplicate order [0.04ms]
+(pass) CharacterBinding v1 > rejects missing bone [0.03ms]
+(pass) CharacterBinding v1 > rejects missing attachment [0.04ms]
+(pass) CharacterBinding v1 > rejects invalid pivot [0.06ms]
+(pass) CharacterBinding v1 > rejects invalid size [0.06ms]
+(pass) CharacterBinding v1 > rejects invalid quaternion [0.05ms]
+(pass) CharacterBinding v1 > fbanim v1 rejects character-binding manifest and path [0.07ms]
+(pass) CharacterBinding v1 > Region 的图片、选框和轴心共享同一套 Y-up 几何 [0.10ms]
+
+tests\character-part-sets.test.ts:
+(pass) CharacterPartSet API > 创建、读取和更新角色部件集 [8.13ms]
+(pass) CharacterPartSet API > 拒绝重复素材成员 [0.16ms]
+(pass) CharacterPartSet API > 拒绝同一标准部件职责重复，允许多个自定义附件 [1.86ms]
+(pass) CharacterPartSet API > 骨骼生成无需用户选择目标部件集，由服务端自动建立内部归属 [0.58ms]
+(pass) CharacterPartSet API > 骨骼部件表产物保留目标部件集关联但不冒充独立部件 [6.42ms]
+(pass) CharacterPartSet API > 完整人物成功后构建单次引用分件任务并终止递归 [0.13ms]
+
+tests\export-layout.test.ts:
+(pass) 精灵图自动换行 > 宽度超限时按行优先自动换行 [0.09ms]
+(pass) 精灵图自动换行 > 帧数不多时也生成紧凑的规则网格 [0.02ms]
+(pass) 精灵图自动换行 > 单帧或换行后高度仍超限时给出序列导出建议 [0.04ms]
+
+tests\frame-geometry.test.ts:
+(pass) 帧变换几何 > 按中心锚点计算平移后的包围盒 [0.05ms]
+(pass) 帧变换几何 > 旋转、缩放与负 scale 都正确扩大包围盒 [0.03ms]
+(pass) 帧变换几何 > 透明图片只按不透明局部矩形计算变换范围 [0.13ms]
+(pass) 帧变换几何 > 适应视口不会放大，且处理退化边界 [0.05ms]
+(pass) 帧变换几何 > 旋转归一化到闭区间并清理浮点尾差 [0.06ms]
+
+tests\generate-api.test.ts:
+(pass) 图像 API 生成编排 > OpenAI edits 按顺序提交多张引用图 [2.48ms]
+(pass) 图像 API 生成编排 > 多引用图上游失败时给出模型兼容建议并保留原始错误 [1.59ms]
+(pass) 图像 API 生成编排 > OpenAI 兼容接口传递尺寸并写入 base64 图片 [1.27ms]
+(pass) 图像 API 生成编排 > DashScope 下载返回图片 URL，并规范化兼容模式地址 [1.60ms]
+(pass) 图像 API 生成编排 > DashScope 按顺序发送多张引用图 [1.31ms]
+(pass) 图像 API 生成编排 > Gemini 使用模型转义、API key 头并写入 inlineData [1.42ms]
+(pass) 图像 API 生成编排 > Gemini parts 保留多张引用图顺序 [1.63ms]
+(pass) 图像 API 生成编排 > Gemini 遍历全部候选并兼容代理的 snake_case 图片 part [4.30ms]
+(pass) 图像 API 生成编排 > Gemini NO_IMAGE 自动重试一次后可恢复 [604.69ms]
+(pass) 图像 API 生成编排 > Gemini 安全拦截和文本拒绝返回明确原因且不重试 [0.38ms]
+(pass) 图像 API 生成编排 > Gemini 提示词拦截优先显示 promptFeedback [0.17ms]
+(pass) 图像 API 生成编排 > MiniMax 限制 prompt 长度、覆盖尺寸并写入 base64 [1.75ms]
+(pass) 图像 API 生成编排 > MiniMax 在服务返回 URL 时下载图片 [1.29ms]
+(pass) 图像 API 生成编排 > MiniMax 清楚报告全部图片被安全过滤 [0.14ms]
+(pass) 图像 API 生成编排 > MiniMax 明确拒绝多张引用图 [0.07ms]
+(pass) 图像 API 生成编排 > 取消状态会在发请求前失败 [0.15ms]
+
+tests\humanoid-binding.test.ts:
+(pass) 人形骨架语义诊断 > 完整语义的骨架被识别为人形且无缺失 [0.22ms]
+(pass) 人形骨架语义诊断 > 命名/语义不一致时列出缺失骨骼段 [0.09ms]
+(pass) 人形骨架语义诊断 > semanticProfile 也能补齐语义映射 [0.08ms]
+(pass) 人形骨架语义诊断 > 人形骨架的分件描述为固定 11 部件，自定义骨架按骨段命名 [0.12ms]
+
+tests\image-layers.test.ts:
+(pass) 图片分层响应解析 > 支持顶层、data 与常见命名数组 [0.13ms]
+(pass) 图片分层响应解析 > 不递归扫描任意字符串并过滤 id [0.03ms]
+
+tests\imageops.test.ts:
+(pass) 色键抠图 > tolerance=0 只清除精确匹配且不改变其他像素 [0.12ms]
+(pass) 色键抠图 > 切比雪夫距离边界包含 tolerance，边界外保留 [0.03ms]
+(pass) 色键抠图 > softness 在阈值外线性乘以原 alpha [0.03ms]
+(pass) 色键抠图 > 色盘跳过透明像素并返回主桶内的精确原色 [3.09ms]
+(pass) 色键抠图 > 没有目标色时逐字节保持图像不变，tolerance=255 全清 [0.06ms]
+(pass) 色键抠图 > 有目标色但没有像素命中时图像不变 [0.03ms]
+(pass) 骨骼分件图像质量检查 > 自定义网格跳过透明余格，标准人形网格仍把空格视为缺件 [1.49ms]
+(pass) 骨骼分件图像质量检查 > 提取透明边和显著连通主体 [0.23ms]
+(pass) 骨骼分件图像质量检查 > 质量检查忽略擦除后几乎不可见的低透明度边缘 [0.23ms]
+(pass) 骨骼分件图像质量检查 > 识别完全重复和镜像复制的部件 [0.67ms]
+(pass) 骨骼分件图像质量检查 > 硬性拒绝空格、贴边、多主体和重复分件 [0.37ms]
+(pass) 骨骼分件图像质量检查 > 连通域检测按阅读顺序返回部件包围盒并滤除碎屑 [0.62ms]
+(pass) 骨骼分件图像质量检查 > 连通域检测：全透明返回空，maxComponents 保留最大的前 N 个 [0.20ms]
+(pass) 骨骼分件图像质量检查 > 左右对应肢体使用更敏感的重复阈值 [1.72ms]
+
+tests\import-order.test.ts:
+(pass) 服务重启的 interrupted 任务立即结束等待并保留失败原因 [0.21ms]
+(pass) 多文件导入顺序 > 按文件名自然升序排列数字帧 [0.12ms]
+(pass) 多文件导入顺序 > 任务状态短暂查询失败时继续等待，不提前放行下一文件 [0.14ms]
+(pass) 多文件导入顺序 > 批次失效期间返回的旧任务结果会被丢弃 [0.09ms]
+
+tests\material-import-order.test.ts:
+(pass) 素材导入顺序 > 忽略选择顺序并按帧编号自然升序排列 [0.07ms]
+
+tests\mcp.test.ts:
+(pass) MCP 端点 > initialize 握手返回协议版本与服务端信息 [39.47ms]
+(pass) MCP 端点 > tools/list 返回全部工具 [11.17ms]
+(pass) MCP 端点 > tools/call create_project + list_projects 端到端 [29.47ms]
+(pass) MCP 端点 > 未知工具返回错误 [7.68ms]
+(pass) MCP 端点 > ping 返回空结果 [6.62ms]
+(pass) MCP 端点 > notifications/initialized 被接受 [10.81ms]
+(pass) MCP 端点 > 无效 JSON 返回错误状态码 [5.78ms]
+(pass) MCP 端点 > DELETE /mcp 被处理 [0.34ms]
+(pass) MCP 端点 > get_config 工具返回服务端配置 [10.76ms]
+(pass) MCP 端点 > get_settings 工具不泄露 API keys [5.69ms]
+
+tests\playback-range.test.ts:
+(pass) 指定时间轴帧范围预览 > 默认包含全部帧，用户帧号对应零起始游标 [0.08ms]
+(pass) 指定时间轴帧范围预览 > 第 30 帧播完回到第 10 帧，不进入范围外 [0.14ms]
+(pass) 指定时间轴帧范围预览 > 范围内仍按每帧 duration 停留，末帧不会提前跳过 [0.04ms]
+(pass) 指定时间轴帧范围预览 > 只选一帧时始终停留该帧 [0.02ms]
+(pass) 指定时间轴帧范围预览 > 删帧后范围收缩到剩余帧，越界游标回到起点并重新计时 [0.02ms]
+(pass) 指定时间轴帧范围预览 > 空时间轴不推进，也不产生负数游标 [0.02ms]
+(pass) 指定时间轴帧范围预览 > 反向、非有限数和小数输入归一到有效整数范围 [0.02ms]
+
+tests\provider-selection.test.ts:
+(pass) provider 默认选择 > 显式优先 [0.12ms]
+(pass) provider 默认选择 > 配置 API 可手输 [0.02ms]
+(pass) provider 默认选择 > 有模型优先于空 API
+(pass) provider 默认选择 > CLI 回退
+(pass) provider 默认选择 > 视频资格 [0.27ms]
+(pass) provider 默认选择 > 不选未配置
+
+tests\provider.test.ts:
+(pass) 生成 provider 配置解析 > 空设置时从环境变量创建遗留 CLI provider [0.62ms]
+(pass) 生成 provider 配置解析 > 旧模型列表按能力归类，新字段存在时优先新字段并过滤无效值 [1.45ms]
+(pass) 生成 provider 配置解析 > 优先选择配置完整的 provider，并解析抠图设置的环境回退 [1.57ms]
+(pass) 生成 provider 配置解析 > 图片分层优先读取独立设置，并兼容旧 Provider 配置 [1.54ms]
+(pass) 提示词加强器关联 > 普通优化不注入骨骼约束，骨骼各阶段注入对应的失败经验 [0.36ms]
+(pass) 提示词加强器关联 > 提示词加强 API 接受合法骨骼 intent 并拒绝未知值 [309.34ms]
+(pass) 提示词加强器关联 > 通过 providerId 复用 DashScope 凭证并标准化端点 [1.67ms]
+(pass) 提示词加强器关联 > 旧凭证配置可回退，模型名重复时不猜测 provider [1.46ms]
+(pass) 提示词加强器关联 > 按图片/视频模式使用结构化且保留原意的优化指令 [1.94ms]
+(pass) 提示词加强器关联 > few-shot 严格跟随所选风格，不用像素示例污染写实结果 [1.63ms]
+(pass) 提示词加强器关联 > 短名词被误答时自动纠正重试，不把聊天回答当提示词 [1.78ms]
+(pass) Provider 模型探测 > 按厂商构建请求、提取模型列表，并识别认证与网络异常 [0.54ms]
+(pass) Provider 模型探测 > 模型列表接口校验必填字段、DashScope 地址和非标准响应 [0.35ms]
+(pass) 生成适配器校验 > 结构化 CLI 参数可执行，并保留 provider 元信息 [34.08ms]
+(pass) 生成适配器校验 > 两阶段角色生成会预检 CLI 引用图能力 [1.73ms]
+(pass) 生成适配器校验 > 拒绝未配置、能力不匹配与不支持的视频请求 [1.42ms]
+(pass) 生成适配器校验 > 视频支持 provider 必须配置视频模型 [1.15ms]
+
+tests\server-runtime.test.ts:
+(pass) 外部命令执行器 > 成功命令正常结束 [30.74ms]
+(pass) 外部命令执行器 > 非零退出携带 stderr 上下文 [29.59ms]
+(pass) 外部命令执行器 > 已取消的任务不会启动进程 [0.16ms]
+(pass) 媒体响应 > 缩略图尺寸只接受 64 到 1024 的整数 [0.13ms]
+(pass) 媒体响应 > 图片支持版本化缓存与 ETag 条件请求 [1.51ms]
+(pass) 素材重命名 > 更新素材名称并拒绝空名称和不存在的素材 [3.67ms]
+(pass) SQLite 实体转换 > 解析帧 JSON 字段并在损坏数据时安全回退 [0.08ms]
+(pass) SQLite 实体转换 > 素材按扩展名推断媒体类型，并优先使用原始路径 [0.08ms]
+(pass) SQLite 实体转换 > 读取实体和下一帧序号使用项目范围 [2.27ms]
+(pass) 时间轴单元格 > 空图片单元格可创建、读取、删除并撤销独立攻击特效 [18.88ms]
+(pass) 时间轴单元格 > 清空实例帧后保留原步骤 [6.50ms]
+(pass) 项目级撤销 > 仅成功 mutation 提交历史，纯 DB 编辑不复制图片 [11.98ms]
+(pass) 项目级撤销 > 删除帧后同时恢复数据库和图片文件 [24.80ms]
+(pass) 项目级撤销 > 素材导入按 body 中的项目建立可恢复文件快照 [20.77ms]
+(pass) 项目级撤销 > DB 恢复失败时回滚文件并保留未消费快照 [17.12ms]
+(pass) 项目级撤销 > 外部 mutation 会使旧历史失效 [8.87ms]
+(pass) 项目级撤销 > 同项目并发编辑按顺序形成历史，不同项目互不影响 [19.91ms]
+(pass) 项目级撤销 > 每个项目最多保留 50 条历史 [67.98ms]
+
+tests\shared-types.test.ts:
+(pass) 生成尺寸与 provider 规则 > 解析比例、像素尺寸、清晰度档位与未知值 [0.21ms]
+(pass) 生成尺寸与 provider 规则 > 标准化 DashScope 根地址，不影响普通地址 [0.03ms]
+(pass) 生成尺寸与 provider 规则 > 视频模型选择排除图像模型，并按引用图与 t2v 优先级选择 [0.09ms]
+(pass) 动作生成 prompt > 动作预设默认根据当前角色形象决定具体表现 [0.05ms]
+(pass) 动作生成 prompt > 帧数推荐网格会限制输入范围 [0.05ms]
+(pass) 动作生成 prompt > 同动作拼图保留循环语义、截断多余帧并说明空格 [0.16ms]
+(pass) 动作生成 prompt > 多动作与视频 prompt 的兜底和长度限制正确 [0.13ms]
+(pass) 完整人物到 12 分件的两阶段 prompt > 第一阶段只生成比例可信且无遮挡的完整人物 [0.06ms]
+(pass) 完整人物到 12 分件的两阶段 prompt > 第二阶段固定为 4×3 顺序并严格继承完整人物比例 [0.20ms]
+(pass) 完整人物到 12 分件的两阶段 prompt > 传入骨架部件描述时改为骨骼驱动：按语义逐格生成且不套用人形固定槽位 [0.06ms]
+(pass) 完整人物到 12 分件的两阶段 prompt > 空的骨架部件描述退回原有网格驱动行为 [0.03ms]
+(pass) 完整人物到 12 分件的两阶段 prompt > 自定义行列数只决定容量，多余格允许留空且不套用固定人形槽位 [0.07ms]
+(pass) 完整人物到 12 分件的两阶段 prompt > 角色 8 向图使用中心留空的 3×3 环形布局并锁定角色一致性 [0.16ms]
+
+tests\skeletal-project.test.ts:
+(pass) 骨骼项目文档 API > 首次读取持久化项目内空文档 [4.17ms]
+(pass) 骨骼项目文档 API > 逐帧项目不能读写骨骼文档 [0.51ms]
+(pass) 骨骼项目文档 API > 拒绝 URL 与文档 projectId 不一致 [0.27ms]
+(pass) 骨骼项目文档 API > 可保存并重读合法空文档 [0.63ms]
+(pass) 骨骼项目文档 API > 读取旧项目时移除全局绑定来源，只保留项目内绑定 [0.60ms]
+
+tests\warp-image.test.ts:
+(pass) warpImagePixels > identity warp (all-zero points) reproduces the input pixels [0.43ms]
+(pass) warpImagePixels > moving a corner node shifts the pixels near that corner [0.16ms]
+(pass) warpImagePixels > out-of-range displacement does not throw and keeps the output size [0.09ms]
+(pass) warpImagePixels > rejects malformed grid/points without throwing [0.05ms]
+
+tests\zip.test.ts:
+(pass) ZIP 导出 > 生成可解压的 ZIP，并保持 ASCII、Unicode 与空文件内容 [0.98ms]
+(pass) ZIP 导出 > 读取应用生成的 ZIP [0.57ms]
+
+tests\pipeline\background-window.test.ts:
+(pass) 完整抽帧命令在 Windows 显式隐藏后台控制台 [1548.00ms]
+(pass) 兼容任务命令在 Windows 显式隐藏后台控制台 [1330.55ms]
+
+tests\pipeline\cache.test.ts:
+(pass) 缓存的损坏 PNG 和截断时序阻止新 Clip 入库，恢复有效产物后仍能复用三帧 [422.05ms]
+(pass) 缓存 PNG 即使 IHDR 有效也必须完整解码通过 [401.18ms]
+(pass) 缓存时序中的路径和显示时长篡改不会被相同帧数掩盖 [352.82ms]
+
+tests\pipeline\cli.test.ts:
+(pass) doctor输出一个JSON且模型未准备不会冒充可用 [76.86ms]
+(pass) 不支持的抽帧mode在创建服务前返回参数错误 [30.74ms]
+(pass) 未知命令给结构化错误并不把日志混入stdout [30.70ms]
+(pass) 不开GUI也能完成真实48帧流程，复用服务并返回真实失败退出码 [1002.80ms]
+(pass) 缺少ffprobe的真实视频导入返回依赖错误3而不是素材错误2 [447.21ms]
+
+tests\pipeline\extract-all.test.ts:
+(pass) 完整显示帧提取（真实 FFmpeg） > 48 帧无截断并以源整数索引保存 [198.61ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 61 帧无截断并以源整数索引保存 [209.94ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 120 帧无截断并以源整数索引保存 [253.67ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 300 帧无截断并以源整数索引保存 [390.98ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 重复画面仍保留全部 48 个显示帧和 2 秒停顿 [178.41ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 真正 VFR 保留 1/24、1/12、1/8、1/24 秒时长 [163.76ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > Unicode、空格和 shell 元字符是普通文件名 [188.46ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 音频位于全局流 0 时仍映射首个视频流并逐帧保持解码顺序 [293.55ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 已有 raw 拒绝覆盖且原文件不变 [7.73ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 提取取消保留暂存并且不发布 raw 或 timing [92.23ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 预先取消探测时不启动输出 [0.14ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 损坏媒体 明确失败且无伪完成目录 [49.85ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 无视频流 明确失败且无伪完成目录 [48.16ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > HDR 明确失败且无伪完成目录 [52.50ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 旋转 明确失败且无伪完成目录 [59.56ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 非方形像素 明确失败且无伪完成目录 [51.58ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 交错 明确失败且无伪完成目录 [48.25ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 缺失和非单调 PTS 不用平均 FPS 掩盖，超安全整数有理数明确拒绝 [33.26ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > JSON 中超安全整数 PTS 先以 BigInt 读取，约分后才转 JSON 数值 [30.76ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 末帧优先可信帧时长，其次流终点，无依据时明确 estimated [46.71ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 逐帧 SAR 改变与异常显示矩阵也明确拒绝 [34.05ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 输出 PNG 数据损坏必须完整解码失败，不能只检查 IHDR [183.64ms]
+(pass) 完整显示帧提取（真实 FFmpeg） > 每张 PNG 必须与源宽高一致，失败仍保留暂存 [162.08ms]
+
+tests\pipeline\gui-launch.test.ts:
+(pass) Start-SFS.cmd从其他目录启动时实际显示窗口，不只创建隐藏进程 [587.40ms]
+
+tests\pipeline\matting.test.ts:
+(pass) 缺少引擎必须失败，不能复制原图并改成ready [15.27ms]
+
+tests\pipeline\pixi-csp.test.ts:
+(pass) 实际自托管 Pixi 脚本可在禁止动态代码生成的 CSP 环境通过渲染器检查 [59.16ms]
+(pass) 普通与 gzip Pixi 响应内容一致，且条件缓存分别可重验证 [20.72ms]
+
+tests\pipeline\runtime.test.ts:
+(pass) 服务实例锁在加载业务数据库之前拒绝第二个写入者 [17.52ms]
+(pass) 服务释放不能移除新实例的描述文件 [11.55ms]
+(pass) 鉴权拒绝未授权API、其他Origin、Host和WebSocket [0.35ms]
+(pass) 两个进程并发恢复失效锁时只有一个持有者 [543.09ms]
+
+tests\pipeline\service.test.ts:
+(pass) P1 shared service > migration backs up WAL contents before adding source schema and remains idempotent [44.01ms]
+(pass) P1 shared service > HTTP imports validated immutable source and queues exact timed frames as safe editor copies [635.07ms]
+(pass) P1 shared service > restart retains queued payload and marks jobs interrupted without false resume [155.88ms]
+(pass) P1 shared service > cancelled extraction publishes no completed DB source and preserves original [463.04ms]
+(pass) P1 shared service > GUI edit during extraction rejects stale commit and retained source can be retried [487.57ms]
+(pass) P1 shared service > legacy GUI default and direct all mode worker share exact source semantics [1101.30ms]
+
+ 254 pass
+ 0 fail
+ 4575 expect() calls
+Ran 254 tests across 35 files. [15.37s]

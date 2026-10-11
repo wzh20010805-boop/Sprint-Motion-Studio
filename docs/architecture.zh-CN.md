@@ -229,3 +229,17 @@ storage/
 sources 的复制原视频/PNG/timing 与 projects 的可编辑副本隔离。完整抽帧在唯一暂存目录完成，数量/连续索引/尺寸/全解码校验通过才发布，再检查 base_revision 后事务提交主轨。缓存复用也验证完整时序与 PNG；旧结果、取消或失败不提交伪完整项目。源 PTS 以字符串存整数，有理数约分时使用 BigInt；JSON 的数值须为安全整数。
 
 P1 只维护完整原帧和时序，没有场景抠图、地面参考、统一游戏画布或正式 Cocos 导出。VFR 主轨预览可量化并警告，timing.json 为源时序依据。重启遗留 queued/running 标记 interrupted，参数和中间文件保留；恢复命令属于后续阶段。Electron 严格 CSP 通过已安装 Pixi 的无动态代码生成兼容模块运行画布。
+# SFS P2 扩展
+
+Worker自动根据边缘颜色判断是否适合背景色法：98%边缘RGB与中位数最大通道差≤12且边缘不透明时，从外边连通地去除色差≤20的背景；色差5–20保留软边。其他场景仍用CPU Rembg。纯背景区域和几乎不可见结果整批失败，不发布任何新头版本。报告记录处理method与有效前景比例；Windows子进程统一UTF-8，中文错误正常显示。
+
+`pipeline/masks.ts` 管理不可变遮罩修订、事务发布、源图摘要检查与审核；`masksApi.ts` 是GUI/CLI共用入口。依赖方向为queue → 遮罩服务 → Python Worker。`workers/image/worker.py` 每个动作只建一个CPU Rembg session，以原始RGBA与灰度遮罩合成，不隐式下载。数据库schema4新增`mask_versions`、`mask_heads`，升级前做一致备份，并保留schema3修订触发器。`MaskWorkshop.tsx` 只加载当前高清帧，以源图坐标绘画并调用共享API保存。`candy.css` 提供统一高饱和贴纸风格，`CandyDoodle` 是使用主题变量的原创矢量插画。保留上游版权和资源。详见 [P2说明](p2-guide.md)。
+## SFS P3–P5 新增架构
+
+`workers/image/compose.py`统一生成对齐预览、越界检查、透明PNG序列和规则多页图集。源坐标左上像素边界，公式q=s*(p-r)+c+d；固定/线性地面轨迹、公共画布/锚点/比例与逐帧微调。高清卡通采用预乘Alpha插值后转回直Alpha。不自动逐帧缩小、裁边、旋转或去重。
+
+`pipeline/alignment.ts`保存角色公共预设、动作根轨迹与审核指纹；`export.ts`冻结主轨输入，产生清单/报告/联系表/MP4/ZIP，再核验修订和文件字节后发布新不可变目录。`images.ts`保留PNG原件与原Alpha，建立独立未审核遮罩。`recipe.ts`按schema提交下一未完成阶段，遇人工闸门停止。抠图缓存按项目隔离并校验输出摘要；同输入预览合并进行中的请求。
+
+`AlignmentWorkshop`左右显示原图与共享后端画布。`FrameEditor`保留活跃纹理及8项近期缓存；时间轴惰性载入128px缩略图。GUI、CLI、MCP共用持久队列；`production.ts`提供摘要stdout，`mcpBridge.ts`维持stdio客户租约，`mcp/sfs.ts`只提供九工具。
+
+`apps/desktop/main.cjs`负责独立Electron单实例、鉴权Cookie、contextIsolation/sandbox、本地CSP与资源、外部导航和权限拒绝、用户可写工作区、关闭任务策略和明确可选模型导入/下载。`distribution.ts`定位旁边的运行时。`build_portable.ts`打包CLI/服务、固定Electron、独立Python、FFmpeg、Worker与许可/清单/SHA256；`verify_portable.ts`进行本机换目录和限制系统PATH测试，不冒称干净虚拟机验收。

@@ -1,0 +1,77 @@
+{
+  "phase": "P5",
+  "events": [
+    "shared-service-ready",
+    "page-loaded"
+  ],
+  "console": [
+    {
+      "level": "info",
+      "message": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "level": "info",
+      "message": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    }
+  ],
+  "networkBlocked": [],
+  "preferences": {
+    "allowRunningInsecureContent": false,
+    "contextIsolation": true,
+    "disableDialogs": false,
+    "disablePopups": false,
+    "enableBlinkFeatures": "",
+    "experimentalFeatures": false,
+    "javascript": true,
+    "nodeIntegration": false,
+    "nodeIntegrationInSubFrames": false,
+    "nodeIntegrationInWorker": false,
+    "safeDialogs": false,
+    "safeDialogsMessage": "",
+    "sandbox": true,
+    "webSecurity": true,
+    "webviewTag": false
+  },
+  "windowVisible": true,
+  "renderer": {
+    "text": "P5 离线换目录\n3 帧\n场景抠图与修正\n导入素材\n播放预览\n导出动画\n帧资产\n拖动缩略图到下方轨道单元格；资产可重复使用\nCtrl+点击 多选 · Shift+点击 范围选 · 右键 菜单\n#1\n#2\n#3\n100%\n缩放\n100%\n旋转\n0°\n透明\n100%\n×1\n攻击特效\n烈焰\n利刃\n笔宽 18\n删除特效\n缩放 100%\n透明 100%\n选中任意单元格即可绘制；拖动特效改变位置，复制到其他步骤继续调整\nSpace\n+ 拖动：移动画布\n动画轴\nDefault\n轨道：后 → 前\n添加轨道\n添加步骤\n删除步骤\n− 时长\n+ 时长\n顶层优先显示\n#1\n×1\n#2\n×1\n#3\n×1\nMain",
+    "require": "undefined",
+    "process": "undefined",
+    "resources": [
+      {
+        "p": "/api/v1/projects",
+        "status": 200,
+        "bytes": 460
+      },
+      {
+        "p": "/pixi.min.js",
+        "status": 200,
+        "bytes": 813505
+      },
+      {
+        "p": "/imageops/imageOps.worker.js",
+        "status": 200,
+        "bytes": 17675
+      },
+      {
+        "p": "/fonts/fusion-pixel-12px-proportional-zh_hans.otf.woff2",
+        "status": 200,
+        "bytes": 712624
+      }
+    ]
+  },
+  "scenario": {
+    "ok": true,
+    "checks": [
+      "GUI confirms only three isolated synthetic PNG masks",
+      "Interpolated root, save, overflow check and explicit revision confirmation in real Electron",
+      "Reviewed PNG/grid package, contact sheet and ZIP served by shared backend",
+      {
+        "test": "300 actual timeline selections",
+        "maxTextureAliases": 8,
+        "retainedTextureAliases": 8
+      }
+    ]
+  },
+  "ok": true
+}

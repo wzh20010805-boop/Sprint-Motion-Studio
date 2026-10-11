@@ -4,6 +4,19 @@ This document records features, changes, and bug fixes by release. Main releases
 
 ## [Unreleased]
 
+- SFS P3–P5: shared character canvas/scale and ground-root keyframes, authoritative Pillow preview/export, exact-revision/file-hash review, immutable PNG/grid/manifest/ZIP packages, resumable jobs and validated caches, offline CLI schemas/recipe plus nine-tool MCP, and a standalone Windows Electron/Bun/Python/FFmpeg portable bundle. Local relocated/runtime/300-frame/GUI-CLI consistency tests pass; clean-VM and real artistic approval remain external acceptance steps.
+
+- Unify desktop project and library imports: retain independent originals, video/GIF, every source frame and exact timing for cross-project reuse. Repeated extraction reuses records; first upgraded startup backfills legacy imports. Align upload controls with available matting/extraction/generation capabilities and use full extraction for video context actions.
+
+- Fix asynchronously loaded onion-skin textures reappearing during playback preview. Editing can still show neighboring poses; exported PNGs render only their own timeline step.
+
+- Fix background-only selections deleting the character: select on the original image, reject empty/weak automatic masks atomically, retain previous versions, and display UTF-8 Windows diagnostics. Nearly uniform backgrounds now use connected color removal to preserve shield interiors and detached thin equipment.
+
+- P2 adds CPU Rembg batch sessions, full-coordinate ROI, immutable automatic/manual masks, erase/restore brushes, persistent undo, alpha/black/white inspection, review jobs and shared CLI endpoints. Missing engines no longer copy originals as success.
+- Replace the upstream pixel/cassette theme with saturated candy colors, neon accents, hand-drawn sticker borders and an original vector soldier across light/dark pages.
+
+- Add all-frame / inclusive frame-range preview with start/end inputs, single-frame loops and existing per-step durations. Clamp after deletion and reset on action changes. Preview only; assets and exports are unchanged.
+
 - Explicitly hide Windows background consoles for media probing, extraction, legacy jobs and CLI dependency checks. Add native startup-info and visibility regressions while keeping the editor window visible.
 
 - Fix Windows Start-SFS.cmd launching an invisible GUI process: normal GUI launches no longer use windowsHide, with a real batch-launch visibility regression test.

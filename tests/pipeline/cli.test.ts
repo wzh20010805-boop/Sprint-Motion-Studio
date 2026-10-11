@@ -12,7 +12,7 @@ async function invoke(args: string[], env = process.env) {
 }
 
 test("doctor输出一个JSON且模型未准备不会冒充可用", async () => {
-  const result = await invoke(["doctor", "--json"]);
+  const result = await invoke(["doctor", "--json"], {...process.env, SFS_MODEL_DIR:join(import.meta.dir,'nonexistent-models')});
   expect(result.exitCode).toBe(0);
   expect(result.body?.schema_version).toBe("1.0");
   expect(result.body?.data?.capabilities?.extract_all).toBeTrue();
@@ -71,10 +71,16 @@ test("不开GUI也能完成真实48帧流程，复用服务并返回真实失败
     expect(disabled.status).toBe(403);
     const matteForm = new FormData(); matteForm.set("projectId",project); matteForm.set("type","mp4"); matteForm.set("autoMatting","true"); matteForm.set("file",Bun.file(video));
     const matte = await fetch(info.url+"/api/import/upload",{method:"POST",headers:{authorization:`Bearer ${info.token}`},body:matteForm});
-    expect(matte.status).toBe(503);
+    expect(matte.status).toBe(409);
+    expect((await matte.json() as any).error.code).toBe('USE_P2_MATTE');
     const libraryForm = new FormData(); libraryForm.set("file",Bun.file(video));
     const library = await fetch(info.url+"/api/materials/upload",{method:"POST",headers:{authorization:`Bearer ${info.token}`},body:libraryForm});
-    expect(library.status).toBe(403);
+    expect(library.status).toBe(200);
+    const libraryQueued = await library.json() as any;
+    expect(libraryQueued.mode).toBe('all');
+    const libraryWait = await command(['job','wait','--job',libraryQueued.jobId]);
+    expect(libraryWait.exitCode).toBe(0);
+    expect(libraryWait.body.data.job.result.frame_count).toBe(48);
     const absent = await command(["job", "status", "--job", "missing"]);
     expect(absent.exitCode).toBe(2);
     expect((await command(["job","status","--job","historical-failed"])).exitCode).toBe(0);

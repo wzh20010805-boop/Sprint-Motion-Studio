@@ -1,0 +1,9 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\production.test.ts:
+(pass) P3/P4 shared HTTP roots, review gate, immutable export, stale publication, cancel and resume [7251.06ms]
+
+ 1 pass
+ 0 fail
+ 1 expect() calls
+Ran 1 test across 1 file. [7.82s]

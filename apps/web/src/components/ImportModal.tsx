@@ -85,7 +85,7 @@ export default function ImportModal({ projectId, axisId, trackId, startStepId, t
   const fileRef = useRef<HTMLInputElement>(null);
   const theme = useTheme();
   const cfg = useServerConfig();
-  const sfsP1 = cfg?.sfs?.phase === "P1";
+  const sfsP1 = !!cfg?.sfs;
   const workflow = useImportWorkflow(onDone);
   const { items, finished, submitting, setSubmitting, updateItem, okCount, errCount } = workflow;
 
@@ -113,6 +113,8 @@ export default function ImportModal({ projectId, axisId, trackId, startStepId, t
   // 目录 + 搜索过滤：不影响已选（隐藏的素材仍保留在 pickedIds）
   const q = matQuery.trim().toLowerCase();
   const filteredMats = (mats ?? []).filter((m) => {
+    // 视频原件在素材库保留；项目帧选择器只选已经完整抽出的图片。
+    if (m.kind === 'video') return false;
     if (folderId === "ungrouped" ? m.folder_id !== null : folderId !== "all" && m.folder_id !== folderId) return false;
     if (!q) return true;
     const prompt = typeof m.metadata.prompt === "string" ? m.metadata.prompt : "";
@@ -196,7 +198,7 @@ export default function ImportModal({ projectId, axisId, trackId, startStepId, t
       fd.append("projectId", projectId);
       fd.append("type", inferType(file));
       fd.append("fps", String(fps));
-      fd.append("mode", extractMode);
+      fd.append("mode", sfsP1 ? 'all' : extractMode);
       fd.append("autoMatting", String(sfsP1 ? false : autoMatting));
       const { jobId } = await api.upload(fd);
       return { kind: "queued", jobId };
@@ -438,7 +440,7 @@ export default function ImportModal({ projectId, axisId, trackId, startStepId, t
               <label>{t("sfs.extractionMode")}</label>
               <select className="px-input" value={extractMode} onChange={(e) => setExtractMode(e.target.value as "all" | "fps")}>
                 <option value="all">{t("sfs.allFrames")}</option>
-                <option value="fps">{t("sfs.legacySampling")}</option>
+                {!sfsP1 && <option value="fps">{t("sfs.legacySampling")}</option>}
               </select>
               <p>{t("sfs.rawTimingHint")}</p>
             </div>
@@ -450,6 +452,7 @@ export default function ImportModal({ projectId, axisId, trackId, startStepId, t
             )}
 
             {sfsP1 ? <p>{t("sfs.mattingPending")}</p> : <MattingOption checked={autoMatting} onChange={setAutoMatting} />}
+            {sfsP1 && <p data-testid="sfs-project-retention">{t("sfs.projectRetention")}</p>}
 
             {finished && (
               <div className="up-summary">

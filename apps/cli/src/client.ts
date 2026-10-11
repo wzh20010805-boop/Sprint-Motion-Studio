@@ -2,19 +2,21 @@ import { spawn } from "node:child_process";
 import { mkdirSync, readFileSync, existsSync, openSync, closeSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { isProcessAlive, type ServiceInfo } from "../../server/src/runtime";
+import { distributionRoot,configureDistribution } from './distribution';
 
 export class CliError extends Error {
   constructor(public code: string, message: string, public exitCode = 2, public result?: any) { super(message); }
 }
 
 export function repositoryRoot(): string {
+  const packed=distributionRoot();if(packed){configureDistribution(packed);return packed;}
   const candidates = [process.env.SFS_REPO_ROOT, resolve(import.meta.dir, "../../.."), dirname(process.execPath), resolve(dirname(process.execPath), "..")];
   const root = candidates.find(value => value && existsSync(join(value, "apps/server/src/runtimeBootstrap.ts")));
   if (!root) throw new CliError("BACKEND_UNAVAILABLE", "找不到工具源码运行时；P1编译CLI需邻接源码目录或SFS_REPO_ROOT", 3);
   return resolve(root);
 }
 
-export function defaultWorkspace() { return join(repositoryRoot(), "workspaces", "default"); }
+export function defaultWorkspace() { const packed=distributionRoot();return packed?join(process.env.LOCALAPPDATA??packed,'SpriteMotionStudio','workspaces','default'):join(repositoryRoot(), "workspaces", "default"); }
 
 export function readService(workspace: string): ServiceInfo | null {
   try {
@@ -32,23 +34,31 @@ async function healthy(info: ServiceInfo) {
   } catch { return false; }
 }
 
+async function compatibleService(info:ServiceInfo) {
+ const response=await fetch(info.url+'/api/config',{headers:{Authorization:`Bearer ${info.token}`},signal:AbortSignal.timeout(2000)});
+ const config=await response.json() as any;
+ if(!response.ok||config.sfs?.production_api_version!=='1.0')throw new CliError('BACKEND_VERSION_CONFLICT','工作区仍运行旧版或不兼容服务。请保存并关闭旧GUI，待后台任务完成后重启；当前服务和任务未被强行关闭。',6);
+ return info;
+}
+
 /** CLI只调用HTTP，进程锁在后端加载DB前取得。并发启动的失败者等待赢家。 */
 export async function ensureService(workspaceInput: string): Promise<ServiceInfo> {
   const workspace = resolve(workspaceInput);
   const current = readService(workspace);
-  if (current && await healthy(current)) return current;
+  if (current && await healthy(current)) return compatibleService(current);
   const root = repositoryRoot();
   mkdirSync(join(workspace, ".sfs"), { recursive: true });
   let existingOwner = false;
   try { existingOwner = isProcessAlive(JSON.parse(readFileSync(join(workspace, ".sfs", "service.lock"), "utf8")).pid); } catch { /* 启动入口处理损坏锁 */ }
   if (!existingOwner) {
+    const packed=distributionRoot();if(packed)configureDistribution(packed);
     const bun = existsSync(join(root, "../.runtime/node_modules/@oven/bun-windows-x64/bin/bun.exe"))
       ? resolve(root, "../.runtime/node_modules/@oven/bun-windows-x64/bin/bun.exe")
       : Bun.which("bun");
-    if (!bun) throw new CliError("BACKEND_UNAVAILABLE", "未找到隔离Bun运行时，请执行工具setup脚本", 3);
+    if (!bun&&!packed) throw new CliError("BACKEND_UNAVAILABLE", "未找到隔离Bun运行时，请执行工具setup脚本", 3);
     const log = openSync(join(workspace, ".sfs", "service.log"), "a");
     try {
-      const child = spawn(bun, [join(root, "apps/server/src/runtimeBootstrap.ts")], {
+      const child = spawn(packed?join(packed,'runtime/sfs-service.exe'):bun!, packed?[]:[join(root, "apps/server/src/runtimeBootstrap.ts")], {
         cwd: root, detached: true, windowsHide: true, stdio: ["ignore", log, log],
         env: { ...process.env, SFS_WORKSPACE: workspace, PORT: "0", NODE_ENV: "production" },
       });
@@ -59,7 +69,7 @@ export async function ensureService(workspaceInput: string): Promise<ServiceInfo
   const deadline = Date.now() + 30000;
   do {
     const info = readService(workspace);
-    if (info && await healthy(info)) return info;
+    if (info && await healthy(info)) return compatibleService(info);
     await Bun.sleep(100);
   } while (Date.now() < deadline);
   throw new CliError(existingOwner ? "WORKSPACE_LOCKED" : "BACKEND_UNAVAILABLE", `服务未就绪，请查看 ${join(workspace, ".sfs/service.log")}`, existingOwner ? 6 : 3);

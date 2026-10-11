@@ -1,0 +1,180 @@
+{
+  "id": "a42a25e0-cc4e-46af-b7c5-ec0bc5cce91d",
+  "manifest": {
+    "schema_version": "1.0",
+    "generator": {
+      "name": "soldier-frame-studio",
+      "version": "1.0.0"
+    },
+    "export_id": "a42a25e0-cc4e-46af-b7c5-ec0bc5cce91d",
+    "character": "P5 离线换目录",
+    "clip": "Default",
+    "axis_id": "bb6ba742-3864-4265-9277-c08209e904d1",
+    "project_id": "9fe42165-2249-4c6e-aab5-c38547c79408",
+    "input_revision": 13,
+    "input_fingerprint": "df52cc7ddf4103206688ff265d76afbc6c45c8c7760d24c0fc685a814df2fc7d",
+    "coordinate_system": "top-left-x-right-y-down-pixel-edges",
+    "canvas": {
+      "width": 128,
+      "height": 128
+    },
+    "anchor_pixels": [
+      64,
+      112
+    ],
+    "cocos_anchor": {
+      "x": 0.5,
+      "y": 0.125
+    },
+    "scale": 1,
+    "resampling": "pixel",
+    "timing_mode": "source_pts",
+    "frames": [
+      {
+        "id": "27aefa94-fde4-4bd4-a36d-d5a8e87bc766",
+        "index": 0,
+        "mask_version": "e634e592-b36d-4223-ab1b-d03371d73ec2",
+        "source_id": "4a2f121e-fd4a-4e42-a418-f00fb4cbef38",
+        "source_sha256": null,
+        "source_frame_id": null,
+        "source_index": 0,
+        "duration": {
+          "num": 1,
+          "den": 8
+        },
+        "file": "frames/frame_000001.png",
+        "sheet": "sheets/page_001.png",
+        "rect": [
+          1,
+          1,
+          128,
+          128
+        ],
+        "root": [
+          64,
+          112
+        ],
+        "input_sha256": "10d1486fb6dae1117bfe61f6bfa28f62a4f3759f0a294c7a1e6cd00fc4a62101",
+        "raw_sha256": "10d1486fb6dae1117bfe61f6bfa28f62a4f3759f0a294c7a1e6cd00fc4a62101",
+        "rgba_sha256": "10d1486fb6dae1117bfe61f6bfa28f62a4f3759f0a294c7a1e6cd00fc4a62101"
+      },
+      {
+        "id": "8bc7cdea-383f-4610-ae80-421cb6e80dbe",
+        "index": 1,
+        "mask_version": "15923a72-b50a-4454-af32-9d004dae98ca",
+        "source_id": "4a2f121e-fd4a-4e42-a418-f00fb4cbef38",
+        "source_sha256": null,
+        "source_frame_id": null,
+        "source_index": 1,
+        "duration": {
+          "num": 1,
+          "den": 8
+        },
+        "file": "frames/frame_000002.png",
+        "sheet": "sheets/page_001.png",
+        "rect": [
+          131,
+          1,
+          128,
+          128
+        ],
+        "root": [
+          65,
+          112
+        ],
+        "input_sha256": "5404f0354fa1f14f8f9742baf235731e4bb3fdbcb7823a6cbc0bdeb1fa2f0aa8",
+        "raw_sha256": "5404f0354fa1f14f8f9742baf235731e4bb3fdbcb7823a6cbc0bdeb1fa2f0aa8",
+        "rgba_sha256": "58ca90e3604c6248c67279c79b14e0f69c34288710c439bd351a91adcc4154f7"
+      },
+      {
+        "id": "b45974b4-4229-4155-8c5a-9c2877cea640",
+        "index": 2,
+        "mask_version": "2bfb711b-2117-4b41-b902-66ea05a58c21",
+        "source_id": "4a2f121e-fd4a-4e42-a418-f00fb4cbef38",
+        "source_sha256": null,
+        "source_frame_id": null,
+        "source_index": 2,
+        "duration": {
+          "num": 1,
+          "den": 8
+        },
+        "file": "frames/frame_000003.png",
+        "sheet": "sheets/page_001.png",
+        "rect": [
+          261,
+          1,
+          128,
+          128
+        ],
+        "root": [
+          66,
+          112
+        ],
+        "input_sha256": "3d036d03c3196bc3f340f21648de5fb9447c7e8da18305787899da1ac0d4dce6",
+        "raw_sha256": "3d036d03c3196bc3f340f21648de5fb9447c7e8da18305787899da1ac0d4dce6",
+        "rgba_sha256": "77e071df06e303c30e890533d893652a2ebda80b16a4a96fd4d8ccca3c7f74d1"
+      }
+    ],
+    "sheets": [
+      {
+        "file": "sheets/page_001.png",
+        "width": 390,
+        "height": 130
+      }
+    ],
+    "checks": [
+      {
+        "index": 0,
+        "bounds": [
+          45,
+          20,
+          97,
+          103
+        ],
+        "overflow": false,
+        "empty": false,
+        "frame_id": "27aefa94-fde4-4bd4-a36d-d5a8e87bc766"
+      },
+      {
+        "index": 1,
+        "bounds": [
+          45,
+          20,
+          97,
+          103
+        ],
+        "overflow": false,
+        "empty": false,
+        "frame_id": "8bc7cdea-383f-4610-ae80-421cb6e80dbe"
+      },
+      {
+        "index": 2,
+        "bounds": [
+          45,
+          20,
+          97,
+          103
+        ],
+        "overflow": false,
+        "empty": false,
+        "frame_id": "b45974b4-4229-4155-8c5a-9c2877cea640"
+      }
+    ],
+    "duration": {
+      "num": 3,
+      "den": 8
+    },
+    "release_mode": "reviewed",
+    "grid": {
+      "cell": [
+        128,
+        128
+      ],
+      "margin": 1,
+      "gap": 2,
+      "columns": 15,
+      "rows": 15
+    },
+    "contact_sheet_limit": 3
+  }
+}

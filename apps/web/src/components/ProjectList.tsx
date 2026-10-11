@@ -7,6 +7,7 @@ import { askConfirm, notify } from "../notice";
 import { useModalEscClose } from "../hooks/useModalEscClose";
 import FolderTree, { type FolderSelection } from "./FolderTree";
 import FileZoom, { useFileZoom } from "./FileZoom";
+import CandyDoodle from './CandyDoodle';
 
 export default function ProjectList({ onOpen }: { onOpen: (id: string) => void }) {
   const t = useT();
@@ -121,9 +122,10 @@ export default function ProjectList({ onOpen }: { onOpen: (id: string) => void }
           <div className="home-header-copy">
             <span className="page-kicker">{t("page.projectsWorkspace")}</span>
             <h1>
-              <Clapperboard size={30} /> FrameBaker
+              <Clapperboard size={30} /> {t('candy.brand')}
             </h1>
-            <p className="subtitle">{t("msg.pixel_frame_by_frame_editor_extract_generate_edit_export")}</p>
+            <p className="subtitle">{t('candy.subtitle')}</p>
+            <div className="candy-hero"><div><span className="candy-eyebrow">MAKE A LITTLE MAGIC</span><h2>{t('candy.title')}</h2><div className="candy-tags"><span>01 / VIDEO</span><span>02 / CUTOUT</span><span>03 / ANIMATE</span></div></div><CandyDoodle/></div>
           </div>
           <div className="home-header-actions">
             <motion.button

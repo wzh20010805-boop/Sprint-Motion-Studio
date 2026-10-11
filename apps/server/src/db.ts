@@ -6,7 +6,7 @@ import { ensureBuiltinAnimationAssets, normalizeGeneratedAnimationAssetNames } f
 import type { AttackEffectCell, AttackEffectCellRow, Frame, FrameRow, Material, MaterialRow } from "@framebaker/shared";
 
 // 仓库根目录（apps/server/src → 根）：storage 固定放在根级，与启动时的 cwd 无关
-export const REPO_ROOT = join(import.meta.dir, "..", "..", "..");
+export const REPO_ROOT = process.env.SFS_REPO_ROOT ? resolve(process.env.SFS_REPO_ROOT) : join(import.meta.dir, "..", "..", "..");
 export const STORAGE_ROOT = process.env.SFS_WORKSPACE ? resolve(process.env.SFS_WORKSPACE) : join(REPO_ROOT, "storage");
 
 // 确保运行时目录存在
@@ -308,7 +308,7 @@ export function serializeFrame(f: FrameRow): Frame {
 
 export function serializeMaterial(m: MaterialRow): Material {
   const path = m.raw_path ?? m.processed_path ?? "";
-  const kind: Material["kind"] = /\.(mp4|mov|webm|avi)$/i.test(path) ? "video" : "image";
+  const kind: Material["kind"] = /\.(mp4|mov|webm|avi|gif)$/i.test(path) ? "video" : "image";
   return { ...m, metadata: parseJson<Record<string, unknown>>(m.metadata, {}), kind } as Material;
 }
 

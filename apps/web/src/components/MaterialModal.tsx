@@ -51,10 +51,11 @@ export default function MaterialModal({ material: m, v, initialAction, onClose, 
   const [actionPreset, setActionPreset] = useState<"actions" | "directions">(initialAction === "directions" ? "directions" : "actions");
   const [showExtract, setShowExtract] = useState(false);
   const [extractFps, setExtractFps] = useState(8);
-  const [extractMatte, setExtractMatte] = useState(true);
+  const [extractMatte, setExtractMatte] = useState(false);
   const [showFullFps, setShowFullFps] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const cfg = useServerConfig();
+  const sfsLocal = !!cfg?.sfs;
   const engine = cfg?.matting.engine;
   const engineAvailable = engine != null && engine !== "none";
   const imageLayersAvailable = cfg?.imageLayers.configured ?? false;
@@ -149,8 +150,8 @@ export default function MaterialModal({ material: m, v, initialAction, onClose, 
 
   const doExtract = () =>
     run(async () => {
-      await api.extractMaterial(m.id, { fps: extractFps, autoMatting: extractMatte });
-      onToast(t("msg.extract_job_queued_fps_fps", { fps: extractFps }));
+      await api.extractMaterial(m.id, sfsLocal ? {} : { fps: extractFps, autoMatting: extractMatte });
+      onToast(sfsLocal ? t('sfs.libraryExtractQueued') : t("msg.extract_job_queued_fps_fps", { fps: extractFps }));
       onClose();
     });
 
@@ -203,10 +204,11 @@ export default function MaterialModal({ material: m, v, initialAction, onClose, 
         {isVideo ? (
           <div className="mat-video-wrap">
             {!showExtract && (
-              <VideoPlayer src={materialFileUrl(m.id, v, "raw")} />
+              /\.gif$/i.test(m.raw_path || '') ? <img src={materialFileUrl(m.id, v, 'raw')} alt={m.name} /> : <VideoPlayer src={materialFileUrl(m.id, v, "raw")} />
             )}
             <div className="hint">{t("msg.video_no_extract_during_gen_split_to_images_here_then_ma")}</div>
-            {showFullFps && (
+            {sfsLocal && <div className="hint">{t('sfs.libraryRetention')}</div>}
+            {showFullFps && !sfsLocal && (
               <>
                 <div className="form-row">
                   <label>{t("msg.extract_fps_fps", { fps: extractFps })}</label>
@@ -261,7 +263,7 @@ export default function MaterialModal({ material: m, v, initialAction, onClose, 
           {!isVideo && (
             <span className={`engine-status ${engineAvailable ? "ok" : "bad"}`}>
               <span className="dot" />
-              {engine == null
+              {sfsLocal ? t('sfs.libraryMattingHint') : engine == null
                 ? t("msg.detecting_engine")
                 : engineAvailable
                   ? t("msg.engine_rembg_model", { model: cfg!.matting.model })
@@ -278,7 +280,7 @@ export default function MaterialModal({ material: m, v, initialAction, onClose, 
                 type="button"
                 whileTap={{ scale: 0.95 }}
                 className="px-btn accent"
-                disabled={busy}
+                disabled={busy || sfsLocal}
                 onClick={() => setShowExtract(true)}
               >
                 <Film size={14} /> {t("videoExtract.open")}
@@ -300,13 +302,13 @@ export default function MaterialModal({ material: m, v, initialAction, onClose, 
                   disabled={busy}
                   onClick={() => void doExtract()}
                 >
-                  {busy ? t("common.submitting") : t("msg.extract_frames_fps_fps", { fps: extractFps })}
+                  {busy ? t("common.submitting") : sfsLocal ? t('sfs.libraryExtractAll') : t("msg.extract_frames_fps_fps", { fps: extractFps })}
                 </motion.button>
               )}
             </>
           ) : (
             <>
-              <motion.button type="button" whileTap={{ scale: 0.95 }} className="px-btn accent-cyan" disabled={busy} onClick={doMatting}>
+              <motion.button type="button" whileTap={{ scale: 0.95 }} className="px-btn accent-cyan" disabled={busy || sfsLocal} onClick={doMatting}>
                 <Wand2 size={14} /> {m.status === "matted" ? t("msg.re_matte") : t("msg.run_matting")}
               </motion.button>
               {m.status === "matted" && (
