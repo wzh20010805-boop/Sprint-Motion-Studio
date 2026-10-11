@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test";
 import { join } from "node:path";
-import { readFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, mkdirSync, existsSync, symlinkSync } from "node:fs";
 
 const cli = join(import.meta.dir, "../../apps/cli/src/index.ts");
 async function invoke(args: string[], env = process.env) {
@@ -90,7 +90,12 @@ test("不开GUI也能完成真实48帧流程，复用服务并返回真实失败
 test("缺少ffprobe的真实视频导入返回依赖错误3而不是素材错误2", async () => {
   const workspace=join(import.meta.dir,"../../fixtures/generated/cli-missing-probe",crypto.randomUUID());
   mkdirSync(workspace,{recursive:true});
-  const env={...process.env,PATH:process.env.SystemRoot+"\\System32"};
+  // 同时移除 PATH 中的 Bun 和媒体工具，也不提供本机旁置运行时。
+  // 源码 CLI 应使用正在运行的 Bun 启动后端，让测试真正走到 ffprobe 缺失。
+  const runtimeRoot=join(workspace,"repo-without-bundled-runtime");
+  mkdirSync(runtimeRoot,{recursive:true});
+  symlinkSync(join(import.meta.dir,"../../apps"),join(runtimeRoot,"apps"),process.platform==="win32"?"junction":"dir");
+  const env={...process.env,PATH:"",SFS_REPO_ROOT:runtimeRoot};
   let info:any;
   try {
     const created=await invoke(["project","create","--name","dependency","--workspace",workspace],env);
@@ -98,7 +103,8 @@ test("缺少ffprobe的真实视频导入返回依赖错误3而不是素材错误
     info=JSON.parse(readFileSync(join(workspace,".sfs/service.json"),"utf8"));
     const video=join(workspace,"video.mp4");
     const fixture=Bun.spawn(["ffmpeg","-hide_banner","-nostdin","-n","-f","lavfi","-i","testsrc2=size=32x32:rate=24","-frames:v","2","-c:v","libx264",video],{stdout:"pipe",stderr:"pipe"});
-    await Promise.all([fixture.exited,new Response(fixture.stdout).text(),new Response(fixture.stderr).text()]);
+    const [fixtureExit,,fixtureError]=await Promise.all([fixture.exited,new Response(fixture.stdout).text(),new Response(fixture.stderr).text()]);
+    expect(fixtureExit,fixtureError).toBe(0);
     const imported=await invoke(["import","video","--project",created.body.project_id,"--file",video,"--workspace",workspace],env);
     expect(imported.exitCode).toBe(3);
     expect(imported.body.error.code).toBe("DEPENDENCY_MISSING");

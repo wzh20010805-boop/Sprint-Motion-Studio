@@ -19,6 +19,12 @@ try {
         try {
             & $sfsBun install --frozen-lockfile
             if ($LASTEXITCODE -ne 0) { throw 'Electron 开发宿主安装失败' }
+            # Electron 44 的包提供显式安装器，锁文件安装不保证已下载桌面二进制。
+            $sfsElectron = Join-Path $PWD 'node_modules\electron\dist\electron.exe'
+            if (-not (Test-Path -LiteralPath $sfsElectron)) {
+                & node (Join-Path $PWD 'node_modules\electron\install.js')
+                if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $sfsElectron)) { throw 'Electron 桌面二进制准备失败' }
+            }
         } finally { Pop-Location }
     }
     if ($IncludeValidationPython) {

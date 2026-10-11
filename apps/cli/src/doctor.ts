@@ -16,7 +16,7 @@ export async function doctor() {
   return {
     schema_version: "1.0", ok, status: ok ? "succeeded" : "failed", requires_user_action: !ok,
     data: { bun: Bun.version, platform: process.platform, ffmpeg, ffprobe,
-      isolated_python: existsSync(join(repositoryRoot(), ".venv-image/Scripts/python.exe")),
+      isolated_python: existsSync(join(repositoryRoot(), process.platform === "win32" ? ".venv-image/Scripts/python.exe" : ".venv-image/bin/python")),
       capabilities: { extract_all: ok, matting: false, cocos_integration: false, cli_requires_gui: false } },
     artifacts: [], warnings: ["MODEL_NOT_READY", "P1_ONLY"],
     error: ok ? null : { code: "DEPENDENCY_MISSING", message: "需要可用FFmpeg和ffprobe" },

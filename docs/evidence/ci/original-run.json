@@ -1,0 +1,9 @@
+{
+  "id": 38017850528,
+  "head_sha": "6290605bdcb5ba9aa88adb1148972e8441722511",
+  "event": "push",
+  "path": ".github/workflows/ci.yml",
+  "status": "completed",
+  "conclusion": "failure",
+  "html_url": "https://github.com/wzh20010805-boop/Sprint-Motion-Studio/actions/runs/38017850528"
+}

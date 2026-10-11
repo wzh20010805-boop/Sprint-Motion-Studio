@@ -4,6 +4,8 @@ This document records features, changes, and bug fixes by release. Main releases
 
 ## [Unreleased]
 
+- Run the complete CI suite on Linux and Windows with verified FFmpeg/ffprobe downloads and an explicit Electron installer. Reuse the current Bun for source CLI startup when PATH is isolated; execute native window tests on Windows and retain validation evidence.
+
 - Explicitly hide Windows background consoles for media probing, extraction, legacy jobs and CLI dependency checks. Add native startup-info and visibility regressions while keeping the editor window visible.
 
 - Fix Windows Start-SFS.cmd launching an invisible GUI process: normal GUI launches no longer use windowsHide, with a real batch-launch visibility regression test.

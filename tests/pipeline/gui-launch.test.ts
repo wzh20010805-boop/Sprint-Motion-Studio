@@ -3,7 +3,9 @@ import { join } from "node:path";
 import { mkdirSync, readFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 
-test("Start-SFS.cmd从其他目录启动时实际显示窗口，不只创建隐藏进程", async () => {
+// Win32 批处理和可见性必须由 Windows CI 实测，Linux 无对应原生接口。
+const windowsTest = process.platform === "win32" ? test : test.skip;
+windowsTest("Start-SFS.cmd从其他目录启动时实际显示窗口，不只创建隐藏进程", async () => {
   const workspace = join(import.meta.dir,"../../fixtures/generated/gui-visible-start",crypto.randomUUID());
   mkdirSync(workspace,{recursive:true});
   const launcher = join(import.meta.dir,"../../Start-SFS.cmd");

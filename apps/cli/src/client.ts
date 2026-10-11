@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { mkdirSync, readFileSync, existsSync, openSync, closeSync } from "node:fs";
-import { join, resolve, dirname } from "node:path";
+import { join, resolve, dirname, basename } from "node:path";
 import { isProcessAlive, type ServiceInfo } from "../../server/src/runtime";
 
 export class CliError extends Error {
@@ -42,9 +42,11 @@ export async function ensureService(workspaceInput: string): Promise<ServiceInfo
   let existingOwner = false;
   try { existingOwner = isProcessAlive(JSON.parse(readFileSync(join(workspace, ".sfs", "service.lock"), "utf8")).pid); } catch { /* 启动入口处理损坏锁 */ }
   if (!existingOwner) {
-    const bun = existsSync(join(root, "../.runtime/node_modules/@oven/bun-windows-x64/bin/bun.exe"))
+    // 源码 CLI 可复用当前 Bun，不能依赖 PATH；编译出的 sfs.exe 不能递归启动自己。
+    const sourceBun = /^(bun|bun\.exe)$/i.test(basename(process.execPath)) ? process.execPath : null;
+    const bun = process.platform === "win32" && existsSync(join(root, "../.runtime/node_modules/@oven/bun-windows-x64/bin/bun.exe"))
       ? resolve(root, "../.runtime/node_modules/@oven/bun-windows-x64/bin/bun.exe")
-      : Bun.which("bun");
+      : sourceBun ?? Bun.which("bun");
     if (!bun) throw new CliError("BACKEND_UNAVAILABLE", "未找到隔离Bun运行时，请执行工具setup脚本", 3);
     const log = openSync(join(workspace, ".sfs", "service.log"), "a");
     try {

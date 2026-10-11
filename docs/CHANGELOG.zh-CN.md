@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- CI 在 Linux 和 Windows 执行完整测试，校验并准备 FFmpeg/ffprobe，显式安装 Electron。源码 CLI 在 PATH 隔离时复用当前 Bun；Windows 实测原生窗口测试，并保留版本、路径与测试证据。
+
 - Windows 媒体探测、抽帧、兼容任务命令和 CLI 环境检查显式隐藏后台控制台；新增真实 Win32 启动参数与可见性回归，正常编辑器窗口仍可见。
 
 - 修复 Windows 双击 Start-SFS.cmd 后只有隐藏进程、没有窗口的问题；正常 GUI 启动不再使用 windowsHide，新增真实批处理启动的窗口可见性回归。

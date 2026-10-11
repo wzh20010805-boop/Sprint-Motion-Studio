@@ -1,0 +1,23 @@
+bun test v1.4.2 (744846f84)
+
+tests\pipeline\cli.test.ts:
+ 97 |   symlinkSync(join(import.meta.dir,"../../apps"),join(runtimeRoot,"apps"),process.platform==="win32"?"junction":"dir");
+ 98 |   const env={...process.env,PATH:"",SFS_REPO_ROOT:runtimeRoot};
+ 99 |   let info:any;
+100 |   try {
+101 |     const created=await invoke(["project","create","--name","dependency","--workspace",workspace],env);
+102 |     expect(created.exitCode).toBe(0);
+                                   ^
+error: expect(received).toBe(expected)
+
+Expected: 0
+Received: 3
+
+      at <anonymous> (D:\AIJOB\tools\Sprite Motion Studio\ci-platform-fix\tests\pipeline\cli.test.ts:102:30)
+(fail) 缺少ffprobe的真实视频导入返回依赖错误3而不是素材错误2 [127.18ms]
+
+ 0 pass
+ 4 filtered out
+ 1 fail
+ 1 expect() calls
+Ran 1 test across 1 file. [177.00ms]
