@@ -1808,5 +1808,4 @@ SOFTWARE.
 
 Rembg 2.0.76 CPU and ONNX Runtime 1.31.0 are installed only in this tool's isolated `.venv-image` environment. The u2netp model was fetched from the [official Rembg model release](https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx), with MD5 `8e83ca70e441ab06c318d82300c84806` and SHA256 `309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8`. Model cache and virtual environment are not included in Git or a redistributable package. Original project/model notices must be retained when P5 packages these dependencies. See [Rembg](https://github.com/danielgatis/rembg) and [U-2-Net](https://github.com/xuebinqin/U-2-Net).
 
-`CandyDoodle.tsx` is an original local vector illustration generated for this project; the redesigned UI uses system fonts rather than adding a third-party font dependency. Existing upstream copyright and bundled font notices remain retained.
-
+`CandyDoodle.tsx` now displays a project-specific candy-colored image generated with the built-in imagegen tool (palette, brush and animation clapperboard). It is bundled locally for offline use. The previous Open Doodles image has been replaced; historical provenance remains in the Git history and previous-version reports. Existing upstream copyright and font notices remain retained.

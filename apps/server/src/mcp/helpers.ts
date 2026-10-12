@@ -5,6 +5,8 @@ import type { FolderKind } from "@framebaker/shared";
 import { db, uid, STORAGE_ROOT, nextFrameIdx } from "../db";
 import type { MaterialRow } from "@framebaker/shared";
 import { appendFramePool } from "../timeline";
+import { rememberMaterialProjects } from '../materialProjects';
+import { broadcast } from '../ws';
 
 export function ok(data: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -105,10 +107,12 @@ export function importMaterialToProject(m: MaterialRow, projectId: string): stri
   }
   let metadata: Record<string, unknown> = { fromMaterial: m.id };
   try {
-    metadata = { ...metadata, ...JSON.parse(m.metadata ?? "{}") };
+    metadata = { ...JSON.parse(m.metadata ?? "{}"), fromMaterial: m.id };
   } catch {
     /* ignore */
   }
   appendFramePool(projectId,{id:frameId,raw_path:rawPath,processed_path:procPath,status:"ready",source:m.source,metadata:JSON.stringify(metadata)});
+  rememberMaterialProjects(db, m.id, [projectId]);
+  broadcast('materials_changed', {});
   return frameId;
 }

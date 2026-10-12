@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import { backupBeforeMigrations, migratePipeline } from "./pipeline/migrations";
 import { ensureBuiltinAnimationAssets, normalizeGeneratedAnimationAssetNames } from "./builtinAnimationAssets";
 import type { AttackEffectCell, AttackEffectCellRow, Frame, FrameRow, Material, MaterialRow } from "@framebaker/shared";
+import { resolveMaterialProjects } from './materialProjects';
 
 // 仓库根目录（apps/server/src → 根）：storage 固定放在根级，与启动时的 cwd 无关
 export const REPO_ROOT = process.env.SFS_REPO_ROOT ? resolve(process.env.SFS_REPO_ROOT) : join(import.meta.dir, "..", "..", "..");
@@ -306,10 +307,19 @@ export function serializeFrame(f: FrameRow): Frame {
   } as Frame;
 }
 
-export function serializeMaterial(m: MaterialRow): Material {
+function serializeMaterialWithProjects(m: MaterialRow, projectIds: string[]): Material {
   const path = m.raw_path ?? m.processed_path ?? "";
   const kind: Material["kind"] = /\.(mp4|mov|webm|avi|gif)$/i.test(path) ? "video" : "image";
-  return { ...m, metadata: parseJson<Record<string, unknown>>(m.metadata, {}), kind } as Material;
+  return { ...m, metadata: parseJson<Record<string, unknown>>(m.metadata, {}), kind, project_ids: projectIds } as Material;
+}
+
+export function serializeMaterial(m: MaterialRow): Material {
+  return serializeMaterialWithProjects(m, resolveMaterialProjects(db, [m]).get(m.id) ?? []);
+}
+
+export function serializeMaterials(rows: MaterialRow[]): Material[] {
+  const projects = resolveMaterialProjects(db, rows);
+  return rows.map(row => serializeMaterialWithProjects(row, projects.get(row.id) ?? []));
 }
 
 export function renameMaterial(id: string, name: string): MaterialRow | null {

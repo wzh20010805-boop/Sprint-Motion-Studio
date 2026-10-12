@@ -1,6 +1,18 @@
 // 中文文案：key → 中文。勿把中文原文当 key。
 
 export const zh = {
+  "library.byProject": "按项目分区",
+  "library.all": "全部素材",
+  "library.unassigned": "未归属素材",
+  "library.videos": "视频",
+  "library.photos": "照片",
+  "library.customFolders": "自定义文件夹",
+  "library.emptyPartition": "这个分区还没有素材。上传时可选择归属项目。",
+  "library.uploadProject": "归属项目",
+  "library.uploadHint": "按文件类型自动归入视频或照片。照片也包含视频抽取的帧；此处上传仅保存到素材库。",
+  "library.collapseProject": "收起 {name}",
+  "library.expandProject": "展开 {name}",
+  "p2.keyboardHint": "← / → 快速切换帧",
   "p2.title": "场景抠图与修正",
   "p2.subtitle": "把角色从场景里带出来，把每一处边缘修漂亮。",
   "p2.initial": "制作初稿",
@@ -46,8 +58,8 @@ export const zh = {
   "p2.reason.SMALL_FOREGROUND": "前景过小，可能丢失装备",
   "p2.reason.TOUCHES_BORDER": "前景触碰边缘，请检查裁切",
   "p2.reason.SOURCE_CHANGED": "原图已修改，请重新生成抠图初稿；旧修订保留",
-  "candy.brand": "小兵素材工坊",
-  "candy.title": "让小兵，动起来！",
+  "candy.brand": "素材创意工坊",
+  "candy.title": "让创意，动起来！",
   "candy.subtitle": "导入动作、抠出角色、细细修边。你的下一段灵感，从这里开工。",
   "playback.mode": "预览范围",
   "playback.all": "全部帧",
@@ -1254,6 +1266,7 @@ export const zh = {
   "sfs.legacySampling": "旧版 FPS 采样（主动跳帧）",
   "sfs.rawTimingHint": "完整保留原始帧和源时序。变帧率视频在时间轴预览中可能量化，请以源时序文件为准。",
   "sfs.mattingPending": "导入后会保留完整原始帧。点击编辑器顶部「场景抠图与修正」，生成透明初稿并修复边缘。",
+  "canvas.frameNavigationHint": "逐帧预览",
 } as const;
 
 export type MsgKey = keyof typeof zh;

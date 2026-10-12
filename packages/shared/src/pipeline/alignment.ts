@@ -1,3 +1,9 @@
+import type { Frame } from '../types';
+export const PRODUCTION_API_VERSION='1.1';
+
+/** 主编辑器的中心锚点变换；偏移使用源图像素，旋转为弧度。 */
+export type FrameRenderTransform = Pick<Frame,'offset_x'|'offset_y'|'scale'|'rotation'|'opacity'>;
+
 /** 源图像左上像素边界坐标。公共比例和画布按角色项目共享。 */
 export interface AlignmentConfig {
  canvas: { width:number; height:number };

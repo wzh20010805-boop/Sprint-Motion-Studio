@@ -1,0 +1,13 @@
+{
+  "exe": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\dist\\修复版\\SpriteMotionStudio-1.0.1-r1\\runtime\\python\\python.exe",
+  "args": [
+    "-c",
+    "from PIL import Image; import sys; i=Image.open(sys.argv[1]); assert i.getchannel('A').getextrema()[1]==115",
+    "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\editor-export-portable-r3\\workspace\\exports\\a106d745-dc5e-438c-a6c5-ce6770798a9f\\75e94700-35ab-4cca-ad54-637cb49f5058\\frames\\frame_000001.png"
+  ],
+  "cwd": "C:/Windows/Temp",
+  "PATH": "C:\\Windows\\System32;C:\\Windows",
+  "code": 0,
+  "out": "",
+  "err": ""
+}

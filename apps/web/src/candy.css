@@ -1,4 +1,4 @@
-/* 小兵素材工坊：荧光糖果 + 手绘贴纸。所有面板共享调色与轮廓。 */
+/* 素材创意工坊：荧光糖果 + 手绘贴纸。所有面板共享调色与轮廓。 */
 :root,[data-theme="light"] {
  --bg:#f5eaff; --surface:#fff8ff; --elevated:#ffffff; --border:#382158; --border-focused:#a53bfa;
  --hover:#eddaff; --active:#d8b9ff; --selected:#efd4ff; --text:#29153f; --text-muted:#705480; --text-placeholder:#9074a0;
@@ -31,7 +31,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible {o
 .px-btn:hover:not(:disabled),.icon-btn:hover:not(:disabled) {transform:translateY(-2px) rotate(-1deg);box-shadow:3px 5px 0 var(--ink),var(--glow);}
 .px-btn:active:not(:disabled),.icon-btn:active:not(:disabled) {transform:translate(2px,2px);box-shadow:0 1px 0 var(--ink);}
 .px-btn.accent {background:var(--pink);color:var(--accent-contrast);box-shadow:2px 3px 0 var(--ink),var(--glow);}
-.px-btn.accent-cyan {background:var(--cyan);color:var(--accent-contrast);}
+.px-btn.accent-cyan {background:var(--cyan);color:var(--accent-contrast);box-shadow:2px 3px 0 var(--ink);--glow:0 0 22px color-mix(in srgb,var(--cyan) 40%,transparent);}
 .px-btn.accent-purple {background:var(--purple);color:var(--accent-contrast);}
 .px-btn.small {padding:4px 8px;min-height:28px;font-size:12px;}
 .icon-btn {border-radius:10px;background:var(--elevated);}
@@ -61,7 +61,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible {o
 .candy-tags span,.candy-tag {padding:5px 9px;border:2px solid var(--ink);border-radius:8px;background:var(--yellow);color:var(--accent-contrast);font-size:10px;font-weight:800;letter-spacing:1px;}
 .candy-tags span:nth-child(2) {background:var(--green);transform:rotate(3deg);}
 .candy-tags span:nth-child(3) {background:var(--pink);transform:rotate(-3deg);}
-.candy-doodle {width:260px;height:180px;flex-shrink:0;filter:drop-shadow(3px 5px 0 color-mix(in srgb,var(--ink) 25%,transparent));}
+.candy-doodle {width:260px;height:180px;object-fit:contain;flex-shrink:0;filter:drop-shadow(3px 5px 0 color-mix(in srgb,var(--ink) 25%,transparent));}
+@media(max-width:1050px){
+ .home-header{flex-wrap:wrap;}
+ .home-header>div:first-child{flex:1 1 100%;}
+ .home-header-actions{align-items:flex-start;padding-top:0;}
+}
 .folder-sidebar,.folder-tree {border-radius:16px;background:var(--surface);}
 .folder-row {border-radius:10px;}
 .folder-row.active {background:var(--selected);border-left-color:var(--pink);}
@@ -128,6 +133,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible {o
 .mask-stage canvas {max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;touch-action:none;cursor:crosshair;image-rendering:auto;}
 .mask-loading {position:absolute;inset:0;display:grid;place-items:center;background:var(--surface);}
 .mask-frame-navigation {display:flex;align-items:center;justify-content:center;gap:15px;font-size:12px;}
+.mask-keyboard-hint {color:var(--text-muted);font-size:11px;}
 .mask-dimensions {color:var(--text-muted);margin-left:auto;font-size:11px;}
 .mask-status {display:flex;align-items:center;gap:8px;border:2px solid var(--border);border-radius:12px;padding:12px;background:var(--selected);font-size:13px;font-weight:750;}
 .mask-status.reviewed {background:var(--green);color:var(--accent-contrast);}

@@ -3,6 +3,7 @@ import { mkdirSync, readFileSync, existsSync, openSync, closeSync } from "node:f
 import { join, resolve, dirname, basename } from "node:path";
 import { isProcessAlive, type ServiceInfo } from "../../server/src/runtime";
 import { distributionRoot,configureDistribution } from './distribution';
+import { PRODUCTION_API_VERSION } from '../../../packages/shared/src/pipeline/alignment';
 
 export class CliError extends Error {
   constructor(public code: string, message: string, public exitCode = 2, public result?: any) { super(message); }
@@ -37,7 +38,7 @@ async function healthy(info: ServiceInfo) {
 async function compatibleService(info:ServiceInfo) {
  const response=await fetch(info.url+'/api/config',{headers:{Authorization:`Bearer ${info.token}`},signal:AbortSignal.timeout(2000)});
  const config=await response.json() as any;
- if(!response.ok||config.sfs?.production_api_version!=='1.0')throw new CliError('BACKEND_VERSION_CONFLICT','工作区仍运行旧版或不兼容服务。请保存并关闭旧GUI，待后台任务完成后重启；当前服务和任务未被强行关闭。',6);
+ if(!response.ok||config.sfs?.production_api_version!==PRODUCTION_API_VERSION)throw new CliError('BACKEND_VERSION_CONFLICT','工作区仍运行旧版或不兼容服务。请保存并关闭旧GUI，待后台任务完成后重启；当前服务和任务未被强行关闭。',6);
  return info;
 }
 

@@ -463,7 +463,7 @@ export default function SkeletalProjectEditor({ project, onBack }: { project: Pr
               if (await save({ ...document, character: { binding: next } })) setBindingEditorOpen(false);
             }} />}
         </section>
-        {materialImportOpen && <MaterialImportModal initialTab="upload" onClose={() => setMaterialImportOpen(false)} onDone={() => {
+        {materialImportOpen && <MaterialImportModal initialTab="upload" initialProjectId={project.id} projects={[project]} onClose={() => setMaterialImportOpen(false)} onDone={() => {
           setMaterialImportOpen(false);
           void reloadMaterialLibrary().catch((e) => notify(t("skeletal.loadFailed", { msg: (e as Error).message })));
         }} />}

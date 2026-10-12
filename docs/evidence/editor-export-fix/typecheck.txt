@@ -1,0 +1,1 @@
+$ tsc -p apps/server && tsc -p apps/web && tsc -p apps/cli

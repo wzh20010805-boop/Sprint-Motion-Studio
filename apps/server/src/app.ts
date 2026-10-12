@@ -222,6 +222,8 @@ export const app = new Elysia()
     if (!cancelJob(params.id)) return status(409, "取消失败");
     return { ok: true };
   })
+  // 首页装饰固定同源路径，便携包从独立资产目录读取，不连接图片外站。
+  .get('/illustrations/creative-candy.png',()=>new Response(Bun.file(process.env.SFS_ASSET_DIR?join(process.env.SFS_ASSET_DIR,'art/creative-candy.png'):join(import.meta.dir,'../../web/public/art/creative-candy.png')),{headers:{'Content-Type':'image/png','Cache-Control':'no-cache'}}))
   // 字体等静态文件（位于 apps/web/public/fonts）
   .get("/fonts/:name", ({ params, status }) => {
     const name = params.name;

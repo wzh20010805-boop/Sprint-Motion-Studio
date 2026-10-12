@@ -34,6 +34,8 @@ export interface ExtractPayload {
   originName?: string;
   /** 素材入库目标文件夹（NULL = 根目录） */
   folderId?: string | null;
+  /** 素材库分区归属；不会向项目时间轴追加帧。 */
+  projectIds?: string[];
 }
 
 /** 规范化时间戳：非负、排序、按 1ms 去重、截断上限 */
@@ -210,8 +212,8 @@ function saveMaterials(stageDir: string, files: string[], p: ExtractPayload): st
     renameSync(`${stageDir}/${file}`, rawPath);
     const name = files.length > 1 ? `${base} #${i + 1}` : base;
     db.query(
-      "INSERT INTO materials (id, name, raw_path, status, source, folder_id, created_at) VALUES (?, ?, ?, 'raw', ?, ?, ?)"
-    ).run(id, name, rawPath, source, p.folderId ?? null, Date.now());
+      "INSERT INTO materials (id, name, raw_path, status, source, folder_id, metadata, created_at) VALUES (?, ?, ?, 'raw', ?, ?, ?, ?)"
+    ).run(id, name, rawPath, source, p.folderId ?? null, JSON.stringify({ project_ids: p.projectIds ?? [] }), Date.now());
     ids.push(id);
   });
   return ids;
@@ -255,7 +257,7 @@ export async function extractFrames(
       const id = uid();
       const rawPath = `${rawDir}/frame_${String(start + i).padStart(4, "0")}.png`;
       renameSync(`${stageDir}/${file}`, rawPath);
-      const materialId = retainImportedMaterial({ key: 'frame:' + id, name: files.length > 1 ? `${p.originName || '素材'} #${i + 1}` : p.originName || '素材', rawPath, source, metadata: { fromFrame: id } });
+      const materialId = retainImportedMaterial({ key: 'frame:' + id, name: files.length > 1 ? `${p.originName || '素材'} #${i + 1}` : p.originName || '素材', rawPath, source, projectIds: [projectId], metadata: { fromFrame: id } });
       appendFramePool(projectId,{id,raw_path:rawPath,status:p.autoMatting?"matting":"ready",source,metadata:JSON.stringify({ fromMaterial: materialId })});
       frameIds.push(id);
     });

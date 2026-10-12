@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync,writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { AlignmentConfig } from '@framebaker/shared';
+import type { AlignmentConfig,FrameRenderTransform } from '@framebaker/shared';
 import { db, STORAGE_ROOT, uid } from '../db';
 import { broadcast } from '../ws';
 import { getProject, PipelineError, validateId } from './service';
@@ -56,7 +56,12 @@ export function composeInputs(project:string,axis:string) {
  const {frames}=axisFrames(project,axis),state=alignmentState(project,axis);
  if(!state.config)throw new PipelineError('ALIGNMENT_REVIEW_REQUIRED','请先标注地面基准和公共画布',409);
  validateAlignment(state.config,frames.length);
- return frames.map((f,index)=>{const mask=maskState(f.id);if(!mask.current)throw new PipelineError('MASK_REVIEW_REQUIRED','部分帧没有有效抠图，请生成或修复遮罩',409);return {id:f.id,index,path:mask.current.rgba_path,mask_version:mask.version_id,reviewed:mask.reviewed,sha256:fileHash(mask.current.rgba_path)};});
+ return frames.map((f,index)=>{
+  const mask=maskState(f.id);if(!mask.current)throw new PipelineError('MASK_REVIEW_REQUIRED','部分帧没有有效抠图，请生成或修复遮罩',409);
+  const transform:FrameRenderTransform={offset_x:f.offset_x,offset_y:f.offset_y,scale:f.scale,rotation:f.rotation,opacity:f.opacity};
+  if(!Object.values(transform).every(v=>typeof v==='number'&&Number.isFinite(v))||transform.opacity<0||transform.opacity>1)throw new PipelineError('INVALID_FRAME_TRANSFORM','帧变换必须是有限数，透明度须在0到1之间');
+  return {id:f.id,index,path:mask.current.rgba_path,mask_version:mask.version_id,reviewed:mask.reviewed,sha256:fileHash(mask.current.rgba_path),transform};
+ });
 }
 
 export function reviewFingerprint(project:string,axis:string) {

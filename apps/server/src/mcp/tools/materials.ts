@@ -4,7 +4,8 @@ import * as z from "zod/v4";
 import type { McpServer } from "@modelcontextprotocol/server";
 import type { MaterialRow } from "@framebaker/shared";
 import { IMAGE_LAYER_COUNT_MAX, IMAGE_LAYER_COUNT_MIN } from "@framebaker/shared";
-import { db, getMaterial, renameMaterial, uid, STORAGE_ROOT, serializeMaterial } from "../../db";
+import { db, getMaterial, renameMaterial, uid, STORAGE_ROOT, serializeMaterial, serializeMaterials } from "../../db";
+import { resolveMaterialProjects } from '../../materialProjects';
 import { broadcast } from "../../ws";
 import { createJob, createMattingJob } from "../../queue";
 import { EXTRACT_TIMESTAMPS_MAX, normalizeExtractTimestamps } from "../../jobs/extract";
@@ -18,7 +19,7 @@ export function register(server: McpServer) {
     {
       title: "List Materials",
       description:
-        "List all materials in the library sorted by creation time (newest first). Each material has id, name, status (raw/matted), source, kind (image/video), folder_id, and metadata.",
+        "List all materials in the library sorted by creation time (newest first). Each material has id, name, status (raw/matted), source, kind (image/video), folder_id, project_ids (existing associated projects; empty means unassigned), and metadata.",
       inputSchema: z.object({}),
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     },
@@ -26,7 +27,7 @@ export function register(server: McpServer) {
       const rows = db
         .query("SELECT * FROM materials ORDER BY created_at DESC")
         .all() as MaterialRow[];
-      return ok({ materials: rows.map(serializeMaterial) });
+      return ok({ materials: serializeMaterials(rows) });
     }
   );
 
@@ -188,6 +189,7 @@ export function register(server: McpServer) {
           target: { kind: "materials" },
           originName: (m.name || "素材").replace(/\s*#\d+$/, "").trim() || "素材",
           folderId: folderId !== undefined ? (folderId as string | null) : m.folder_id,
+          projectIds: resolveMaterialProjects(db, [m]).get(m.id) ?? [],
         },
       });
       return ok({ jobId });

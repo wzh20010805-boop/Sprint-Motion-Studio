@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Bone, Check, Crop, Download, Eye, Film, Grid3x3, ImageDown, Layers3, Package, Pencil, PersonStanding, Pipette, RefreshCw, Scan, Send, Sparkles, Trash2, Undo2, Upload, Wand2, X } from "lucide-react";
 import { SOURCE_COLORS } from "@framebaker/shared";
-import { api, materialFileUrl, materialImageUrl, wsClient, type Folder, type Material } from "../api";
+import { api, materialFileUrl, materialImageUrl, wsClient, type Folder, type Material, type Project } from "../api";
 import { downloadMaterialImage, downloadMaterialImages } from "../export";
 import { cropImage, findOpaqueBounds, removeColor } from "../imageops/client";
 import type { RemoveColorOptions } from "../imageops/ops";
@@ -13,6 +13,7 @@ import { SOURCE_LABEL_KEYS } from "../sourceLabel";
 import { themedSourceColor, useTheme } from "../theme";
 import { useServerConfig } from "../config";
 import FolderTree, { type FolderSelection } from "./FolderTree";
+import MaterialProjectTree, { type MaterialPartition } from './MaterialProjectTree';
 import FileZoom, { useFileZoom } from "./FileZoom";
 import MaterialImportModal from "./MaterialImportModal";
 import LayerSplitModal from "./LayerSplitModal";
@@ -52,6 +53,7 @@ const MaterialCard = memo(function MaterialCard({
   return (
     <motion.div
       className={`project-card mat-card ${selected ? "selected" : ""}`}
+      data-material-id={m.id}
       whileHover={{ y: -4 }}
       whileTap={{ scale: 0.985 }}
       draggable
@@ -92,8 +94,9 @@ const MaterialCard = memo(function MaterialCard({
 export default function MaterialsPage() {
   const t = useT();
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
-  const [folderSel, setFolderSel] = useState<FolderSelection>("all");
+  const [partition, setPartition] = useState<MaterialPartition>({ scope: 'all' });
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [anchorId, setAnchorId] = useState<string | null>(null);
   const [importTab, setImportTab] = useState<"upload" | "cli" | null>(null);
@@ -159,8 +162,10 @@ export default function MaterialsPage() {
 
   const load = useCallback(async () => {
     try {
-      const list = await api.listMaterials();
+      const [list, projectList] = await Promise.all([api.listMaterials(), api.listProjects()]);
       setMaterials(list);
+      setProjects(projectList);
+      setPartition(current => current.scope === 'project' && !projectList.some(p => p.id === current.projectId) ? { scope: 'unassigned' } : current);
       setSelectedIds((prev) => {
         if (prev.size === 0) return prev;
         const alive = new Set(list.map((m) => m.id));
@@ -206,7 +211,7 @@ export default function MaterialsPage() {
         // 全局版本只供当前详情/抽帧弹窗破缓存，素材卡片使用上面的按 id 版本。
         setV((current) => current + 1);
         loadDebounced();
-      } else if (msg.type === "materials_changed") {
+      } else if (msg.type === "materials_changed" || msg.type === "project_deleted") {
         // 增删/导入/移动：结构变化需重拉，但不影响已有素材的图片缓存（不动 imgV）
         loadDebounced();
       }
@@ -223,10 +228,37 @@ export default function MaterialsPage() {
   }, [load, loadFolders, loadDebounced]);
 
   const visible = useMemo(() => {
-    if (folderSel === "all") return materials;
-    if (folderSel === "ungrouped") return materials.filter((m) => !m.folder_id);
-    return materials.filter((m) => m.folder_id === folderSel);
-  }, [materials, folderSel]);
+    const activeProjects = new Set(projects.map(project => project.id));
+    return materials.filter(material => {
+      if (partition.scope === 'all') return true;
+      if (partition.scope === 'folder') return partition.folderId === 'all' || (partition.folderId === 'ungrouped' ? !material.folder_id : material.folder_id === partition.folderId);
+      const projectIds = (material.project_ids ?? []).filter(id => activeProjects.has(id));
+      const belongs = partition.scope === 'project' ? projectIds.includes(partition.projectId) : !projectIds.length;
+      return belongs && (!partition.kind || material.kind === partition.kind);
+    });
+  }, [materials, projects, partition]);
+
+  // 项目被另一窗口删除或归属变化时，批量操作也只能作用于当前可见素材。
+  useEffect(() => {
+    const ids = new Set(visible.map(material => material.id));
+    setSelectedIds(previous => {
+      const next = new Set([...previous].filter(id => ids.has(id)));
+      return next.size === previous.size ? previous : next;
+    });
+    setAnchorId(previous => previous && ids.has(previous) ? previous : null);
+  }, [visible]);
+
+  const choosePartition = (next: MaterialPartition) => {
+    setPartition(next);
+    setSelectedIds(new Set());
+    setAnchorId(null);
+    setCtxMenu(null);
+  };
+  const folderSel: FolderSelection = partition.scope === 'folder' ? partition.folderId : '';
+  const projectName = partition.scope === 'project' ? projects.find(p => p.id === partition.projectId)?.name : null;
+  const partitionLabel = partition.scope === 'project' || partition.scope === 'unassigned'
+    ? [projectName ?? t('library.unassigned'), partition.kind ? t(partition.kind === 'video' ? 'library.videos' : 'library.photos') : null].filter(Boolean).join(' / ')
+    : partition.scope === 'folder' ? `${t('library.customFolders')} / ${folderSel === 'all' ? t('msg.all') : folderSel === 'ungrouped' ? t('msg.ungrouped') : folders.find(f => f.id === folderSel)?.name ?? ''}` : t('library.all');
 
   // 持有「会变但回调只读」的值，避免回调依赖它们而频繁重建（保证 MaterialCard memo 生效）
   const selRef = useRef(selectedIds);
@@ -236,7 +268,7 @@ export default function MaterialsPage() {
   const visibleRef = useRef(visible);
   visibleRef.current = visible;
 
-  const currentFolderId = folderSel !== "all" && folderSel !== "ungrouped" ? folderSel : null;
+  const currentFolderId = partition.scope === 'folder' && folderSel !== "all" && folderSel !== "ungrouped" ? folderSel : null;
 
   const toast = (msg: string) => notify(msg, "info");
 
@@ -355,6 +387,7 @@ export default function MaterialsPage() {
       const r = await api.batchImportMaterials(ids, projectId);
       setShowPicker(false);
       setSelectedIds(new Set());
+      await load();
       toast(t("msg.imported_count_materials_into_project", { count: r.count }));
     } catch (e) {
       notify(t("msg.import_failed_msg", { msg: (e as Error).message }));
@@ -753,11 +786,14 @@ export default function MaterialsPage() {
 
   return (
     <div className="page page-with-folders">
+      <aside className="material-library-sidebar">
+      <MaterialProjectTree projects={projects} materials={materials} selected={partition} onSelect={choosePartition} />
       <FolderTree
         kind="material"
+        title={t('library.customFolders')}
         folders={folders}
         selected={folderSel}
-        onSelect={setFolderSel}
+        onSelect={folderId => choosePartition({ scope: 'folder', folderId })}
         onCreate={async (name, parentId) => {
           await api.createFolder("material", name, parentId);
           await loadFolders();
@@ -777,6 +813,7 @@ export default function MaterialsPage() {
         }}
         onDropItems={(folderId, ids) => void moveSelectedTo(folderId, ids)}
       />
+      </aside>
 
       <div className="folder-content">
         <header className="home-header">
@@ -785,6 +822,7 @@ export default function MaterialsPage() {
             <h1>
               <Package size={28} /> {t("msg.materials")}
             </h1>
+            <p className="material-partition-title" data-testid="material-partition-title">{partitionLabel}</p>
             <p className="subtitle">
               {t(sfsLocal ? 'sfs.librarySummary' : "msg.count_materials_generate_upload_matte_review_import_mod", {
                 count: visible.length,
@@ -827,7 +865,7 @@ export default function MaterialsPage() {
           ) : visible.length === 0 ? (
             <div className="empty">
               <Package size={32} />
-              <p>{t("msg.no_materials_in_this_folder")}</p>
+              <p>{t("library.emptyPartition")}</p>
             </div>
           ) : (
             <div className="file-grid" style={{ ["--tile-min" as string]: `${zoom}px` }}>
@@ -954,6 +992,8 @@ export default function MaterialsPage() {
               initialTab={importTab}
               initialReferenceMaterialId={decomposeMaterialId ?? undefined}
               folderId={currentFolderId}
+              initialProjectId={partition.scope === 'project' ? partition.projectId : null}
+              projects={projects}
               onClose={() => {
                 setImportTab(null);
                 setDecomposeMaterialId(null);

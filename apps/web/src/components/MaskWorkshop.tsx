@@ -4,6 +4,7 @@ import type { Frame, MaskStroke } from '@framebaker/shared';
 import { maskApi, type MaskState } from '../maskApi';
 import { askConfirm, notify } from '../notice';
 import { useT } from '../i18n';
+import { hasVisibleForeground } from '../maskPixels';
 
 type View='checker'|'raw'|'alpha'|'black'|'white';
 type Tool='erase'|'restore'|'region';
@@ -16,6 +17,8 @@ export default function MaskWorkshop({projectId,frames,initialId,onClose,onChang
  const [refresh,setRefresh]=useState(0);
  const [reviewed,setReviewed]=useState<Set<string>>(new Set());
  const frame=frames[index];
+ const currentIndex=useRef(index),currentFrameId=useRef(frame?.id),confirmPending=useRef(false);
+ currentIndex.current=index;currentFrameId.current=frame?.id;
  const [state,setState]=useState<MaskState|null>(null), [strokes,setStrokes]=useState<MaskStroke[]>([]);
  const [tool,setTool]=useState<Tool>('region'),[view,setView]=useState<View>('raw'),[size,setSize]=useState(16);
  const [invisible,setInvisible]=useState(false);
@@ -47,16 +50,16 @@ export default function MaskWorkshop({projectId,frames,initialId,onClose,onChang
   const rect=liveRegion.current??region;
   if(rect){ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--pink').trim();ctx.lineWidth=Math.max(1,c.width/250);ctx.setLineDash([8,4]);ctx.strokeRect(...rect);ctx.setLineDash([]);}
  };
- const reload=async()=>{const next=await maskApi.state(frame!.id);setState(next);setRefresh(v=>v+1);return next;};
+ const reload=async()=>{const id=frame!.id,next=await maskApi.state(id);if(currentFrameId.current===id){setState(next);setRefresh(v=>v+1);}return next;};
  useEffect(()=>{
   let dead=false;setLoading(true);setState(null);setStrokes([]);setInvisible(false);raw.current=null;mask.current=null;
   if(!frame)return;
   maskApi.state(frame.id).then(async s=>{
    const [r,m]=await Promise.all([loadImage(maskApi.image(frame.id,'raw')+'&v='+s.revision),s.current?loadImage(maskApi.image(frame.id,'mask',s.version_id)):Promise.resolve(null)]);
-   if(dead)return;
-   if(m){const mc=document.createElement('canvas');mc.width=m.naturalWidth;mc.height=m.naturalHeight;const ctx=mc.getContext('2d')!;ctx.drawImage(m,0,0);const pixels=ctx.getImageData(0,0,mc.width,mc.height).data;let visible=0;for(let i=0;i<pixels.length;i+=4)if(pixels[i]!>128)visible++;setInvisible(visible<Math.max(4,mc.width*mc.height*.0001));}
+   if(dead||currentFrameId.current!==frame.id)return;
+   if(m){const mc=document.createElement('canvas');mc.width=m.naturalWidth;mc.height=m.naturalHeight;const ctx=mc.getContext('2d')!;ctx.drawImage(m,0,0);const pixels=ctx.getImageData(0,0,mc.width,mc.height).data;ctx.clearRect(0,0,mc.width,mc.height);ctx.drawImage(r,0,0);setInvisible(!hasVisibleForeground(ctx.getImageData(0,0,mc.width,mc.height).data,pixels));}
    raw.current=r;mask.current=m;setState(s);setLoading(false);
-  }).catch(e=>{if(!dead){notify(e.message);setLoading(false);}});
+  }).catch(e=>{if(!dead&&currentFrameId.current===frame.id){notify(e.message);setLoading(false);}});
   return()=>{dead=true;};
  },[frame?.id,refresh]);
  useEffect(()=>{render();},[strokes,view,region,loading]);
@@ -70,9 +73,32 @@ export default function MaskWorkshop({projectId,frames,initialId,onClose,onChang
   void poll();const timer=setInterval(poll,1000);return()=>{dead=true;clearInterval(timer);};
  },[jobId]);
  const safely=async(work:()=>Promise<void>)=>{setBusy(true);try{await work();onChanged();}catch(e){notify((e as Error).message);}finally{setBusy(false);}};
- const switchFrame=async(next:number)=>{if(strokes.length&&!await askConfirm(t('p2.discard')))return;setStrokes([]);setIndex(next);};
- const close=async()=>{if(strokes.length&&!await askConfirm(t('p2.discard')))return;onClose();};
- useEffect(()=>{const key=(e:KeyboardEvent)=>{if(e.key==='Escape'&&!busy)void close();};window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);},[busy,strokes]);
+ const discardStrokes=async()=>{
+  if(!strokeRef.current.length)return true;
+  confirmPending.current=true;
+  try{return await askConfirm(t('p2.discard'));}finally{confirmPending.current=false;}
+ };
+ const switchFrame=async(next:number)=>{
+  const bounded=Math.max(0,Math.min(frames.length-1,next));
+  if(busy||confirmPending.current||drawing.current||regionStart.current||!frames.length||bounded===currentIndex.current)return;
+  if(strokeRef.current.length&&!await discardStrokes())return;
+  // 同一轮连续按键立即看到新索引；较慢的旧图片请求不能回写当前帧。
+  currentIndex.current=bounded;currentFrameId.current=frames[bounded]!.id;
+  setStrokes([]);setIndex(bounded);
+ };
+ const close=async()=>{if(busy||confirmPending.current)return;if(!await discardStrokes())return;onClose();};
+ useEffect(()=>{
+  const key=(e:KeyboardEvent)=>{
+   if(e.defaultPrevented||e.isComposing||e.keyCode===229||e.altKey||e.ctrlKey||e.metaKey||e.shiftKey||document.querySelector('.confirm-mask'))return;
+   if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();void close();return;}
+   if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;
+   const target=e.target as HTMLElement|null;
+   if(target?.isContentEditable||target?.closest?.('input,textarea,select,[contenteditable]:not([contenteditable="false"])'))return;
+   e.preventDefault();e.stopImmediatePropagation();
+   void switchFrame(currentIndex.current+(e.key==='ArrowLeft'?-1:1));
+  };
+  window.addEventListener('keydown',key,true);return()=>window.removeEventListener('keydown',key,true);
+ },[busy,frames,strokes]);
  const point=(e:React.PointerEvent):[number,number]=>{const c=canvas.current!,box=c.getBoundingClientRect();return [Math.max(0,Math.min(c.width-1,Math.round((e.clientX-box.left)*c.width/box.width))),Math.max(0,Math.min(c.height-1,Math.round((e.clientY-box.top)*c.height/box.height)))];};
  const start=(e:React.PointerEvent<HTMLCanvasElement>)=>{
   if(busy||loading||e.button!==0)return;
@@ -112,7 +138,7 @@ export default function MaskWorkshop({projectId,frames,initialId,onClose,onChang
    </aside>
    <main className="mask-center"><div className="mask-view-tabs">{(['checker','raw','alpha','black','white'] as View[]).map(v=><button className={view===v?'active':''} key={v} onClick={()=>setView(v)}>{t(`p2.view.${v}` as any)}</button>)}</div>
     <div className={`mask-stage ${view}`}><canvas ref={canvas} data-testid="mask-canvas" onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end}/>{loading&&<div className="mask-loading">{t('p2.loading')}</div>}</div>
-    <div className="mask-frame-navigation"><button className="icon-btn" aria-label={t('p2.previous')} disabled={busy||index===0} onClick={()=>void switchFrame(index-1)}><ChevronLeft/></button><span>{t('p2.frame',{n:index+1,total:frames.length})}</span><button className="icon-btn" aria-label={t('p2.next')} disabled={busy||index===frames.length-1} onClick={()=>void switchFrame(index+1)}><ChevronRight/></button><span className="mask-dimensions">{raw.current?.naturalWidth} × {raw.current?.naturalHeight}</span></div>
+    <div className="mask-frame-navigation"><button className="icon-btn" aria-label={t('p2.previous')} aria-keyshortcuts="ArrowLeft" title={`${t('p2.previous')} (←)`} disabled={busy||index===0} onClick={()=>void switchFrame(index-1)}><ChevronLeft/></button><span>{t('p2.frame',{n:index+1,total:frames.length})}</span><button className="icon-btn" aria-label={t('p2.next')} aria-keyshortcuts="ArrowRight" title={`${t('p2.next')} (→)`} disabled={busy||index===frames.length-1} onClick={()=>void switchFrame(index+1)}><ChevronRight/></button><span className="mask-keyboard-hint">{t('p2.keyboardHint')}</span><span className="mask-dimensions">{raw.current?.naturalWidth} × {raw.current?.naturalHeight}</span></div>
    </main>
    <aside className="mask-review"><span className="candy-step">03 / {t('p2.inspect')}</span><div className={`mask-status ${state?.reviewed?'reviewed':''}`}><Check size={20}/>{state?.reviewed?t('p2.reviewed'):t('p2.pending')}</div><p>{t('p2.reviewHint')}</p>
     <div className="mask-warning-list">{reasons.map((reason:string)=><span key={reason}>{t(`p2.reason.${reason}` as any)}</span>)}</div>

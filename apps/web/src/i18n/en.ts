@@ -1,7 +1,20 @@
 // 英文文案：key → English。与 zh.ts 共用同一套 MsgKey。
 
 export const en = {
+  "library.byProject": "By project",
+  "library.all": "All materials",
+  "library.unassigned": "Unassigned materials",
+  "library.videos": "Videos",
+  "library.photos": "Photos",
+  "library.customFolders": "Custom folders",
+  "library.emptyPartition": "No materials in this section yet. Choose a project when uploading.",
+  "library.uploadProject": "Project",
+  "library.uploadHint": "Files are grouped into videos or photos automatically. Photos include extracted frames. Uploading here only adds files to the library.",
+  "library.collapseProject": "Collapse {name}",
+  "library.expandProject": "Expand {name}",
+  "p2.keyboardHint": "← / → Quickly step through frames",
   "地面基准、统一比例与导出": "Ground roots, shared scale & export",
+  "已包含主编辑器的位移、缩放、旋转和透明度；这里的地面根与微调在其后应用。": "Includes the main editor's offset, scale, rotation and opacity; ground alignment and fine offsets apply afterwards.",
   "根位置是地面投影；跳跃和倒地时不要追随脚底。画布、锚点和比例在同角色所有动作共享。": "Roots mark the ground projection; do not follow feet during jumps or falls. Canvas, anchor and scale are shared by all actions in this character.",
   "关闭": "Close", "画布宽": "Canvas width", "画布高": "Canvas height",
   "统一比例": "Shared scale", "画布锚点": "Canvas anchor",
@@ -69,7 +82,7 @@ export const en = {
   "p2.reason.TOUCHES_BORDER": "Foreground touches image border",
   "p2.reason.SOURCE_CHANGED": "Original changed. Regenerate the draft; old revisions are retained.",
   "candy.brand": "Soldier Sprite Studio",
-  "candy.title": "Little sprites. Big moves!",
+  "candy.title": "Let creativity move!",
   "candy.subtitle": "Bring an action, cut out your character, refine every edge. Make your next idea move.",
   "playback.mode": "Preview range",
   "playback.all": "All frames",
@@ -1276,6 +1289,7 @@ export const en = {
   "sfs.legacySampling": "Legacy FPS sampling (drops frames)",
   "sfs.rawTimingHint": "Original frames and source timing are preserved. VFR timeline preview may be quantized; source timing remains authoritative.",
   "sfs.mattingPending": "Import keeps all original frames. Open Scene cutout & refinement from the editor to create and refine a transparent draft.",
+  "canvas.frameNavigationHint": "Step through frames",
 } as const;
 
 export type MsgKey = keyof typeof en;

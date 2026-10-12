@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { ExportRequest } from '@framebaker/shared';
+import packageInfo from '../../package.json';
 import { db, STORAGE_ROOT, uid } from '../db';
 import { alignmentState, axisFrames, composeInputs, fileHash,reviewFingerprint } from './alignment';
 import { getProject, PipelineError } from './service';
@@ -57,7 +58,7 @@ export async function exportAssets(payload:ExportPayload,progress?:(text:string)
  const result=await runImageWorker({action:'export',directory:staging,...snapshot},join(staging,'worker'),signal,progress);
  checkCancelled(signal);
  if(!snapshot.draft&&result.checks.some((c:any)=>c.overflow||c.empty))throw new PipelineError('ALIGNMENT_REVIEW_REQUIRED','正式输出存在空帧或裁切，旧导出版本未覆盖',409);
- const manifest={schema_version:'1.0',generator:{name:'soldier-frame-studio',version:'1.0.0'},export_id:id,
+ const manifest={schema_version:'1.0',generator:{name:'soldier-frame-studio',version:packageInfo.version},export_id:id,
   character:getProject(snapshot.project).name,clip:snapshot.clip_name,axis_id:snapshot.axis,project_id:snapshot.project,
   input_revision:snapshot.revision,input_fingerprint:payload.fingerprint,coordinate_system:'top-left-x-right-y-down-pixel-edges',
   canvas:snapshot.alignment!.canvas,anchor_pixels:snapshot.alignment!.anchor,

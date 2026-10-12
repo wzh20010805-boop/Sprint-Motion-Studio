@@ -57,6 +57,8 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
   const activeTrackIdRef = useRef<string | null>(null);
   activeTrackIdRef.current = activeTrackId;
   const [activeStepId, setActiveStepId] = useState<string | null>(null);
+  const activeStepIdRef = useRef<string | null>(null);
+  activeStepIdRef.current = activeStepId;
   const [activeId, setActiveId] = useState<string | null>(null);
   const activeIdRef = useRef<string | null>(null);
   activeIdRef.current = activeId;
@@ -70,10 +72,14 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
   const [paused, setPaused] = useState(false);
   const [fps, setFps] = useState(8);
   const [cursor, setCursor] = useState(0);
+  const cursorRef = useRef(0);
+  cursorRef.current = cursor;
   const [previewRange, setPreviewRange] = useState<PlaybackRange | null>(null);
   const [fitRequest, setFitRequest] = useState(0);
   const playTick = useRef(0);
   const shellRef = useRef<HTMLDivElement>(null);
+  const pointerBusyRef = useRef(false);
+  const draggingRef = useRef(false);
   // 画布工具栏状态（上提到 Editor：编辑/预览两种模式共用一份，切换不丢）
   const [zoom, setZoom] = useState(1);
   const [onion, setOnion] = useState(true);
@@ -486,6 +492,81 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
   }, [zoomBy]);
+
+  // 拖动画布、绘制特效或拖放素材时固定当前帧，避免松手后写到另一帧。
+  useEffect(() => {
+    const begin = (e: Event) => {
+      if (e.target instanceof Element && e.target.closest('.editor')) pointerBusyRef.current = true;
+    };
+    const end = () => { pointerBusyRef.current = false; };
+    const beginDrag = (e: Event) => {
+      if (e.target instanceof Element && e.target.closest('.editor')) draggingRef.current = true;
+    };
+    const endDrag = () => { draggingRef.current = false; };
+    const release = () => { end(); endDrag(); };
+    window.addEventListener('pointerdown', begin, true);
+    window.addEventListener('dragstart', beginDrag, true);
+    window.addEventListener('pointerup', end, true);
+    window.addEventListener('pointercancel', end, true);
+    window.addEventListener('dragend', release, true);
+    window.addEventListener('drop', release, true);
+    window.addEventListener('blur', release);
+    return () => {
+      window.removeEventListener('pointerdown', begin, true);
+      window.removeEventListener('dragstart', beginDrag, true);
+      window.removeEventListener('pointerup', end, true);
+      window.removeEventListener('pointercancel', end, true);
+      window.removeEventListener('dragend', release, true);
+      window.removeEventListener('drop', release, true);
+      window.removeEventListener('blur', release);
+    };
+  }, []);
+
+  // 方向键只切换预览位置；同步 ref 保留同一渲染周期内的连续按键。
+  useEffect(() => {
+    const onArrow = (e: KeyboardEvent) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      if (e.defaultPrevented || e.isComposing || e.keyCode === 229 || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || pointerBusyRef.current || draggingRef.current || ctxMenu) return;
+      const target = e.target instanceof HTMLElement ? e.target : null;
+      if (target?.isContentEditable || target?.closest('input, textarea, select, [contenteditable], [role="slider"], [role="spinbutton"], [role="combobox"]') || document.querySelector('.modal-mask, [role="dialog"], [aria-modal="true"], .px-select.open')) return;
+      const delta = e.key === 'ArrowRight' ? 1 : -1;
+      if (showPreview) {
+        if (!steps.length) return;
+        e.preventDefault();
+        const next = Math.max(rangeStart, Math.min(rangeEnd, cursorRef.current + delta));
+        cursorRef.current = next;
+        playTick.current = 0;
+        setPaused(true);
+        setCursor(next);
+        return;
+      }
+      const trackId = activeTrackIdRef.current;
+      if (trackId !== null && steps.length) {
+        const index = steps.findIndex(step => step.id === activeStepIdRef.current);
+        const next = Math.max(0, Math.min(steps.length - 1, index < 0 ? 0 : index + delta));
+        const stepId = steps[next]!.id;
+        const frameId = allFrames.find(frame => frame.track_id === trackId && frame.step_id === stepId)?.id ?? null;
+        e.preventDefault();
+        activeStepIdRef.current = stepId;
+        activeIdRef.current = frameId;
+        setActiveStepId(stepId);
+        setActiveId(frameId);
+      } else {
+        const assets = timeline?.assetFrames ?? timeline?.poolFrames ?? [];
+        if (!assets.length) return;
+        const index = assets.findIndex(frame => frame.id === activeIdRef.current);
+        const next = Math.max(0, Math.min(assets.length - 1, index < 0 ? 0 : index + delta));
+        e.preventDefault();
+        activeIdRef.current = assets[next]!.id;
+        setActiveId(assets[next]!.id);
+        setActiveStepId(null);
+        activeStepIdRef.current = null;
+      }
+      clearSelection();
+    };
+    window.addEventListener('keydown', onArrow);
+    return () => window.removeEventListener('keydown', onArrow);
+  }, [allFrames, clearSelection, ctxMenu, rangeEnd, rangeStart, showPreview, steps, timeline]);
 
   // Esc 清空多选；Delete/Backspace 删除当前轨道单元格内容。弹窗和输入控件不抢按键。
   useEffect(() => {

@@ -19,6 +19,15 @@ module.exports=async({window,origin,service})=>{
  }
  checks.push('GUI confirms only three isolated synthetic PNG masks');
  await js("document.querySelector('.mask-heading button').click()");await pause(150);
+ // 通过实际主编辑器按钮修改属性，生产预览/导出必须采用这些已保存的属性。
+ await js("document.querySelector('.tl-cell').click()");await pause(150);
+ const project=process.env.SFS_SMOKE_PAGE.split('/').at(-1),timeline=await read(`/api/projects/${project}/timeline`),frameId=timeline.frames[0].id;
+ const stepper=async(index,button,property,expected)=>{
+  await js(`document.querySelectorAll('.transform-stepper')[${index}].querySelectorAll('button')[${button}].click()`);
+  for(let i=0;i<100;i++){const current=await read(`/api/projects/${project}/timeline`),frame=current.frames.find(f=>f.id===frameId);if(frame&&Math.abs(frame[property]-expected)<.00001)return;await pause(50);}throw new Error('GUI transform not saved: '+property);
+ };
+ await stepper(0,0,'scale',.9);await stepper(1,2,'rotation',Math.PI/12);await stepper(2,0,'opacity',.9);
+ checks.push('Actual GUI scale, rotation and opacity controls persisted before production export');
  await click('导出动画','.topbar button');await wait("document.querySelector('[data-testid=alignment-workshop]')",'alignment dialog');
  await wait("document.querySelector('.alignment-canvas img')?.naturalWidth===128",'shared canvas preview');
  await click('▶','.alignment-controls button');
@@ -33,6 +42,7 @@ module.exports=async({window,origin,service})=>{
  await click('正式导出 PNG 与图集');await wait("document.querySelector('a[download*=zip]')",'GUI production export');
  const href=await js("document.querySelector('a[download*=zip]').getAttribute('href')"),exportId=href.split('/')[4];
  const manifest=await read(`/api/v1/exports/${exportId}/file?path=manifest.json`);assert.equal(manifest.release_mode,'reviewed');assert.equal(manifest.frames.length,3);
+ assert.equal(manifest.frames[0].transform.scale,.9);assert.equal(manifest.frames[0].transform.opacity,.9);assert.ok(Math.abs(manifest.frames[0].transform.rotation-Math.PI/12)<.00001);
  const contact=await service(`/api/v1/exports/${exportId}/file?path=previews/contact-sheet.png`);assert.equal(contact.status,200);
  const archive=await service(href);assert.equal(archive.status,200);assert.ok((await archive.arrayBuffer()).byteLength>1000);
  const shape=await js("(()=>{const r=document.querySelector('.alignment-workshop').getBoundingClientRect();return {fits:r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight}})()");assert.equal(shape.fits,true);

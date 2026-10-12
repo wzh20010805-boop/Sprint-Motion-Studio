@@ -1,0 +1,90 @@
+const { app, BrowserWindow } = require('electron');
+const { strict: assert } = require('node:assert');
+const { join } = require('node:path');
+const fs = require('node:fs');
+app.setPath('userData', join(process.env.MASK_CHECK_OUTPUT, 'profile'));
+const report = { checks: [], failures: [] };
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+const timeout = setTimeout(() => { report.failures.push({ name: 'Probe timeout', error: 'Isolated UI verification exceeded 20 seconds' }); fs.writeFileSync(join(process.env.MASK_CHECK_OUTPUT, 'report.json'), JSON.stringify(report, null, 2)); app.exit(1); }, 20000);
+app.whenReady().then(async () => {
+  const window = new BrowserWindow({ width: 1360, height: 900, show: false, webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, offscreen: true, backgroundThrottling: false } });
+  window.webContents.on('console-message', event => { if(event.level === 'error') (report.consoleErrors ??= []).push(event.message); });
+  const js = source => window.webContents.executeJavaScript(source);
+  const check = async (name, work) => { try { await work(); report.checks.push(name); } catch (e) { report.failures.push({ name, error: e.message }); } };
+  const key = async (keyCode, modifiers = []) => { window.webContents.sendInputEvent({ type: 'keyDown', keyCode, modifiers }); window.webContents.sendInputEvent({ type: 'keyUp', keyCode, modifiers }); await delay(30); };
+  const text = () => js("document.querySelector('.mask-frame-navigation span').textContent");
+  const click = async selector => { assert.ok(await js(`(()=>{const b=document.querySelector(${JSON.stringify(selector)});if(!b||b.disabled)return false;b.click();return true;})()`), selector); await delay(50); };
+  const loaded = async () => { for(let n=0;n<60;n++){if(await js("!!document.querySelector('.mask-workshop')&&!document.querySelector('.mask-loading')"))return;await delay(40);}throw new Error('Frame did not load'); };
+  await window.loadURL(process.env.MASK_CHECK_URL); await loaded();
+  await check('Cyan glow appears on hover, clears on leave, focus-visible outline is retained', async () => {
+    // 工作台遮罩不盖住这个独立的样式探针。
+    await js("document.querySelector('.mask-workshop-backdrop').style.visibility='hidden'");
+    const normal = await js("getComputedStyle(document.querySelector('#hover-target')).boxShadow");
+    const plain = await js("getComputedStyle(document.querySelector('#plain-target')).boxShadow");
+    assert.equal(normal, plain, 'Cyan button must use the normal sticker shadow when not hovered');
+    const point = await js("(()=>{const r=document.querySelector('#hover-target').getBoundingClientRect();return{x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()");
+    window.webContents.sendInputEvent({ type: 'mouseMove', x: 1200, y: 10 }); await delay(60);
+    window.webContents.sendInputEvent({ type: 'mouseMove', ...point }); await delay(200);
+    report.hoverState = await js("({hovered:document.querySelector('#hover-target').matches(':hover'),shadow:getComputedStyle(document.querySelector('#hover-target')).boxShadow})");
+    assert.notEqual(await js("getComputedStyle(document.querySelector('#hover-target')).boxShadow"), normal);
+    window.webContents.sendInputEvent({ type: 'mouseMove', x: 1200, y: 10 }); await delay(200);
+    assert.equal(await js("getComputedStyle(document.querySelector('#hover-target')).boxShadow"), normal);
+    await key('Tab');
+    assert.equal(await js("document.activeElement.id"), 'hover-target');
+    // 隐藏窗口没有 OS 焦点；强制浏览器焦点伪类，检查实际 CSS 焦点轮廓。
+    window.webContents.debugger.attach('1.3');
+    await window.webContents.debugger.sendCommand('DOM.enable');
+    await window.webContents.debugger.sendCommand('CSS.enable');
+    const {root} = await window.webContents.debugger.sendCommand('DOM.getDocument');
+    const {nodeId} = await window.webContents.debugger.sendCommand('DOM.querySelector', {nodeId:root.nodeId, selector:'#hover-target'});
+    await window.webContents.debugger.sendCommand('CSS.forcePseudoState', {nodeId, forcedPseudoClasses:['focus','focus-visible']});
+    assert.notEqual(await js("getComputedStyle(document.querySelector('#hover-target')).outlineStyle"), 'none');
+    await window.webContents.debugger.sendCommand('CSS.forcePseudoState', {nodeId, forcedPseudoClasses:[]});
+    window.webContents.debugger.detach();
+  });
+  await js("document.querySelector('.mask-workshop-backdrop').style.visibility='';document.activeElement?.blur()");
+  await check('Arrow keys change only the current preview and stop at first / last frame', async () => {
+    await key('Left'); assert.equal(await text(), '第 1 / 3 帧');
+    await key('Right'); await loaded(); assert.equal(await text(), '第 2 / 3 帧');
+    await key('Right'); await loaded(); await key('Right'); assert.equal(await text(), '第 3 / 3 帧');
+    await key('Left'); await loaded(); assert.equal(await text(), '第 2 / 3 帧');
+  });
+  await check('Controls, modifier shortcuts and IME keep their own arrow behavior', async () => {
+    await click('.mask-frame-list button'); await loaded();
+    for(const modifiers of [['control'], ['alt'], ['shift'], ['meta']])await key('Right', modifiers);
+    await js("window.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true,isComposing:true}))");
+    assert.equal(await text(), '第 1 / 3 帧');
+    await js("document.querySelector('.mask-controls select').focus()"); await key('Right'); assert.equal(await text(), '第 1 / 3 帧');
+    await js("document.querySelector('.mask-controls input[type=range]').focus()"); await key('Right'); assert.equal(await text(), '第 1 / 3 帧');
+    await js("document.activeElement.blur()");
+  });
+  await check('Rapid navigation keeps the final frame state after slower earlier loads', async () => {
+    await click('.mask-frame-list button'); await loaded();
+    await js("for(let n=0;n<2;n++)window.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}))");
+    await delay(400); assert.equal(await text(), '第 3 / 3 帧');
+    await click('.mask-frame-list button'); await loaded();
+    await key('Right'); await key('Right'); await delay(400);
+    assert.equal(await text(), '第 3 / 3 帧');
+    assert.equal(await js("document.querySelector('.mask-review a[download]')?.href.endsWith('/frame-3/image?kind=rgba&version=version-3')"), true);
+  });
+  await check('Brush drag and unsaved draft confirmation protect edits from arrow keys', async () => {
+    await click('.mask-frame-list button'); await loaded();
+    await click('.mask-tool-pair button');
+    const point = await js("(()=>{const r=document.querySelector('canvas').getBoundingClientRect();return{x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()");
+    window.webContents.sendInputEvent({ type: 'mouseDown', button: 'left', clickCount: 1, ...point });
+    await key('Right'); assert.equal(await text(), '第 1 / 3 帧');
+    window.webContents.sendInputEvent({ type: 'mouseUp', button: 'left', clickCount: 1, ...point }); await delay(60);
+    assert.equal(await js("document.querySelector('.mask-review .accent').textContent.includes('1 笔')"), true);
+    await key('Right'); assert.equal(await js("!!document.querySelector('.confirm-mask')"), true);
+    await key('Right'); await click('.confirm-modal button'); await delay(400);
+    assert.equal(await text(), '第 1 / 3 帧');
+    assert.equal(await js("document.querySelector('.mask-review .accent').textContent.includes('1 笔')"), true);
+    await key('Right'); await click('.confirm-modal button.danger'); await loaded();
+    assert.equal(await text(), '第 2 / 3 帧');
+    assert.equal(await js("document.querySelector('.mask-review .accent').textContent.includes('0 笔')"), true);
+  });
+  report.passed = report.failures.length === 0;
+  clearTimeout(timeout);
+  fs.writeFileSync(join(process.env.MASK_CHECK_OUTPUT, 'report.json'), JSON.stringify(report, null, 2));
+  app.exit(report.passed ? 0 : 1);
+}).catch(e => { clearTimeout(timeout); report.failures.push({ name: 'Fixture initialization', error: e.stack }); fs.writeFileSync(join(process.env.MASK_CHECK_OUTPUT, 'report.json'), JSON.stringify(report, null, 2)); app.exit(1); });

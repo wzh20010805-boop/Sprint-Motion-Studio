@@ -87,9 +87,11 @@ export default function AttackEffectToolbar(props: Props) {
           <Undo2 size={14} />
         </IconBtn>
       </Tooltip>
-      <button className="px-btn danger attack-delete" disabled={disabled || !effect} onClick={() => patchEffect(null)} title={t("attackEffect.deleteHint")}>
-        <Trash2 size={13} /> {t("attackEffect.delete")}
-      </button>
+      <Tooltip text={t("attackEffect.deleteHint")}>
+        <IconBtn className="danger attack-delete" disabled={disabled || !effect} onClick={() => patchEffect(null)} aria-label={t("attackEffect.delete")}>
+          <Trash2 size={14} />
+        </IconBtn>
+      </Tooltip>
       <Tooltip text={t("attackEffect.copy")}>
         <IconBtn disabled={!effect?.strokes.length} onClick={() => effect && onCopy(effect)}><ClipboardCopy size={14} /></IconBtn>
       </Tooltip>

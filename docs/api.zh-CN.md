@@ -189,11 +189,13 @@ provider 解析：传了 `providerId` 按 id 找（找不到 400）；缺省用�
 
 ### GET /api/materials
 
+每个素材包含 `project_ids: string[]`：关联的**现存**项目 ID，去重并排序。素材库按“项目 → 视频/照片”提供虚拟分区；`kind=video` 包含视频/GIF，静态图片和抽帧结果为 `image`。归属只根据显式元数据或已有 source/frame/material ID 谱系推导，不通过文件名猜测。同一素材复用到多个项目时可同时出现在多个分区；`[]` 表示未归属项目。升级时一次性把可证实的旧归属保存到元数据，之后删除项目中的帧不会丢失归属；删除项目则从返回 ID 中移除该项目，素材库原件仍保留。自定义 `folder_id` 独立保留，分区不移动或改写素材文件。旧版 `list_materials` MCP 工具返回相同字段，桌面 MCP 白名单不变。
+
 ```json
 {
   "materials": [
     {
-      "id": "…", "name": "slime #1", "status": "matted", "source": "cli",
+      "id": "…", "name": "slime #1", "status": "matted", "source": "cli", "project_ids": [],
       "raw_path": "/abs/storage/materials/…/raw.png",
       "processed_path": "/abs/storage/materials/…/processed.png",
       "metadata": { "prompt": "pixel slime" }, "created_at": 1785912000000
@@ -213,6 +215,10 @@ provider 解析：传了 `providerId` 按 id 找（找不到 400）；缺省用�
 ### POST /api/materials/upload
 
 multipart/form-data：`file` + 可选 `processedFile`、`metadata`（JSON 对象字符串；也兼容 Elysia multipart 自动解析后的对象）、`autoMatting`(`"true"`)、`fps`（视频抽帧，默认 8）。传 `processedFile` 时素材同时保存 raw/processed 两个槽位并标记 `status=matted`；网格拆分用它保留真实前后对比。
+
+可选 `projectId` 把上传内容归入该项目的素材分区，不向项目时间轴追加帧；写入文件或任务前校验项目存在（不存在返回 404）。此归属同时传给原视频和抽帧照片，与 `folderId` 相互独立。素材成功复用到项目后追加该项目归属，保留原归属，并广播 `materials_changed`。
+
+项目归属也包含骨骼项目绑定附件引用的素材。成功保存合法骨骼文档时持久化这些归属并广播 `materials_changed`，以后解除附件绑定仍保留素材的项目分区；文档校验失败不会新增归属。
 PNG/JPG 等单图 → 直接生成 1 个素材，响应 `{ "materialId": "…" }；GIF/MP4 → 队列拆帧每帧一个素材，响应 `{ "jobId": "…" }`。
 
 ```bash
@@ -505,7 +511,7 @@ FrameBaker 正在 http://localhost:3000 运行，MCP 端点为 /mcp（Streamable
 // 请求
 { "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": { "name": "my-client", "version": "1.0" } } }
 // 响应
-{ "jsonrpc": "2.0", "id": 1, "result": { "protocolVersion": "2025-06-18", "capabilities": { "tools": {} }, "serverInfo": { "name": "framebaker", "version": "1.0.0" } } }
+{ "jsonrpc": "2.0", "id": 1, "result": { "protocolVersion": "2025-06-18", "capabilities": { "tools": {} }, "serverInfo": { "name": "framebaker", "version": "1.0.7" } } }
 ```
 
 握手后发送 `notifications/initialized` 通知（无需响应），随后可 `tools/list` 和 `tools/call`。2026-07-28 客户端无需握手，直接调用即可。
@@ -607,6 +613,8 @@ FrameBaker 正在 http://localhost:3000 运行，MCP 端点为 /mcp（Streamable
 受鉴权的隔离桌面服务支持 `POST /api/v1/matte`：`project_id`、`frame_ids`、可选 `region: [x,y,width,height]` 与 `base_revision`。共享队列初稿完成后返回 `waiting_user`、`requires_user_action: true`、模型登记、异常帧和本地预览/遮罩/RGBA路径。同批使用一个CPU Rembg session，Worker不隐式下载模型。
 
 `GET /api/v1/masks/:frameId` 返回当前遮罩、项目修订与不可变历史。`GET .../image?kind=raw|mask|rgba|preview&version=...` 仅提供已登记路径。`POST .../strokes` 接收 `version_id`、`revision` 和 `strokes: [{mode: "erase"|"restore", size, points:[[x,y],...]}]`。`POST .../undo`、`POST .../review` 需要同样的版本/修订对。所有坐标和笔刷直径使用完整原图，不删除分离连通块。`GET /api/v1/projects/:id/masks` 供重开后读取审核/异常状态。参数错误400、版本冲突409、依赖/模型缺失503。GUI与CLI共用，正式导出与MCP仍属于后续阶段。见 [P2说明](p2-guide.md)。
+遮罩确认将审核标记、项目修订和相关抠图任务状态放在同一事务提交。历史批次引用已删除或已移出项目的帧时标记为 `cancelled`、`requires_user_action: false`，保留任务参数、结果和文件；不会阻塞现存帧确认，也不会冒充审核通过。帧完整的批次仍需全部帧的当前遮罩有效且已确认，才能标记 `done`。提交后才发送任务事件；事务失败时审核和修订一起回滚。
+
 ## SFS P3–P5 正式管线接口（2026-10-11）
 
 所有接口通过同一鉴权本地服务，JSON沿用v1信封；主轨按动画步索引排序。详见[使用与调用说明](p3-p5-guide.md)。
@@ -626,3 +634,9 @@ FrameBaker 正在 http://localhost:3000 运行，MCP 端点为 /mcp（Streamable
 正式导出必须与审核修订及原图/遮罩/前景/参数摘要一致。发布前再次核验，导出到新目录而非覆盖旧成功版本；原文件失效报INPUT_NOT_FOUND，修订冲突报REVISION_CONFLICT/STALE_JOB_RESULT。草稿明确标记；不去重、不逐帧裁边、不旋转，Alpha与有理数时长保持一致。
 
 鉴权模式 `/mcp` 仅公开九工具：inspect_capabilities、inspect_project、import_source、submit_pipeline、get_job、cancel_job、get_review_artifacts、apply_review_patch、export_assets。SDK HTTP与CLI stdio桥共用业务校验；原上游广工具仅在无令牌开发模式可用。import_source不读取服务器任意路径，接收有上限的明确提供字节。stdio客户端健康租约防止空闲停服。
+
+1.0.1渲染修复：`/api/config.sfs.production_api_version` 为1.1，新客户端拒绝旧服务。manifest每帧新增transform（offset_x、offset_y、正负scale、弧度rotation、opacity），先围绕完整源图中心处理，再执行地面基准对齐；预览/越界/审核/导出共用。更改帧属性使旧审核与缓存失效。图集不自动旋转格子，用户设置的帧旋转会实际烘焙到像素。
+
+导入/人工修正PNG的Alpha可以全为半透明；遮罩详情和项目摘要统一纠正旧导入记录的LOW_CONFIDENCE提示，不改像素或审核状态。真正空RGBA与自动抠图低置信遮罩仍被阻止。JSON schema/envelope版本保留1.0，旧manifest读取方可以忽略新增的变换来源字段。
+
+首页装饰资源：固定同源 GET `/illustrations/creative-candy.png`，PNG响应，不接受动态文件名；工作区令牌模式沿用本地鉴权。开发版从web/public/art读取，便携版从runtime/assets/art读取。

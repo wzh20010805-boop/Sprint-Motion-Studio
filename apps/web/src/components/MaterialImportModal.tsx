@@ -1,8 +1,8 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Bone, Scissors, Sparkles, Upload, X } from "lucide-react";
 import { buildArticulatedCharacterPrompt, buildArticulatedPartsPrompt } from "@framebaker/shared";
-import { api } from "../api";
+import { api, type Project } from "../api";
 import { useServerConfig } from "../config";
 import { useT } from "../i18n";
 import { useModalEscClose } from "../hooks/useModalEscClose";
@@ -25,6 +25,8 @@ interface Props {
   initialReferenceMaterialId?: string;
   /** 当前选中的素材文件夹（null = 未分组 / 全部） */
   folderId?: string | null;
+  initialProjectId?: string | null;
+  projects?: Project[];
   onClose: () => void;
   onDone: () => void;
 }
@@ -45,10 +47,14 @@ function stateIcon(s: FileState): string {
 }
 
 /** 素材导入弹窗：上传（可多选，单图/GIF/MP4 混合）或 AI 生成，目标为 /api/materials/* */
-export default function MaterialImportModal({ initialTab, initialReferenceMaterialId, folderId = null, onClose, onDone }: Props) {
+export default function MaterialImportModal({ initialTab, initialReferenceMaterialId, folderId = null, initialProjectId = null, projects = [], onClose, onDone }: Props) {
   const t = useT();
   useModalEscClose(onClose);
   const [tab, setTab] = useState<"upload" | "cli">(initialTab);
+  const [projectId, setProjectId] = useState(initialProjectId ?? '');
+  useEffect(() => {
+    if (projectId && !projects.some(project => project.id === projectId)) setProjectId('');
+  }, [projects, projectId]);
   const [fps, setFps] = useState(8);
   const [autoMatting, setAutoMatting] = useState(false);
   const [prompt, setPrompt] = useState("");
@@ -88,6 +94,7 @@ export default function MaterialImportModal({ initialTab, initialReferenceMateri
       fd.append("fps", String(fps));
       fd.append("autoMatting", String(sfsLocal ? false : autoMatting));
       if (folderId) fd.append("folderId", folderId);
+      if (projectId) fd.append('projectId', projectId);
       const r = await api.uploadMaterial(fd);
       if ("jobId" in r) {
         return { kind: "queued", jobId: r.jobId };
@@ -173,6 +180,14 @@ export default function MaterialImportModal({ initialTab, initialReferenceMateri
 
         {tab === "upload" || sfsLocal ? (
           <>
+            <label className="material-import-project">
+              <span>{t('library.uploadProject')}</span>
+              <select className="px-input" data-testid="material-project-select" value={projectId} disabled={submitting || finished} onChange={event => setProjectId(event.target.value)}>
+                <option value="">{t('library.unassigned')}</option>
+                {projects.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}
+              </select>
+              <small>{t('library.uploadHint')}</small>
+            </label>
             <div className="form-row">
               <label>{t("msg.multi_select_png_jpg_1_material_each_gif_mp4_split_into")}</label>
               <div className="file-drop" onClick={() => !submitting && fileRef.current?.click()}>

@@ -76,42 +76,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup_sfs.ps1 -Inc
 <!-- latest-changelog:start -->
 ## Latest Changes
 
-### [1.0.0](docs/CHANGELOG.md#100---2026-10-11) · 2026-10-11
+### [1.0.7](docs/CHANGELOG.md#107---2026-10-12) · 2026-10-12
 
-- Run the complete CI suite on Linux and Windows with verified FFmpeg/ffprobe downloads and an explicit Electron installer. Reuse the current Bun for source CLI startup when PATH is isolated; execute native window tests on Windows and retain validation evidence.
+- Add left/right keyboard navigation to the main frame editor so the current animation axis can be inspected step by step without clicking each timeline cell. Preserve input, dialog and canvas interaction shortcuts.
 
-- SFS P3–P5: shared character canvas/scale and ground-root keyframes, authoritative Pillow preview/export, exact-revision/file-hash review, immutable PNG/grid/manifest/ZIP packages, resumable jobs and validated caches, offline CLI schemas/recipe plus nine-tool MCP, and a standalone Windows Electron/Bun/Python/FFmpeg portable bundle. Local relocated/runtime/300-frame/GUI-CLI consistency tests pass; clean-VM and real artistic approval remain external acceptance steps.
+### [1.0.6](docs/CHANGELOG.md#106---2026-10-12) · 2026-10-12
 
-- Unify desktop project and library imports: retain independent originals, video/GIF, every source frame and exact timing for cross-project reuse. Repeated extraction reuses records; first upgraded startup backfills legacy imports. Align upload controls with available matting/extraction/generation capabilities and use full extraction for video context actions.
-
-- Fix asynchronously loaded onion-skin textures reappearing during playback preview. Editing can still show neighboring poses; exported PNGs render only their own timeline step.
-
-- Fix background-only selections deleting the character: select on the original image, reject empty/weak automatic masks atomically, retain previous versions, and display UTF-8 Windows diagnostics. Nearly uniform backgrounds now use connected color removal to preserve shield interiors and detached thin equipment.
-
-- P2 adds CPU Rembg batch sessions, full-coordinate ROI, immutable automatic/manual masks, erase/restore brushes, persistent undo, alpha/black/white inspection, review jobs and shared CLI endpoints. Missing engines no longer copy originals as success.
-- Replace the upstream pixel/cassette theme with saturated candy colors, neon accents, hand-drawn sticker borders and an original vector soldier across light/dark pages.
-
-- Add all-frame / inclusive frame-range preview with start/end inputs, single-frame loops and existing per-step durations. Clamp after deletion and reset on action changes. Preview only; assets and exports are unchanged.
-
-- Explicitly hide Windows background consoles for media probing, extraction, legacy jobs and CLI dependency checks. Add native startup-info and visibility regressions while keeping the editor window visible.
-
-- Fix Windows Start-SFS.cmd launching an invisible GUI process: normal GUI launches no longer use windowsHide, with a real batch-launch visibility regression test.
-
-- Soldier Frame Studio P0 audits pinned upstream history, Windows/Bun/FFmpeg/licenses and Electron feasibility, preserving real failure evidence.
-- P1 adds complete display frames, exact PTS/rational timing, immutable sources, consistent migration backups, shared GUI/CLI service and persisted jobs. All frames are default; legacy sampling is explicit.
-- The isolated entry binds loopback and verifies API/WS token, Host and Origin; unavailable matting fails explicitly. Cache reuse, concurrent stale-lock recovery and interrupted GUI finalization are repaired.
-- Serve the installed Pixi compatibility polyfill under strict CSP. Scene matting and standalone distribution remain future phases.
-
-### [0.5.0](docs/CHANGELOG.md#050---2026-09-02) · 2026-09-02
-
-#### Added
-
-- Added worker-backed color-key matting for image materials with canvas eyedropper sampling, dominant-color palettes, 0–255 Chebyshev tolerance, optional edge softness, live preview, and single or batch application while preserving source images.
-- Added optional solid reference backgrounds to all generation dialogs, with high-contrast presets, custom colors, palette-based recommendations, and temporary server-side ImageMagick flattening that never modifies source materials or frames.
-
-#### Removed
-
-- Removed the target-skeleton selector from reference decomposition: it only influenced the generation prompt and grid rows/columns, downstream split, naming, and binding never consumed it, and `targetSkeletonId` was never accepted by the server; the split grid is back to manual rows/columns plus the humanoid default.
+- Correct cyan button glow: glow only on hover, restore the sticker shadow on pointer leave, and retain keyboard focus outlines.
+- Add left/right keyboard frame navigation to the cutout workshop, with stale image response protection, unsaved stroke confirmation, and input/drawing guards.
+- Group the material library by project, then videos/photos. Uploads can select a project; proven legacy associations, shared materials, custom folders and original files are preserved.
 
 [View the complete changelog →](docs/CHANGELOG.md)
 <!-- latest-changelog:end -->

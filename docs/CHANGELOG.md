@@ -4,6 +4,37 @@ This document records features, changes, and bug fixes by release. Main releases
 
 ## [Unreleased]
 
+## [1.0.7] - 2026-10-12
+
+- Add left/right keyboard navigation to the main frame editor so the current animation axis can be inspected step by step without clicking each timeline cell. Preserve input, dialog and canvas interaction shortcuts.
+
+## [1.0.6] - 2026-10-12
+
+- Correct cyan button glow: glow only on hover, restore the sticker shadow on pointer leave, and retain keyboard focus outlines.
+- Add left/right keyboard frame navigation to the cutout workshop, with stale image response protection, unsaved stroke confirmation, and input/drawing guards.
+- Group the material library by project, then videos/photos. Uploads can select a project; proven legacy associations, shared materials, custom folders and original files are preserved.
+
+## [1.0.5] - 2026-10-12
+
+- Fix per-frame mask confirmation failing on historical matting jobs that reference removed frames. Commit review and job updates atomically, retain invalidated batch evidence, and notify the job panel after successful changes.
+
+## [1.0.4] - 2026-10-12
+
+- Replace the home illustration with project-specific saturated candy artwork featuring a palette, brush and animation clapperboard. Preserve transparency and bundle it for offline same-origin delivery, matching the existing magenta, cyan, lime and purple UI.
+
+## [1.0.3] - 2026-10-12
+
+- Fix blank flashes during frame playback by replacing the composition only after textures are ready, preserving the displayed frame while loading and disposing superseded sprites. Verify the 27-frame, 18-FPS test-project copy. Use a consistent 28px delete-effect icon button with tooltip and accessible name.
+
+## [1.0.2] - 2026-10-12
+
+- Rename the Chinese product label to 素材创意工坊 and update the home slogan to 让创意，动起来！; replace the hero with theme-colored Open Doodles CC0 artwork bundled offline. English product names are unchanged.
+
+## [1.0.1] - 2026-10-12
+
+- Apply main-editor center-anchor offset, signed scale, rotation and opacity to production previews, bounds, review fingerprints, PNG/grid/manifest and GUI/CLI exports. Preserve ground-root and canvas-offset semantics; reject reuse of the legacy 1.0 service.
+- Allow explicitly imported/manual nonempty soft-alpha PNGs to be reviewed, including legacy imported records. Keep empty RGBA and automatic low-confidence noise blocked; check real alpha in the GUI.
+
 ## [1.0.0] - 2026-10-11
 
 - Run the complete CI suite on Linux and Windows with verified FFmpeg/ffprobe downloads and an explicit Electron installer. Reuse the current Bun for source CLI startup when PATH is isolated; execute native window tests on Windows and retain validation evidence.

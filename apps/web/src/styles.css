@@ -1113,10 +1113,6 @@ input[type="range"] {
 }
 .attack-delete {
   flex-shrink: 0;
-  min-height: 26px;
-  padding: 4px 7px;
-  gap: 4px;
-  font-size: 10px;
 }
 .tb-sep {
   flex-shrink: 0;

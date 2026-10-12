@@ -1,6 +1,8 @@
 import { Elysia, t } from "elysia";
 import { isFbanimV2Id, validateCharacterBinding, type CharacterBinding, type SkeletalProjectDocument, type Skeleton } from "@framebaker/shared";
 import { db } from "../db";
+import { rememberMaterialProjects } from '../materialProjects';
+import { broadcast } from '../ws';
 
 type ProjectRow = { id: string; kind: string };
 type AssetRow = { kind: string; skeleton_id: string | null };
@@ -77,6 +79,12 @@ export const skeletalProjectsApi = new Elysia({ prefix: "/api" })
     const error = validateDocument(body, params.id);
     if (error) return status(400, error);
     const document = body as SkeletalProjectDocument;
-    db.query("INSERT INTO skeletal_projects (project_id, document, updated_at) VALUES (?, ?, ?) ON CONFLICT(project_id) DO UPDATE SET document = excluded.document, updated_at = excluded.updated_at").run(params.id, JSON.stringify(document), Date.now());
+    db.transaction(() => {
+      db.query("INSERT INTO skeletal_projects (project_id, document, updated_at) VALUES (?, ?, ?) ON CONFLICT(project_id) DO UPDATE SET document = excluded.document, updated_at = excluded.updated_at").run(params.id, JSON.stringify(document), Date.now());
+      for (const materialId of new Set(document.character?.binding.attachments.map(attachment => attachment.materialId) ?? [])) {
+        rememberMaterialProjects(db, materialId, [params.id]);
+      }
+    })();
+    broadcast('materials_changed', {});
     return { document };
   }, { body: t.Any() });

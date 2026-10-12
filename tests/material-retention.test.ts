@@ -31,6 +31,7 @@ for (const entry of ['project', 'library'] as const) {
           if(r.jobId){const done=await waitJob(service,r.jobId,20);assert.equal(done.exitCode,0,JSON.stringify(done.body));}
         }
         const list=await req('/api/materials',undefined,'GET');
+        assert.ok(list.materials.every(m=>m.project_ids.length===1&&m.project_ids[0]===project.id),'originals and all extracted images must inherit their project partition');
         const images=list.materials.filter(m=>m.kind==='image');
         assert.equal(images.length,9,'library must contain the image, all 6 video frames and 2 GIF frames');
         const original=list.materials.find(m=>m.kind==='video' && m.name==='run');
@@ -44,12 +45,14 @@ for (const entry of ['project', 'library'] as const) {
         assert.equal(timeline.frames.length,9);
         const reused=timeline.frames.find(f=>JSON.parse(JSON.stringify(f.metadata)).fromMaterial===images[0].id);
         assert.ok(reused);assert.notEqual(reused.raw_path,images[0].raw_path);
+        const shared=await req('/api/materials',undefined,'GET');assert.ok(shared.materials.filter(m=>m.kind==='image').every(m=>m.project_ids.includes(project.id)&&m.project_ids.includes(target.id)),'reuse must add target membership without losing source');
         const before=readFileSync(images[0].raw_path);writeFileSync(reused.raw_path,image);assert.equal(readFileSync(images[0].raw_path).equals(before),true);
         await req('/api/projects/'+project.id,undefined,'DELETE');
         assert.ok(list.materials.every(m=>existsSync(m.raw_path)),'deleting source project must preserve library');
         const extracted=await req('/api/materials/'+original.id+'/extract',{});
         const done=await waitJob(service,extracted.jobId,20);assert.equal(done.exitCode,0,JSON.stringify(done.body));
         const again=await req('/api/materials',undefined,'GET');assert.equal(again.materials.length,11,'repeat extraction must reuse existing source frames');
+        assert.ok(again.materials.every(m=>!m.project_ids.includes(project.id)),'deleted projects must disappear from partitions while assets remain');
         writeFileSync(join(root,'report.json'),JSON.stringify({entry:'${entry}',materials:list.materials.length,reusedFrames:timeline.frames.length,repeatMaterials:again.materials.length,passed:true},null,2));
       }finally{process.kill(service.pid);}
       console.log('PASS');

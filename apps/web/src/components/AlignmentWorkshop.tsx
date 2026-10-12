@@ -27,6 +27,7 @@ export default function AlignmentWorkshop({projectId,axisId,frames,fps,onClose}:
   <header><h2>{t('地面基准、统一比例与导出')}</h2><button className="px-btn" onClick={onClose}>{t('关闭')}</button></header>
   <fieldset disabled={busy} style={{border:0,padding:0,margin:0}}>
   <p>{t('根位置是地面投影；跳跃和倒地时不要追随脚底。画布、锚点和比例在同角色所有动作共享。')}</p>
+  <p>{t('已包含主编辑器的位移、缩放、旋转和透明度；这里的地面根与微调在其后应用。')}</p>
   <div className="alignment-controls">
    {(['width','height'] as const).map(v=><label key={v}>{t(v==='width'?'画布宽':'画布高')}<input type="number" value={config.canvas[v]} onChange={e=>update({...config,canvas:{...config.canvas,[v]:Number(e.target.value)}})}/></label>)}
    <label>{t('统一比例')}<input type="number" step="0.05" value={config.scale} onChange={e=>update({...config,scale:Number(e.target.value)})}/></label>

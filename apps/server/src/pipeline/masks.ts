@@ -41,11 +41,19 @@ export async function runImageWorker(request: unknown, directory: string, signal
   } finally { signal?.removeEventListener('abort', abort); }
 }
 
+/** 兼容旧版PNG提示；仅修正派生信息，不改写原件、遮罩或审核状态。 */
+export function maskInspectionInfo(kind:string|null,encoded:string|null):string|null {
+  if(kind!=='imported'||!encoded)return encoded;
+  const info=JSON.parse(encoded);
+  if(info.foreground_fraction>0&&!info.reasons.includes('EMPTY_MASK'))return JSON.stringify({...info,visible_fraction:info.foreground_fraction,reasons:info.reasons.filter((reason:string)=>reason!=='LOW_CONFIDENCE')});
+  return encoded;
+}
+
 export function maskState(frameId: string) {
   validateId(frameId); const frame = getFrame(frameId);
   if (!frame) throw new PipelineError('FRAME_NOT_FOUND', '帧不存在', 404);
   const head = db.query('SELECT * FROM mask_heads WHERE frame_id=?').get(frameId) as { version_id: string; reviewed: number } | null;
-  const versions = db.query('SELECT * FROM mask_versions WHERE frame_id=? ORDER BY created_at DESC,id').all(frameId) as any[];
+  const versions = (db.query('SELECT * FROM mask_versions WHERE frame_id=? ORDER BY created_at DESC,id').all(frameId) as any[]).map(version=>({...version,info:maskInspectionInfo(version.kind,version.info)}));
   const current = versions.find(v => v.id === head?.version_id) ?? null;
   const sourceChanged=!!current&&(!frame.raw_path||!existsSync(frame.raw_path)||hash(frame.raw_path)!==current.raw_sha256);
   return { frame_id: frameId, revision: (getProject(frame.project_id) as any).revision, version_id: head?.version_id ?? null, reviewed: !!head?.reviewed&&!sourceChanged, source_changed:sourceChanged, current:sourceChanged?null:current, versions, raw_path:sourceChanged?frame.raw_path:current?.raw_path ?? frame.raw_path };
@@ -121,12 +129,32 @@ export function undoMask(frameId: string, versionId: string, revision: number) {
 }
 
 export function reviewMask(frameId: string, versionId: string, revision: number) {
-  const state=maskState(frameId), frame=getFrame(frameId)!;
-  if (state.version_id !== versionId || state.revision !== revision) throw new PipelineError('REVISION_CONFLICT','遮罩已更新',409);
-  if (!frame.raw_path || hash(frame.raw_path) !== state.current?.raw_sha256) throw new PipelineError('SOURCE_CHANGED','原图已修改，请重新生成抠图',409);
-  if (JSON.parse(state.current.info).reasons.some((reason:string)=>['EMPTY_MASK','LOW_CONFIDENCE'].includes(reason))) throw new PipelineError('MATTE_NO_FOREGROUND','没有可见前景，请先恢复角色或重新生成，不能确认空遮罩',422);
-  db.transaction(()=>{db.query('UPDATE mask_heads SET reviewed=1 WHERE frame_id=?').run(frameId); db.query('UPDATE projects SET revision=revision+1 WHERE id=?').run(frame.project_id);})();
-  const jobs=db.query("SELECT id,payload FROM jobs WHERE project_id=? AND status='waiting_user'").all(frame.project_id) as any[];
-  for (const job of jobs) { const ids=JSON.parse(job.payload).sceneMatting?.frame_ids ?? []; if (ids.length && ids.every((id:string)=>maskState(id).reviewed)) db.query("UPDATE jobs SET status='done',requires_user_action=0,progress='人工检查完成',updated_at=? WHERE id=?").run(Date.now(),job.id); }
-  broadcast('frames_changed',{projectId:frame.project_id}); return maskState(frameId);
+  // 审核、项目修订与批次状态必须一起提交，避免已保存审核却向界面返回错误。
+  const result=db.transaction(()=>{
+    const state=maskState(frameId), frame=getFrame(frameId)!;
+    if (state.version_id !== versionId || state.revision !== revision) throw new PipelineError('REVISION_CONFLICT','遮罩已更新',409);
+    if (!frame.raw_path || hash(frame.raw_path) !== state.current?.raw_sha256) throw new PipelineError('SOURCE_CHANGED','原图已修改，请重新生成抠图',409);
+    if (JSON.parse(state.current.info).reasons.some((reason:string)=>['EMPTY_MASK','LOW_CONFIDENCE'].includes(reason))) throw new PipelineError('MATTE_NO_FOREGROUND','没有可见前景，请先恢复角色或重新生成，不能确认空遮罩',422);
+    db.query('UPDATE mask_heads SET reviewed=1 WHERE frame_id=?').run(frameId);
+    db.query('UPDATE projects SET revision=revision+1 WHERE id=?').run(frame.project_id);
+    const jobs=db.query("SELECT id,payload FROM jobs WHERE project_id=? AND status='waiting_user'").all(frame.project_id) as {id:string;payload:string}[];
+    const settled:{id:string;status:'cancelled'|'done';progress:string}[]=[];
+    for (const job of jobs) {
+      const ids:string[]=JSON.parse(job.payload).sceneMatting?.frame_ids ?? [];
+      if (!ids.length) continue;
+      // 旧批次引用已删或已移出项目的帧时失效，保留原任务及产物，不冒充审核通过。
+      if (ids.some(id=>getFrame(id)?.project_id !== frame.project_id)) {
+        const progress='帧已移除，旧抠图审核任务已失效';
+        db.query("UPDATE jobs SET status='cancelled',requires_user_action=0,progress=?,updated_at=? WHERE id=?").run(progress,Date.now(),job.id);
+        settled.push({id:job.id,status:'cancelled',progress});
+      } else if (ids.every(id=>maskState(id).reviewed)) {
+        db.query("UPDATE jobs SET status='done',requires_user_action=0,progress='人工检查完成',updated_at=? WHERE id=?").run(Date.now(),job.id);
+        settled.push({id:job.id,status:'done',progress:'人工检查完成'});
+      }
+    }
+    return {projectId:frame.project_id,state:maskState(frameId),settled};
+  })();
+  for (const job of result.settled) broadcast(job.status==='done'?'job_done':'job_cancelled',{...job,projectId:result.projectId,type:'matting'});
+  broadcast('frames_changed',{projectId:result.projectId});
+  return result.state;
 }

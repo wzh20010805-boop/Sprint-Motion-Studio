@@ -25,28 +25,58 @@ def translation(config, index):
     return config['anchor'][0]+dx-s*rx, config['anchor'][1]+dy-s*ry
 
 
-def check_bounds(image, config, index):
-    bbox = image.getchannel('A').getbbox()
+def affine(image, config, index, transform=None):
+    """先复用主编辑器中心锚点语义，再执行源根到公共画布的变换。"""
+    transform = transform or {}
+    scale, angle = transform.get('scale', 1), transform.get('rotation', 0)
+    ox, oy, opacity = transform.get('offset_x', 0), transform.get('offset_y', 0), transform.get('opacity', 1)
+    if not all(math.isfinite(v) for v in (scale, angle, ox, oy, opacity)) or not 0 <= opacity <= 1:
+        raise ValueError('INVALID_FRAME_TRANSFORM')
+    cos, sin = math.cos(angle), math.sin(angle)
+    cos = 0 if abs(cos) < 1e-12 else cos
+    sin = 0 if abs(sin) < 1e-12 else sin
+    s = config['scale']
+    a, b, d, e = s*scale*cos, -s*scale*sin, s*scale*sin, s*scale*cos
+    cx, cy = image.width/2, image.height/2
+    tx, ty = translation(config, index)
+    return a, b, tx+s*(cx+ox)-a*cx-b*cy, d, e, ty+s*(cy+oy)-d*cx-e*cy, opacity
+
+
+def check_bounds(image, config, index, transform=None, rendered=None):
+    a, b, tx, d, e, ty, opacity = affine(image, config, index, transform)
+    alpha = image.getchannel('A')
+    if opacity != 1:
+        alpha = alpha.point(lambda value: int(value*opacity+.5))
+    bbox = alpha.getbbox() if a*e-b*d else None
     if bbox is None:
         return {'index': index, 'bounds': None, 'overflow': False, 'empty': True}
-    tx, ty = translation(config, index)
-    s = config['scale']
-    bounds = [bbox[0]*s+tx, bbox[1]*s+ty, bbox[2]*s+tx, bbox[3]*s+ty]
+    points = [(a*x+b*y+tx, d*x+e*y+ty) for x,y in
+              [(bbox[0],bbox[1]),(bbox[2],bbox[1]),(bbox[0],bbox[3]),(bbox[2],bbox[3])]]
+    bounds = [min(p[0] for p in points),min(p[1] for p in points),max(p[0] for p in points),max(p[1] for p in points)]
     w, h = config['canvas']['width'], config['canvas']['height']
-    return {'index': index, 'bounds': bounds, 'overflow': bounds[0] < 0 or bounds[1] < 0 or bounds[2] > w or bounds[3] > h, 'empty': False}
+    if rendered is None:
+        rendered = compose_frame(image, config, index, transform)
+    return {'index': index, 'bounds': bounds, 'overflow': bounds[0] < -1e-9 or bounds[1] < -1e-9 or bounds[2] > w+1e-9 or bounds[3] > h+1e-9, 'empty': rendered.getchannel('A').getbbox() is None}
 
 
-def compose_frame(image, config, index):
+def compose_frame(image, config, index, transform=None):
     image = image.convert('RGBA')
     w, h = config['canvas']['width'], config['canvas']['height']
-    tx, ty = translation(config, index)
-    s = config['scale']
-    inverse = (1/s, 0, -tx/s, 0, 1/s, -ty/s)
+    a, b, tx, d, e, ty, opacity = affine(image, config, index, transform)
+    determinant = a*e-b*d
+    if not determinant or not opacity:
+        return Image.new('RGBA', (w,h))
+    inverse = (e/determinant, -b/determinant, (b*ty-e*tx)/determinant,
+               -d/determinant, a/determinant, (d*tx-a*ty)/determinant)
     if config['resampling'] == 'pixel':
-        return image.transform((w, h), Image.Transform.AFFINE, inverse, Image.Resampling.NEAREST)
-    # RGBa 的小写 a 是 Pillow 的预乘模式；隐藏像素的颜色不参与插值。
-    return image.convert('RGBa').transform((w, h), Image.Transform.AFFINE, inverse,
-                                         Image.Resampling.BICUBIC).convert('RGBA')
+        rendered = image.transform((w, h), Image.Transform.AFFINE, inverse, Image.Resampling.NEAREST)
+    else:
+        # RGBa 的小写 a 是 Pillow 的预乘模式；隐藏像素的颜色不参与插值。
+        rendered = image.convert('RGBa').transform((w, h), Image.Transform.AFFINE, inverse,
+                                                 Image.Resampling.BICUBIC).convert('RGBA')
+    if opacity != 1:
+        rendered.putalpha(rendered.getchannel('A').point(lambda value: int(value*opacity+.5)))
+    return rendered
 
 
 def export_package(request):
@@ -72,10 +102,10 @@ def export_package(request):
     elapsed = Fraction(0)
     for i, frame in enumerate(request['frames']):
         source = Image.open(frame['path']).convert('RGBA')
-        check = check_bounds(source, config, frame.get('index', i))
+        rendered = compose_frame(source, config, frame.get('index', i), frame.get('transform'))
+        check = check_bounds(source, config, frame.get('index', i), frame.get('transform'), rendered)
         check['frame_id'] = frame['id']
         checks.append(check)
-        rendered = compose_frame(source, config, frame.get('index', i))
         file = f'frames/frame_{i+1:06}.png'
         rendered.save(directory / file)
         slot = i % (cols*rows)
@@ -116,7 +146,8 @@ def compose_request(request):
     checks = []
     for frame in request['frames']:
         image = Image.open(frame['path']).convert('RGBA')
-        checks.append({'frame_id': frame['id'], **check_bounds(image, request['alignment'], frame['index'])})
+        rendered = compose_frame(image, request['alignment'], frame['index'], frame.get('transform'))
+        checks.append({'frame_id': frame['id'], **check_bounds(image, request['alignment'], frame['index'], frame.get('transform'), rendered)})
         if frame.get('output'):
-            compose_frame(image, request['alignment'], frame['index']).save(frame['output'])
+            rendered.save(frame['output'])
     return {'checks': checks}

@@ -1,0 +1,20 @@
+{
+  "ok": true,
+  "scope": "relocated current Windows, restricted PATH; not clean VM",
+  "root": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\dist\\界面更新版\\SpriteMotionStudio-1.0.2",
+  "workspace": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\fixtures\\generated\\brand-portable\\workspace",
+  "python": "D:\\AIJOB\\tools\\Sprite Motion Studio\\framebaker\\dist\\界面更新版\\SpriteMotionStudio-1.0.2\\runtime\\python\r\n12.3.0\r\n1.31.0\r\n",
+  "unauthorized_status": 401,
+  "gui_cli_identical": true,
+  "gui_checks": [
+    "GUI confirms only three isolated synthetic PNG masks",
+    "Actual GUI scale, rotation and opacity controls persisted before production export",
+    "Interpolated root, save, overflow check and explicit revision confirmation in real Electron",
+    "Reviewed PNG/grid package, contact sheet and ZIP served by shared backend",
+    {
+      "test": "300 actual timeline selections",
+      "maxTextureAliases": 8,
+      "retainedTextureAliases": 8
+    }
+  ]
+}

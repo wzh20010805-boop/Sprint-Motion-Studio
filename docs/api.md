@@ -189,11 +189,13 @@ Materials are first generated/uploaded to the library, matted, compared, then im
 
 ### GET /api/materials
 
+Each material includes `project_ids: string[]`, the sorted, unique IDs of its associated **existing** projects. The library groups these virtually as project → video/photos; `kind` classifies videos/GIFs as `video`, and still/extracted frames as `image`. Associations come only from explicit metadata or recorded source/frame/material IDs, never filenames. Reused materials may belong to several projects. `[]` means unassigned. A one-time upgrade preserves provable legacy associations in metadata; later frame deletion does not erase those associations. Deleting a project removes it from the returned IDs while retaining library originals. Custom `folder_id` organization stays independent; grouping does not move or rewrite media files. The legacy `list_materials` MCP tool returns the same field; the desktop MCP whitelist is unchanged.
+
 ```json
 {
   "materials": [
     {
-      "id": "…", "name": "slime #1", "status": "matted", "source": "cli",
+      "id": "…", "name": "slime #1", "status": "matted", "source": "cli", "project_ids": [],
       "raw_path": "/abs/storage/materials/…/raw.png",
       "processed_path": "/abs/storage/materials/…/processed.png",
       "metadata": { "prompt": "pixel slime" }, "created_at": 1785912000000
@@ -213,6 +215,10 @@ Material image/video stream. `type=processed` falls back to raw when no processe
 ### POST /api/materials/upload
 
 multipart/form-data: `file` + optional `processedFile`, `metadata` (JSON object string; Elysia's multipart object parsing is also accepted), `autoMatting` (`"true"`), and `fps` (video extraction, default 8). `processedFile` creates a material with both raw/processed slots and `status=matted`; grid splitting uses it to preserve real before/after pairs.
+
+Optional `projectId` assigns the upload to that project's library partition without adding timeline frames. It is validated before files or jobs are created (missing project: 404), applies to video originals and extracted photos, and is independent of `folderId`. Successful material-to-project imports add that project association without removing existing ones and broadcast `materials_changed`.
+
+Project associations also include materials referenced by skeletal project binding attachments. Saving a valid skeletal document persists those associations and broadcasts `materials_changed`; later unbinding keeps the material's project partition. Rejected document saves create no associations.
 PNG/JPG single image → directly creates 1 material, response `{ "materialId": "…" }`; GIF/MP4 → queued frame extraction, one material per frame, response `{ "jobId": "…" }`.
 
 ```bash
@@ -505,7 +511,7 @@ All tools manage pixel-art animation projects — frames, materials, generation,
 // Request
 { "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": { "name": "my-client", "version": "1.0" } } }
 // Response
-{ "jsonrpc": "2.0", "id": 1, "result": { "protocolVersion": "2025-06-18", "capabilities": { "tools": {} }, "serverInfo": { "name": "framebaker", "version": "1.0.0" } } }
+{ "jsonrpc": "2.0", "id": 1, "result": { "protocolVersion": "2025-06-18", "capabilities": { "tools": {} }, "serverInfo": { "name": "framebaker", "version": "1.0.7" } } }
 ```
 
 After handshake, send `notifications/initialized` notification (no response needed), then `tools/list` and `tools/call` are available. 2026-07-28 clients can skip the handshake and call directly.
@@ -607,6 +613,8 @@ Desktop upload controls disable upload-time matting, FPS sampling and cloud gene
 The authenticated isolated desktop service exposes `POST /api/v1/matte` with `project_id`, `frame_ids`, optional `region: [x,y,width,height]` and `base_revision`. A shared queue job returns `waiting_user`, `requires_user_action: true`, model provenance, anomaly IDs and local preview/mask/RGBA paths. One CPU Rembg session serves a batch; no implicit model download occurs.
 
 `GET /api/v1/masks/:frameId` returns the current version, project revision and immutable history. `GET /api/v1/masks/:frameId/image?kind=raw|mask|rgba|preview&version=...` serves only recorded local paths. `POST .../strokes` accepts `version_id`, `revision`, and `strokes: [{mode: "erase"|"restore", size, points:[[x,y],...]}]`. `POST .../undo` and `POST .../review` require the same version/revision pair. Coordinates and brush diameters are in the full original image, with no largest-component filtering. `GET /api/v1/projects/:id/masks` provides review/anomaly state after reopening. Invalid input returns 400, stale revisions 409, missing dependencies/models 503. CLI and GUI share these endpoints; formal export and MCP remain later phases. See [P2 guide](p2-guide.md).
+Mask review commits the reviewed flag, project revision and affected matting job states in one transaction. Historical batches referencing deleted frames or frames moved to another project become `cancelled` with `requires_user_action: false`; their payloads, results and files remain retained. They cannot block review of a present frame or count as successful approval. Intact batches become `done` only when every referenced frame has a valid reviewed mask. Job events are sent after commit; a failed transaction leaves review and revision unchanged.
+
 ## SFS P3–P5 production API (2026-10-11)
 
 Authenticated local shared service; all JSON responses use the existing v1 envelope. Project/axis IDs identify the primary track ordered by animation-step index.
@@ -628,4 +636,10 @@ Formal export requires exact reviewed revision and hashes of raw, mask, foregrou
 
 Token-mode `/mcp` exposes exactly nine SFS tools (inspect_capabilities, inspect_project, import_source, submit_pipeline, get_job, cancel_job, get_review_artifacts, apply_review_patch, export_assets). SDK Streamable HTTP and CLI stdio bridge share internal validated services. The broad upstream MCP remains for tokenless upstream development only. Source import accepts explicitly supplied bounded base64 bytes, never arbitrary server filesystem paths. CLI heartbeat prevents idle shutdown while an MCP client is connected.
 
-CLI schemas are available offline through `schemas --name alignment|recipe|manifest --json`. See [calling guide](p3-p5-guide.md). HTTP editing, GUI, CLI and MCP share one workspace service; packaged startup resolves sibling runtimes and writable user data.
+CLI schemas are available offline through `schema --name alignment|recipe|manifest --json`. See [calling guide](p3-p5-guide.md). HTTP editing, GUI, CLI and MCP share one workspace service; packaged startup resolves sibling runtimes and writable user data.
+
+1.0.1 rendering correction: `/api/config.sfs.production_api_version` is `1.1`; clients reject older service instances. Manifest frames include `transform` (`offset_x`, `offset_y`, signed `scale`, radian `rotation`, `opacity`), applied around the full source-image center before ground alignment. Preview/bounds/review/export share these values; any transform edit invalidates old approval and cached pixels. Packing does not automatically rotate cells.
+
+Imported/manual nonempty PNG alpha may be entirely semi-transparent. `/masks/:id` and the project mask summary normalize legacy imported LOW_CONFIDENCE hints without changing persisted pixels or review state. Empty actual RGBA and automatic low-confidence masks remain rejected. JSON schema/envelope version stays 1.0; existing manifest consumers may ignore the added transform provenance field.
+
+Home decoration: fixed same-origin GET `/illustrations/creative-candy.png` returns PNG without accepting dynamic filenames. Token-mode service retains local authorization; development reads web/public/art and packaged builds read runtime/assets/art.

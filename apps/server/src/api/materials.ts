@@ -3,7 +3,7 @@ import { copyFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { CharacterBinding, MaterialRow } from "@framebaker/shared";
 import { IMAGE_LAYER_COUNT_MAX, IMAGE_LAYER_COUNT_MIN } from "@framebaker/shared";
-import { db, getMaterial, nextFrameIdx, renameMaterial, serializeMaterial, STORAGE_ROOT, uid } from "../db";
+import { db, getMaterial, nextFrameIdx, renameMaterial, serializeMaterial, serializeMaterials, STORAGE_ROOT, uid } from "../db";
 import { createGenerationJobs, createJob, createMattingJob } from "../queue";
 import { EXTRACT_TIMESTAMPS_MAX, normalizeExtractTimestamps } from "../jobs/extract";
 import { checkImageReferenceSupport, checkVideoSupport, resolveReferencePaths } from "../providerAdapter";
@@ -13,6 +13,7 @@ import { appendFramePool, importFrameCellsToTarget, validateFrameImportTarget, t
 import { getThumbnailPath, isImagePath, parseThumbnailSize, serveMediaFile } from "../media";
 import { beginProjectUndo } from "../undo";
 import { uploadLibraryVideo } from '../materialRetention';
+import { rememberMaterialProjects, resolveMaterialProjects } from '../materialProjects';
 
 function baseName(filename: string): string {
   const n = filename.split("/").pop() ?? filename;
@@ -60,6 +61,7 @@ export function sortMaterialsByFrameNumber(materials: MaterialRow[]): MaterialRo
 function importMaterialToProject(m: MaterialRow, projectId: string): string {
   const cell = prepareMaterialFrame(m, projectId);
   appendFramePool(projectId, cell);
+  rememberMaterialProjects(db, m.id, [projectId]);
   return cell.id;
 }
 
@@ -85,7 +87,7 @@ function prepareMaterialFrame(m: MaterialRow, projectId: string): NewFrameCell {
   }
   let metadata: Record<string, unknown> = { fromMaterial: m.id };
   try {
-    metadata = { ...metadata, ...JSON.parse(m.metadata ?? "{}") };
+    metadata = { ...JSON.parse(m.metadata ?? "{}"), fromMaterial: m.id };
   } catch {
     /* ignore */
   }
@@ -131,7 +133,7 @@ export const materialsApi = new Elysia({ prefix: "/api" })
   // 素材列表（按创建时间倒序）
   .get("/materials", () => {
     const rows = db.query("SELECT * FROM materials ORDER BY created_at DESC").all() as MaterialRow[];
-    return { materials: rows.map(serializeMaterial) };
+    return { materials: serializeMaterials(rows) };
   })
   .patch(
     "/materials/:id",
@@ -152,6 +154,7 @@ export const materialsApi = new Elysia({ prefix: "/api" })
   .post(
     "/materials/upload",
     async ({ body, status }) => {
+      if (body.projectId && !db.query('SELECT 1 FROM projects WHERE id=?').get(body.projectId)) return status(404, '项目不存在');
       const origName = body.file.name ?? "素材";
       const ext = extOf(origName);
       const autoMatting = body.autoMatting === "true";
@@ -159,7 +162,7 @@ export const materialsApi = new Elysia({ prefix: "/api" })
       if (ext === "gif" || ext === "mp4" || ext === "mov" || ext === "webm") {
         if (process.env.SFS_SERVICE_TOKEN) {
           try {
-            const materialId = await uploadLibraryVideo(origName, new Uint8Array(await body.file.arrayBuffer()), body.folderId || null);
+            const materialId = await uploadLibraryVideo(origName, new Uint8Array(await body.file.arrayBuffer()), body.folderId || null, body.projectId);
             const jobId = createJob('', 'extract_frames', { extract: { libraryMaterialId: materialId, stagingFile: '', mediaType: ext === 'gif' ? 'gif' : 'mp4', fps: 24, mode: 'all', autoMatting: false, target: { kind: 'materials' } } });
             return { materialId, jobId, mode: 'all' };
           } catch (error) { return status((error as { code?: string }).code === 'DEPENDENCY_MISSING' ? 503 : 400, (error as Error).message); }
@@ -179,6 +182,7 @@ export const materialsApi = new Elysia({ prefix: "/api" })
             target: { kind: "materials" },
             originName: baseName(origName),
             folderId: body.folderId || null,
+            projectIds: body.projectId ? [body.projectId] : [],
           },
         });
         return { jobId };
@@ -204,6 +208,7 @@ export const materialsApi = new Elysia({ prefix: "/api" })
           // 非法 metadata 不阻断文件上传，仅按空对象保存。
         }
       }
+      if (body.projectId) metadata.project_ids = [body.projectId];
       db.query(
         "INSERT INTO materials (id, name, raw_path, processed_path, status, source, folder_id, metadata, created_at) VALUES (?, ?, ?, ?, ?, 'image', ?, ?, ?)"
       ).run(id, baseName(origName) || "素材", rawPath, processedPath, processedPath ? "matted" : "raw", folderId, JSON.stringify(metadata), Date.now());
@@ -219,6 +224,7 @@ export const materialsApi = new Elysia({ prefix: "/api" })
         autoMatting: t.Optional(t.String()),
         fps: t.Optional(t.String()),
         folderId: t.Optional(t.String()),
+        projectId: t.Optional(t.String()),
       }),
     }
   )
@@ -394,6 +400,7 @@ export const materialsApi = new Elysia({ prefix: "/api" })
           target: { kind: "materials" },
           originName: (m.name || "素材").replace(/\s*#\d+$/, "").trim() || "素材",
           folderId: body.folderId !== undefined ? body.folderId : m.folder_id,
+          projectIds: resolveMaterialProjects(db, [m]).get(m.id) ?? [],
         },
       });
       return { jobId };
@@ -482,6 +489,7 @@ export const materialsApi = new Elysia({ prefix: "/api" })
       try {
         const frameIds: string[] = [];
         for (let i = 0; i < count; i++) frameIds.push(importMaterialToProject(m, body.projectId));
+        broadcast('materials_changed', {});
         broadcast("frames_changed", { projectId: body.projectId });
         return { ok: true, count, frameIds };
       } catch (e) {
@@ -531,6 +539,8 @@ export const materialsApi = new Elysia({ prefix: "/api" })
         const frameIds = body.target
           ? importFrameCellsToTarget(body.projectId, materials.map((m) => prepareMaterialFrame(m, body.projectId)), body.target)
           : materials.map((m) => importMaterialToProject(m, body.projectId));
+        for (const material of materials) rememberMaterialProjects(db, material.id, [body.projectId]);
+        broadcast('materials_changed', {});
         broadcast("frames_changed", { projectId: body.projectId });
         broadcast("timeline_changed", { projectId: body.projectId, axisId: body.target?.axisId });
         return { ok: true, count: frameIds.length, frameIds };

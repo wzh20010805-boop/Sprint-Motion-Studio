@@ -1,0 +1,176 @@
+{
+  "phase": "P5",
+  "events": [
+    "shared-service-ready",
+    "page-loaded"
+  ],
+  "console": [
+    {
+      "level": "info",
+      "message": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    }
+  ],
+  "networkBlocked": [],
+  "preferences": {
+    "allowRunningInsecureContent": false,
+    "contextIsolation": true,
+    "disableDialogs": false,
+    "disablePopups": false,
+    "enableBlinkFeatures": "",
+    "experimentalFeatures": false,
+    "javascript": true,
+    "nodeIntegration": false,
+    "nodeIntegrationInSubFrames": false,
+    "nodeIntegrationInWorker": false,
+    "safeDialogs": false,
+    "safeDialogsMessage": "",
+    "sandbox": true,
+    "webSecurity": true,
+    "webviewTag": false
+  },
+  "windowVisible": true,
+  "renderer": {
+    "text": "素材创意工坊\nSPRITE MOTION STUDIO\n项目\n素材库\n设置\n中\n目录\n全部\n未分组\n动画创作空间\n素材创意工坊\n\n导入动作、抠出角色、细细修边。你的下一段灵感，从这里开工。\n\nMAKE A LITTLE MAGIC\n让创意，动起来！\n01 / VIDEO\n02 / CUTOUT\n03 / ANIMATE\n新建项目\n图标大小\n界面检查（隔离项目）\n0 帧 · 2026/10/12 20:11:30",
+    "require": "undefined",
+    "process": "undefined",
+    "resources": [
+      {
+        "p": "/api/v1/projects",
+        "status": 200,
+        "bytes": 324
+      },
+      {
+        "p": "/pixi.min.js",
+        "status": 200,
+        "bytes": 813505
+      },
+      {
+        "p": "/imageops/imageOps.worker.js",
+        "status": 200,
+        "bytes": 17675
+      },
+      {
+        "p": "/fonts/fusion-pixel-12px-proportional-zh_hans.otf.woff2",
+        "status": 200,
+        "bytes": 712624
+      }
+    ]
+  },
+  "scenario": {
+    "ok": true,
+    "checks": [
+      {
+        "name": "home-light",
+        "brand": "素材创意工坊",
+        "title": "让创意，动起来！",
+        "documentTitle": "素材创意工坊 · Sprite Motion Studio",
+        "theme": "light",
+        "bg": "#f5eaff",
+        "imageWidth": 1536,
+        "imageHeight": 1024,
+        "imageSrc": "/illustrations/creative-candy.png",
+        "hero": {
+          "left": 252,
+          "right": 1020,
+          "top": 200.6875,
+          "bottom": 436.6875,
+          "width": 768,
+          "height": 236
+        },
+        "art": {
+          "left": 727,
+          "right": 987,
+          "top": 228.6875,
+          "bottom": 408.6875,
+          "width": 260,
+          "height": 180
+        },
+        "text": {
+          "left": 284.14971923828125,
+          "right": 587.8815307617188,
+          "top": 277.93359375,
+          "bottom": 342.44140625,
+          "width": 303.7318115234375,
+          "height": 64.5078125
+        },
+        "viewport": 1344,
+        "remoteImages": 0
+      },
+      {
+        "name": "home-dark",
+        "brand": "素材创意工坊",
+        "title": "让创意，动起来！",
+        "documentTitle": "素材创意工坊 · Sprite Motion Studio",
+        "theme": "dark",
+        "bg": "#211231",
+        "imageWidth": 1536,
+        "imageHeight": 1024,
+        "imageSrc": "/illustrations/creative-candy.png",
+        "hero": {
+          "left": 252,
+          "right": 1020,
+          "top": 200.6875,
+          "bottom": 436.6875,
+          "width": 768,
+          "height": 236
+        },
+        "art": {
+          "left": 727,
+          "right": 987,
+          "top": 228.6875,
+          "bottom": 408.6875,
+          "width": 260,
+          "height": 180
+        },
+        "text": {
+          "left": 284.14971923828125,
+          "right": 587.8815307617188,
+          "top": 277.93359375,
+          "bottom": 342.44140625,
+          "width": 303.7318115234375,
+          "height": 64.5078125
+        },
+        "viewport": 1344,
+        "remoteImages": 0
+      },
+      {
+        "name": "home-narrow",
+        "brand": "素材创意工坊",
+        "title": "让创意，动起来！",
+        "documentTitle": "素材创意工坊 · Sprite Motion Studio",
+        "theme": "light",
+        "bg": "#f5eaff",
+        "imageWidth": 1536,
+        "imageHeight": 1024,
+        "imageSrc": "/illustrations/creative-candy.png",
+        "hero": {
+          "left": 214,
+          "right": 720,
+          "top": 200.6875,
+          "bottom": 386.6875,
+          "width": 506,
+          "height": 186
+        },
+        "art": {
+          "left": 577,
+          "right": 697,
+          "top": 223.6875,
+          "bottom": 363.6875,
+          "width": 120,
+          "height": 140
+        },
+        "text": {
+          "left": 236.48020935058594,
+          "right": 421.519775390625,
+          "top": 279.9867858886719,
+          "bottom": 319.38818359375,
+          "width": 185.03956604003906,
+          "height": 39.401397705078125
+        },
+        "viewport": 744,
+        "remoteImages": 0
+      }
+    ]
+  },
+  "ok": true
+}

@@ -96,3 +96,28 @@ def test_cache_reuses_valid_outputs_and_recovers_bad_json_and_pixels(tmp_path, m
     (checkpoint.parent / 'rgba.png').write_bytes(b'corrupt')
     assert worker.main(request)['cache_hits'] == 0
     assert Image.open(checkpoint.parent / 'rgba.png').getpixel((25, 25))[3] == 255
+
+
+@pytest.mark.parametrize('alpha', [1, 128])
+def test_imported_soft_png_remains_reviewable_without_opaque_core(tmp_path, alpha):
+    raw = tmp_path / 'soft.png'
+    image = Image.new('RGBA', (32, 32))
+    ImageDraw.Draw(image).rectangle((8, 8, 20, 24), fill=(80, 120, 200, alpha))
+    image.save(raw)
+    frame = {'id': 'soft', 'raw': str(raw), **{k: str(tmp_path / (k+'.png')) for k in ('mask', 'rgba', 'preview')}}
+    info = worker.main({'action': 'import', 'frames': [frame]})['frames'][0]
+    assert 'LOW_CONFIDENCE' not in info['reasons']
+    assert Image.open(frame['rgba']).getpixel((12, 12))[3] == alpha
+    edited = worker.main({'action': 'edit', 'frames': [{**frame, 'input_mask': frame['mask']}],
+                         'strokes': [{'mode': 'erase', 'size': 1, 'points': [[8, 8]]}]})['frames'][0]
+    assert 'LOW_CONFIDENCE' not in edited['reasons']
+
+
+def test_fully_transparent_png_stays_empty_after_import_and_restore(tmp_path):
+    raw = tmp_path / 'empty.png'
+    Image.new('RGBA', (16, 16)).save(raw)
+    frame = {'id': 'empty', 'raw': str(raw), **{k: str(tmp_path / (k+'.png')) for k in ('mask', 'rgba', 'preview')}}
+    assert 'EMPTY_MASK' in worker.main({'action': 'import', 'frames': [frame]})['frames'][0]['reasons']
+    info = worker.main({'action': 'edit', 'frames': [{**frame, 'input_mask': frame['mask']}],
+                        'strokes': [{'mode': 'restore', 'size': 4, 'points': [[8, 8]]}]})['frames'][0]
+    assert 'EMPTY_MASK' in info['reasons']

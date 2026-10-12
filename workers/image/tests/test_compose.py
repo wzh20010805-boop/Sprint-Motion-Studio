@@ -84,3 +84,51 @@ def test_multi_page_export_preserves_rgba_rectangles_and_variable_timing(tmp_pat
         x, y, w, h = item['rect']
         assert png.mode == 'RGBA'
         assert png.tobytes() == sheet.crop((x, y, x+w, y+h)).tobytes()
+
+
+def test_editor_transform_then_alignment_matches_center_anchor_and_alpha():
+    import math
+    image = Image.new('RGBA', (32, 32))
+    image.putpixel((18, 12), (220, 40, 90, 255))
+    c = dict(canvas={'width': 80, 'height': 80}, anchor=[32, 32], scale=2,
+             resampling='pixel', mode='fixed', roots=[{'index': 0, 'x': 16, 'y': 16}], offsets={'0': [1, -1]})
+    transform = dict(offset_x=3, offset_y=-2, scale=1, rotation=math.pi/2, opacity=.5)
+    rendered = compose_frame(image, c, 0, transform)
+    assert rendered.getpixel((45, 31)) == (220, 40, 90, 128)
+    assert rendered.getchannel('A').getbbox() == (45, 31, 47, 33)
+    assert check_bounds(image, c, 0, transform)['bounds'] == pytest.approx([45, 31, 47, 33])
+
+
+def test_editor_scale_is_about_image_center_and_supports_negative_scale():
+    image = Image.new('RGBA', (32, 32))
+    ImageDraw.Draw(image).rectangle((8, 8, 11, 11), fill=(220, 50, 100, 255))
+    c = dict(canvas={'width': 32, 'height': 32}, anchor=[0, 0], scale=1,
+             resampling='pixel', mode='fixed', roots=[{'index': 0, 'x': 0, 'y': 0}], offsets={})
+    for scale, bounds in [(.5, (12, 12, 14, 14)), (-1, (20, 20, 24, 24))]:
+        transform = dict(scale=scale)
+        assert compose_frame(image, c, 0, transform).getchannel('A').getbbox() == bounds
+        assert check_bounds(image, c, 0, transform)['bounds'] == pytest.approx(bounds)
+
+
+def test_transformed_bounds_catch_clipping_and_fully_hidden_frames():
+    image = Image.new('RGBA', (32, 32))
+    ImageDraw.Draw(image).rectangle((8, 8, 11, 11), fill=(220, 50, 100, 255))
+    c = dict(canvas={'width': 32, 'height': 32}, anchor=[0, 0], scale=1,
+             resampling='pixel', mode='fixed', roots=[{'index': 0, 'x': 0, 'y': 0}], offsets={})
+    assert check_bounds(image, c, 0, {'offset_x': 25})['overflow'] is True
+    for hidden in [{'opacity': 0}, {'scale': 0}]:
+        assert check_bounds(image, c, 0, hidden)['empty'] is True
+        assert compose_frame(image, c, 0, hidden).getchannel('A').getbbox() is None
+
+
+def test_subpixel_foreground_disappearing_during_resampling_is_empty():
+    image = Image.new('RGBA', (32, 32))
+    ImageDraw.Draw(image).rectangle((8, 8, 11, 11), fill=(220, 50, 100, 255))
+    c = dict(canvas={'width': 32, 'height': 32}, anchor=[0, 0], scale=1,
+             resampling='pixel', mode='fixed', roots=[{'index': 0, 'x': 0, 'y': 0}], offsets={})
+    transform = dict(scale=.1, offset_x=.4, offset_y=.4)
+    assert compose_frame(image, c, 0, transform).getchannel('A').getbbox() is None
+    report = check_bounds(image, c, 0, transform)
+    assert report['bounds'] == pytest.approx([15.6, 15.6, 16, 16])
+    assert report['overflow'] is False
+    assert report['empty'] is True

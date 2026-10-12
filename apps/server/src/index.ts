@@ -5,10 +5,13 @@ import { wsHandlers } from "./ws";
 import { authorizeLocalRequest } from "./runtime";
 import { db } from "./db";
 import { maskBackend } from './pipeline/masks';
+import { PRODUCTION_API_VERSION } from '@framebaker/shared';
 import { retainExistingImports } from './materialRetention';
+import { backfillMaterialProjects } from './materialProjects';
 
 // 升级时先独立保留旧项目资料，用户以后删除库素材不会被重复补登记。
 retainExistingImports();
+backfillMaterialProjects(db);
 
 const port = Number(process.env.PORT ?? 3000);
 const token = process.env.SFS_SERVICE_TOKEN;
@@ -32,7 +35,7 @@ export const server = serve({
       if (rejected) return Response.json({ schema_version: "1.0", ok: false, status: "failed", error: { code: rejected === 401 ? "UNAUTHORIZED" : "INVALID_ORIGIN", message: "本地服务请求未授权" } }, { status: rejected });
       if (url.pathname === "/api/health") return Response.json({ ok: true, name: "Sprite Motion Studio", instance_id: process.env.SFS_INSTANCE_ID, pid: process.pid });
       if (url.pathname === "/api/config") return Response.json({
-        sfs: { phase: "P5", production_api_version: "1.0", extraction_mode: "all", matting_ready: maskBackend().ready },
+        sfs: { phase: "P5", production_api_version: PRODUCTION_API_VERSION, extraction_mode: "all", matting_ready: maskBackend().ready },
         matting: { engine: maskBackend().ready ? 'rembg-bundled' : 'none', model: 'u2netp', hint: maskBackend().ready ? null : '运行 scripts/setup_p2.ps1 准备本地模型；现有遮罩仍可修正', modelCached: maskBackend().ready },
         imageLayers: { configured: false, model: "" }, gen: { providers: [] }, promptEnhancers: [], queueConcurrency: 2,
       });

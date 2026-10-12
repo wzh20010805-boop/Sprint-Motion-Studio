@@ -12,15 +12,15 @@
     },
     "apps/cli": {
       "name": "@framebaker/cli",
-      "version": "1.0.0",
+      "version": "1.0.4",
     },
     "apps/desktop": {
       "name": "sprite-motion-studio-desktop",
-      "version": "1.0.0",
+      "version": "1.0.4",
     },
     "apps/server": {
       "name": "@framebaker/server",
-      "version": "1.0.0",
+      "version": "1.0.7",
       "dependencies": {
         "@framebaker/shared": "workspace:*",
         "@modelcontextprotocol/server": "^2.0.0",
@@ -30,7 +30,7 @@
     },
     "apps/web": {
       "name": "@framebaker/web",
-      "version": "1.0.0",
+      "version": "1.0.7",
       "dependencies": {
         "@framebaker/shared": "workspace:*",
         "lucide-react": "^0.544.0",
@@ -46,7 +46,7 @@
     },
     "packages/shared": {
       "name": "@framebaker/shared",
-      "version": "1.0.0",
+      "version": "1.0.7",
       "dependencies": {
         "canonicalize": "3.0.0",
       },

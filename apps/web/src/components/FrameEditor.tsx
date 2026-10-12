@@ -346,8 +346,10 @@ export default function FrameEditor({ frame, composite, effect, effects, editabl
 
     const loadInto = async (sprite: Pixi.Sprite, f: Frame | null, isMain: boolean) => {
       if (!f) {
-        sprite.visible = false;
-        if (isMain) p.spriteFrames.delete(sprite);
+        // 切入播放时，等新合成准备好再移除编辑中的主图，避免加载间隙。
+        const keepMain=isMain&&playingRef.current&&composite.length>0;
+        if (!keepMain) sprite.visible = false;
+        if (isMain&&!keepMain) p.spriteFrames.delete(sprite);
         return;
       }
       try {
@@ -382,13 +384,9 @@ export default function FrameEditor({ frame, composite, effect, effects, editabl
   useEffect(() => {
     const p = pixi.current; if (!p || !ready) return;
     let dead = false;
-    p.compositeLayer.children.filter((child) => child !== p.main).forEach((child) => {
-      p.compositeLayer.removeChild(child);
-      p.spriteFrames.delete(child as Pixi.Sprite);
-      child.destroy();
-    });
     const others = composite.filter((f) => f.id !== frame?.id);
-    Promise.all(others.map(async (f) => {
+    const selectedTexture=frame?loadTexture(frame).catch(()=>null):Promise.resolve(null);
+    Promise.all([selectedTexture,Promise.all(others.map(async (f) => {
       try {
         const tex: Pixi.Texture = await loadTexture(f);
         if (dead) {trimTextures();return null;}
@@ -400,8 +398,16 @@ export default function FrameEditor({ frame, composite, effect, effects, editabl
         // 删除/替换帧时旧合成请求可能晚到 404；该帧直接跳过，等待最新 timeline 重绘。
         return null;
       }
-    })).then((sprites) => {
-      if (dead) return;
+    }))]).then(([mainTexture,sprites]) => {
+      if (dead) {for(const sprite of sprites)if(sprite){p.spriteFrames.delete(sprite);sprite.destroy();}return;}
+      // 新步骤解码完成后一次替换。加载期间保留上一张，空单元格仍立即清空。
+      for(const child of p.compositeLayer.removeChildren()){
+        if(child!==p.main){p.spriteFrames.delete(child as Pixi.Sprite);child.destroy();}
+      }
+      if(frame&&mainTexture){
+        mainTexture.source.scaleMode='nearest';p.main.texture=mainTexture;
+        p.main.position.set(frame.offset_x,frame.offset_y);p.main.scale.set(frame.scale);p.main.rotation=frame.rotation;p.main.alpha=frame.opacity;p.main.visible=true;p.spriteFrames.set(p.main,frame);
+      }else{p.main.visible=false;p.spriteFrames.delete(p.main);}
       let oi=0;
       for(const f of composite){if(f.id===frame?.id)p.compositeLayer.addChild(p.main);else {const s=sprites[oi++];if(s)p.compositeLayer.addChild(s);}}
       if (!initialFitDoneRef.current && updateFit()) initialFitDoneRef.current = true;
@@ -503,7 +509,7 @@ export default function FrameEditor({ frame, composite, effect, effects, editabl
   return (
     <div className={`pixi-wrap ${spaceHeld ? "space-pan" : ""} ${panning ? "panning" : ""} ${brushMode ? "drawing-effect" : ""}`} ref={wrapRef}>
       {!frame && composite.length === 0 && effects.length === 0 && !effectEditable && <div className="canvas-empty">{t("msg.no_frames_yet_click_import_materials_top_right")}</div>}
-      <div className="canvas-pan-hint"><kbd>Space</kbd><span>{t("canvas.panHint")}</span></div>
+      <div className="canvas-pan-hint"><kbd>← / →</kbd><span>{t("canvas.frameNavigationHint")}</span><kbd>Space</kbd><span>{t("canvas.panHint")}</span></div>
     </div>
   );
 }

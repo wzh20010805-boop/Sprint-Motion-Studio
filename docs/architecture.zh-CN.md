@@ -243,3 +243,9 @@ Worker自动根据边缘颜色判断是否适合背景色法：98%边缘RGB与�
 `AlignmentWorkshop`左右显示原图与共享后端画布。`FrameEditor`保留活跃纹理及8项近期缓存；时间轴惰性载入128px缩略图。GUI、CLI、MCP共用持久队列；`production.ts`提供摘要stdout，`mcpBridge.ts`维持stdio客户租约，`mcp/sfs.ts`只提供九工具。
 
 `apps/desktop/main.cjs`负责独立Electron单实例、鉴权Cookie、contextIsolation/sandbox、本地CSP与资源、外部导航和权限拒绝、用户可写工作区、关闭任务策略和明确可选模型导入/下载。`distribution.ts`定位旁边的运行时。`build_portable.ts`打包CLI/服务、固定Electron、独立Python、FFmpeg、Worker与许可/清单/SHA256；`verify_portable.ts`进行本机换目录和限制系统PATH测试，不冒称干净虚拟机验收。
+
+1.0.1先应用图片中心变换F(p)=C+kR(p-C)+o，再对齐q=s(F(p)-r)+c+d；主编辑器偏移o以源像素计，对齐微调d以输出像素计。Pillow预览、越界预检、序列和图集使用同一矩阵，透明度乘到Alpha。帧属性进入快照、缓存键和审核指纹；零缩放/透明度或重采样后前景消失为空帧，负等比缩放遵循编辑器。图集打包仍不自动旋转格子。
+
+导入/人工修正检查实际RGBA非零Alpha，不要求不透明核心；自动抠图仍拦截低置信噪声。旧1.0.0导入提示仅在读取时规范化，不改写文件或审核状态。GUI空图检查采用原始Alpha乘遮罩。服务运行契约升级为1.1，防止新客户端静默调用旧后端。
+
+首页糖果色PNG在apps/web/public/art，CandyDoodle使用固定同源地址。打包脚本复制至runtime/assets/art，断网可用；不改变个人素材或工作区。

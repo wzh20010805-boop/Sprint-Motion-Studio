@@ -1,0 +1,72 @@
+{
+  "phase": "P5",
+  "events": [
+    "shared-service-ready",
+    "page-loaded"
+  ],
+  "console": [
+    {
+      "level": "info",
+      "message": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    }
+  ],
+  "networkBlocked": [],
+  "preferences": {
+    "allowRunningInsecureContent": false,
+    "contextIsolation": true,
+    "disableDialogs": false,
+    "disablePopups": false,
+    "enableBlinkFeatures": "",
+    "experimentalFeatures": false,
+    "javascript": true,
+    "nodeIntegration": false,
+    "nodeIntegrationInSubFrames": false,
+    "nodeIntegrationInWorker": false,
+    "safeDialogs": false,
+    "safeDialogsMessage": "",
+    "sandbox": true,
+    "webSecurity": true,
+    "webviewTag": false
+  },
+  "windowVisible": true,
+  "renderer": {
+    "text": "素材创意工坊\nSPRITE MOTION STUDIO\n项目\n素材库\n设置\n中\n目录\n全部\n未分组\n动画创作空间\n素材创意工坊\n\n导入动作、抠出角色、细细修边。你的下一段灵感，从这里开工。\n\nMAKE A LITTLE MAGIC\n让创意，动起来！\n01 / VIDEO\n02 / CUTOUT\n03 / ANIMATE\n新建项目\n图标大小\ntest\n27 帧 · 2026/10/10 09:57:14\n任务队列\n全部完成\n抠图\n抠图初稿已生成，请检查武器与边缘\n抠图\n抠图初稿已生成，请检查武器与边缘\n抠图\n抠图初稿已生成，请检查武器与边缘\n抠图\n抠图初稿已生成，请检查武器与边缘\n抠图\n抠图初稿已生成，请检查武器与边缘",
+    "require": "undefined",
+    "process": "undefined",
+    "resources": [
+      {
+        "p": "/api/v1/projects",
+        "status": 200,
+        "bytes": 301
+      },
+      {
+        "p": "/pixi.min.js",
+        "status": 200,
+        "bytes": 813505
+      },
+      {
+        "p": "/imageops/imageOps.worker.js",
+        "status": 200,
+        "bytes": 17675
+      },
+      {
+        "p": "/fonts/fusion-pixel-12px-proportional-zh_hans.otf.woff2",
+        "status": 200,
+        "bytes": 712624
+      }
+    ]
+  },
+  "scenario": {
+    "ok": true,
+    "total": 1237,
+    "blank": 0,
+    "displayedFrames": 27,
+    "errors": [],
+    "deleteButton": {
+      "height": 28,
+      "neighborHeight": 28,
+      "width": 28
+    }
+  },
+  "ok": true
+}

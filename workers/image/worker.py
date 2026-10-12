@@ -101,14 +101,14 @@ def plain_background_mask(crop):
     return Image.fromarray(alpha)
 
 
-def inspect(mask):
+def inspect(mask, allow_soft=False):
     histogram = mask.histogram()
     count = mask.width * mask.height
     foreground = count - histogram[0]
-    visible = sum(histogram[129:])
+    visible = foreground if allow_soft else sum(histogram[129:])
     reasons = []
     if foreground == 0: reasons.append('EMPTY_MASK')
-    elif visible < max(4, count * .0001): reasons.append('LOW_CONFIDENCE')
+    elif not allow_soft and visible < max(4, count * .0001): reasons.append('LOW_CONFIDENCE')
     if histogram[255] == count: reasons.append('OPAQUE_MASK')
     if foreground / count < .005: reasons.append('SMALL_FOREGROUND')
     border = [mask.getpixel((x, 0)) for x in range(mask.width)] + [mask.getpixel((x, mask.height-1)) for x in range(mask.width)] + [mask.getpixel((0, y)) for y in range(mask.height)] + [mask.getpixel((mask.width-1, y)) for y in range(mask.height)]
@@ -189,7 +189,7 @@ def main(request):
         else:
             raise ValueError('未知图像操作')
         rgba = compose(raw, mask)
-        info = inspect(rgba.getchannel('A')) if action == 'import' else inspect(mask)
+        info = inspect(rgba.getchannel('A'), allow_soft=True) if action in ('import','edit') else inspect(mask)
         if action == 'batch' and any(reason in info['reasons'] for reason in ('EMPTY_MASK', 'LOW_CONFIDENCE')):
             raise ValueError(f'MATTE_NO_FOREGROUND: 帧 {index+1} 未识别到可见角色。请调整保留区域，或使用完整画面重新生成；上一版保留。')
         mask.save(frame['mask'])

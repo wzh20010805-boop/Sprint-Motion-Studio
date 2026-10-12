@@ -60,7 +60,7 @@ async function launch(){
  session.defaultSession.webRequest.onHeadersReceived((details,callback)=>callback({responseHeaders:{...details.responseHeaders,'Content-Security-Policy':[csp]}}));
  session.defaultSession.setPermissionRequestHandler((_w,_p,callback)=>callback(false));
  session.defaultSession.setPermissionCheckHandler(()=>false);
- window=new BrowserWindow({width:1360,height:900,show:!smoke||process.env.SFS_SMOKE_VISIBLE==='1',title:'小兵动画素材工坊 · Sprite Motion Studio',autoHideMenuBar:true,webPreferences:{contextIsolation:true,sandbox:true,nodeIntegration:false,nodeIntegrationInWorker:false,webSecurity:true}});
+ window=new BrowserWindow({width:1360,height:900,show:!smoke||process.env.SFS_SMOKE_VISIBLE==='1',title:'素材创意工坊 · Sprite Motion Studio',autoHideMenuBar:true,webPreferences:{contextIsolation:true,sandbox:true,nodeIntegration:false,nodeIntegrationInWorker:false,webSecurity:true}});
  report.windowVisible=window.isVisible();
  report.preferences=window.webContents.getLastWebPreferences();
  if(smoke)window.webContents.setBackgroundThrottling(false);
@@ -75,9 +75,9 @@ async function launch(){
  report.windowVisible=window.isVisible();
  if(smoke){await new Promise(r=>setTimeout(r,1800));
   report.renderer=await window.webContents.executeJavaScript(`(async()=>{await document.fonts.ready; const resources=[];for(const p of ['/api/v1/projects','/pixi.min.js','/imageops/imageOps.worker.js','/fonts/fusion-pixel-12px-proportional-zh_hans.otf.woff2']){const r=await fetch(p);resources.push({p,status:r.status,bytes:(await r.arrayBuffer()).byteLength});}return {text:document.querySelector('#root')?.innerText,require:typeof require,process:typeof process,resources};})()`);
-  if(process.env.SFS_SMOKE_SCENARIO){const scenario=require(path.join(__dirname,'production-scenario.cjs'));report.scenario=await scenario({window,origin,service});}
+  if(process.env.SFS_SMOKE_SCENARIO){const file=process.env.SFS_SMOKE_SCENARIO==='brand'?'brand-scenario.cjs':process.env.SFS_SMOKE_SCENARIO==='playback'?'playback-scenario.cjs':'production-scenario.cjs';const scenario=require(path.join(__dirname,file));report.scenario=await scenario({window,origin,service});}
   if(process.env.SFS_SMOKE_EVIDENCE){fs.mkdirSync(process.env.SFS_SMOKE_EVIDENCE,{recursive:true});fs.writeFileSync(path.join(process.env.SFS_SMOKE_EVIDENCE,'desktop.png'),(await window.webContents.capturePage()).toPNG());}
-  report.ok=report.renderer.text?.length>20&&report.renderer.require==='undefined'&&report.renderer.process==='undefined'&&report.renderer.resources.every(r=>r.status===200&&r.bytes>0)&&report.networkBlocked.length===0&&!report.console.some(v=>v.level==='error'||v.level===3);
+  report.ok=report.renderer.text?.length>20&&report.renderer.require==='undefined'&&report.renderer.process==='undefined'&&report.renderer.resources.every(r=>r.status===200&&r.bytes>0)&&report.networkBlocked.length===0&&!report.console.some(v=>v.level==='error'||v.level===3)&&(!process.env.SFS_SMOKE_SCENARIO||report.scenario?.ok===true);
   writeReport();closing=true;app.exit(report.ok?0:1);
  }
 }

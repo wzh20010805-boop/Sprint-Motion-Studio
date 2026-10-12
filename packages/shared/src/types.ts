@@ -841,6 +841,8 @@ export interface Material {
   status: MaterialStatus;
   source: FrameSource;
   folder_id: string | null;
+  /** 素材关联的现存项目；同一原件可被多个项目复用。 */
+  project_ids: string[];
   metadata: Record<string, unknown>;
   created_at: number;
   /** 由路径推断：视频素材不可抠图/剪裁，需先抽帧 */
@@ -848,7 +850,7 @@ export interface Material {
 }
 
 /** DB 行形态 */
-export interface MaterialRow extends Omit<Material, "status" | "source" | "metadata"> {
+export interface MaterialRow extends Omit<Material, "status" | "source" | "metadata" | "project_ids"> {
   status: string;
   source: string;
   metadata: string;
