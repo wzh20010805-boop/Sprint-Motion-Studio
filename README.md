@@ -6,23 +6,27 @@
 
 ## 界面与工作流程示例
 
-以下实拍截图展示此前导入的「5s奔跑视频制作.mp4」及其逐帧角色素材。最新版本的界面调整与功能更新见下方变更日志。
+以下为 **1.0.7 版实拍界面**，使用现有 test 项目的 14 帧动作，以及保留的原视频和完整抽帧素材。
 
-| 动画编辑器 · 抠图后的奔跑角色 | 素材库 · 保留视频与完整原帧 |
+![素材创意工坊首页：让创意，动起来！](docs/media/sfs/v1.0.7/home.png)
+
+| 主编辑器 · 左右键逐帧预览 | 素材库 · 项目 / 视频 / 照片分区 |
 | --- | --- |
-| ![当前小兵动画编辑器](docs/media/sfs/editor.png) | ![当前素材库](docs/media/sfs/library.png) |
+| ![素材创意工坊主编辑器](docs/media/sfs/v1.0.7/editor.png) | ![项目素材分区](docs/media/sfs/v1.0.7/library.png) |
 
 ## 奔跑案例
 
-使用此前导入的原视频展示实际来源，用项目现有帧生成动作预览。原视频保留背景，抠图修正后的角色以棋盘格显示；示例不代表所有帧已经通过人工质量审核。
+原视频展示实际来源；下方动作预览由 test 项目最近一次正式导出的 **14 张透明 PNG** 生成。动图中的棋盘格用于展示透明区域，实际 PNG 和精灵图集保留透明通道。完整源视频的其它帧仍需单独检查。
 
-| 导入的原视频 | 当前项目的抠图帧预览 |
+| 导入的原视频 | 最新正式导出的 14 帧动作预览 |
 | --- | --- |
-| ![小兵原视频](docs/media/sfs/source-run.gif) | ![小兵抠图动作预览](docs/media/sfs/run-loop.gif) |
+| ![小兵原视频](docs/media/sfs/source-run.gif) | ![14帧透明素材动作预览](docs/media/sfs/v1.0.7/run-loop.gif) |
+
+[查看透明 PNG 示例](docs/media/sfs/v1.0.7/frame_000001.png) · [查看规则精灵图集](docs/media/sfs/v1.0.7/sprite-sheet.png)
 
 | 遮罩修正 | 地面基准与统一画布 |
 | --- | --- |
-| ![遮罩擦除和恢复](docs/media/sfs/mask-workshop.png) | ![地面基准与逐帧偏移](docs/media/sfs/alignment-workshop.png) |
+| ![遮罩擦除和恢复](docs/media/sfs/v1.0.7/mask-workshop.png) | ![地面基准与全帧越界预检](docs/media/sfs/v1.0.7/alignment-workshop.png) |
 
 [下载此案例的原视频](docs/media/sfs/source-run.mp4)。展示媒体用于说明本项目工作流程；沿用用户此前提供的素材，不属于项目 MIT 源码许可授权的素材库。
 
