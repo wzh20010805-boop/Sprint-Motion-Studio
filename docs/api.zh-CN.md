@@ -612,6 +612,10 @@ FrameBaker 正在 http://localhost:3000 运行，MCP 端点为 /mcp（Streamable
 
 受鉴权的隔离桌面服务支持 `POST /api/v1/matte`：`project_id`、`frame_ids`、可选 `region: [x,y,width,height]` 与 `base_revision`。共享队列初稿完成后返回 `waiting_user`、`requires_user_action: true`、模型登记、异常帧和本地预览/遮罩/RGBA路径。同批使用一个CPU Rembg session，Worker不隐式下载模型。
 
+纯色背景批次和仅缓存命中的批次现在返回 `session_count: 0`，仅有帧需要模型推理时才初始化并复用一个 Rembg session。四邻域背景连通标记使用现有 scipy 依赖；连通的近背景色压缩噪声全部透明，避免形成半透明灰雾，内部浅色细节仍由连通性保护。抠图缓存算法 v3 不复用此前产生灰雾的旧输出。
+
+`POST /api/v1/matte` 增加可选 `background_points: {"帧ID": [[x,y], ...]}`，最多2000个所选帧，每帧128个完整源图整数像素坐标。背景点额外选中近背景色连通区，可清除腿间封闭空隙，同时保留未标记的浅色衣服。帧须属于本批，点须位于保留ROI内；落在深色前景、越界或复杂背景上明确失败。CLI使用 `matte --background-points points.json`；共享recipe的 `matting.background_points` 同步提供给maker MCP的 `submit_pipeline`。缓存v5包含逐帧背景点与当前背景边缘算法，保留原件和旧遮罩版本，不记录人工批准。
+
 `GET /api/v1/masks/:frameId` 返回当前遮罩、项目修订与不可变历史。`GET .../image?kind=raw|mask|rgba|preview&version=...` 仅提供已登记路径。`POST .../strokes` 接收 `version_id`、`revision` 和 `strokes: [{mode: "erase"|"restore", size, points:[[x,y],...]}]`。`POST .../undo`、`POST .../review` 需要同样的版本/修订对。所有坐标和笔刷直径使用完整原图，不删除分离连通块。`GET /api/v1/projects/:id/masks` 供重开后读取审核/异常状态。参数错误400、版本冲突409、依赖/模型缺失503。GUI与CLI共用，正式导出与MCP仍属于后续阶段。见 [P2说明](p2-guide.md)。
 遮罩确认将审核标记、项目修订和相关抠图任务状态放在同一事务提交。历史批次引用已删除或已移出项目的帧时标记为 `cancelled`、`requires_user_action: false`，保留任务参数、结果和文件；不会阻塞现存帧确认，也不会冒充审核通过。帧完整的批次仍需全部帧的当前遮罩有效且已确认，才能标记 `done`。提交后才发送任务事件；事务失败时审核和修订一起回滚。
 
@@ -626,6 +630,7 @@ FrameBaker 正在 http://localhost:3000 运行，MCP 端点为 /mcp（Streamable
 | POST `/api/v1/alignment/check` | 全动作空帧/越界检查，与正式合成同Worker |
 | GET `/api/v1/preview/:id?axis_id=...` | 公共画布RGBA PNG；输入与输出摘要校验缓存 |
 | POST `/api/v1/review/apply` | 当前base_revision、用户明确confirmation和source；每帧遮罩必须先确认 |
+| POST `/api/v1/collaboration/candidates/:id/reviews/whole` | 仅当前桌面审核人；`{context,patch:{content_hash,playback_hash,confirmed:true}}`。用户明确确认已检查全部最终帧及整体播放后，在一个审核事务中登记整段并触发原交付流程；版本或审核修订冲突、未提交/未选定候选、未解决阻断问题及需修复帧均拒绝。无CLI或maker MCP批准工具。 |
 | POST `/api/v1/export` | draft、base_revision、max_texture、gap、margin、timing可选；返回持久任务 |
 | POST `/api/v1/pipeline` | recipe schema1.0、可选clip_id；提交下一未完成阶段，不自动审核 |
 | POST `/api/v1/jobs/:id/resume` | 中断/失败/取消任务以当前输入创建新任务 |
@@ -633,10 +638,136 @@ FrameBaker 正在 http://localhost:3000 运行，MCP 端点为 /mcp（Streamable
 
 正式导出必须与审核修订及原图/遮罩/前景/参数摘要一致。发布前再次核验，导出到新目录而非覆盖旧成功版本；原文件失效报INPUT_NOT_FOUND，修订冲突报REVISION_CONFLICT/STALE_JOB_RESULT。草稿明确标记；不去重、不逐帧裁边、不旋转，Alpha与有理数时长保持一致。
 
-鉴权模式 `/mcp` 仅公开九工具：inspect_capabilities、inspect_project、import_source、submit_pipeline、get_job、cancel_job、get_review_artifacts、apply_review_patch、export_assets。SDK HTTP与CLI stdio桥共用业务校验；原上游广工具仅在无令牌开发模式可用。import_source不读取服务器任意路径，接收有上限的明确提供字节。stdio客户端健康租约防止空闲停服。
+鉴权模式 `/mcp` 公开下文生产1.2制作白名单，不提供人工批准工具。SDK HTTP与CLI stdio桥共用业务校验；原上游广工具仅在无令牌开发模式可用。import_source不读取服务器任意路径，接收有上限的明确提供字节。stdio客户端健康租约防止空闲停服。
 
 1.0.1渲染修复：`/api/config.sfs.production_api_version` 为1.1，新客户端拒绝旧服务。manifest每帧新增transform（offset_x、offset_y、正负scale、弧度rotation、opacity），先围绕完整源图中心处理，再执行地面基准对齐；预览/越界/审核/导出共用。更改帧属性使旧审核与缓存失效。图集不自动旋转格子，用户设置的帧旋转会实际烘焙到像素。
 
 导入/人工修正PNG的Alpha可以全为半透明；遮罩详情和项目摘要统一纠正旧导入记录的LOW_CONFIDENCE提示，不改像素或审核状态。真正空RGBA与自动抠图低置信遮罩仍被阻止。JSON schema/envelope版本保留1.0，旧manifest读取方可以忽略新增的变换来源字段。
 
 首页装饰资源：固定同源 GET `/illustrations/creative-candy.png`，PNG响应，不接受动态文件名；工作区令牌模式沿用本地鉴权。开发版从web/public/art读取，便携版从runtime/assets/art读取。
+
+### 本机会话角色与生产 API 1.2
+
+实例会话、桌面管道及受保护的 `.sfs/desktop-bootstrap.json` 全部就绪后才发布 `.sfs/service.json`。其中 token 仅有制作能力；旧 `sfs_token` Cookie 仍为制作身份。当前实例有效的 `sfs_reviewer` Cookie 优先，并同时允许 GUI 手工制作；失效 Cookie 不提升制作凭据。Cookie 使用 HttpOnly、Strict、host-only 与 `/`。Host、Origin、WebSocket 约束保持，health 只提供实例/PID身份。客户端精确匹配 API `1.2`，不强杀不兼容服务。
+
+不提供制作凭据升级的 HTTP 端点。可信桌面主进程核对描述和活跃服务身份，通过本机管道交换绑定 PID、30秒有效、只能消费一次的 nonce，加载页面前设置审核 Cookie。后续协作审核 adapter 必须使用 `getRequestActor(request)` 及 `requireRole(actor,'reviewer')`；请求 body/header 中的 actor 声明不可信。本基础任务不替换现有手工审核/导出业务。
+
+### 协作制作草稿（API 1.2基础）
+
+`/api/v1/collaboration` 薄适配器使用服务绑定的本地制作/审核身份；请求体角色字段不能授权。`POST /tasks` 接收 `{brief,request_key}`。`GET /draft?project_id=...&axis_id=...` 返回实际字节内容身份、独立期望源选择及有理数输出时长；未配置对齐时明确返回 `alignment:null`，固定候选必须拒绝缺少对齐。`POST /timing` 接收 `{context,timing,base_content,request_key}`；timing 带字段来源，策略为 source_pts/confirmed_fps/explicit_durations，源PTS元数据保持原样。
+
+`POST /images` multipart字段：project_id、axis_id、PNG files，以及JSON options（request_key、可选ordered_names、timing、base_content）。JSON文本（含前导空白）与Elysia解析后的对象共用严格的maker导入选项schema；拒绝无效JSON、非对象和未知选项字段。CLI显式发送平面文件名。名称须为唯一平面NFC PNG文件名；显式清单必须恰好覆盖全部输入，无清单使用自然排序。占用动作拒绝隐式追加或替换。PNG源提供png_sequence类型探测清单和独立原帧映射，没有视频PTS；视频抽帧入口拒绝PNG源。原件与编辑副本分别保存。
+
+`POST /tasks/:id/rework` 接收parent_candidate_id、base_content、request_key，固定父候选保持原样。`POST /tasks/:id/matte` 接收frame_ids及可选base_revision/region；服务检查全部帧属于该任务动作。协作计算置done，遮罩仍未审核；同项目其他旧动作仍waiting_user，恢复重新验证原协作上下文。动作FPS更新返回output_timing：confirmed_fps更新全部输出时长，source_pts/explicit_durations保留绝对时长；手工步骤时长更新物化明确有理数输出时长。协作CLI/MCP命令、候选验收及交付由后续任务接入。
+
+任务公共画布/锚点/比例/重采样与已有共享预设冲突时返回 ALIGNMENT_PRESET_CONFLICT；只有没有预设时才从任务要求初始化。根轨迹和偏移仍按动作保存。非编辑器任务创建、PNG导入和输出时序成功提交后使旧编辑撤销链失效；失败写入和已完成操作的相同重试保留后来建立的编辑历史。
+
+### 固定私有候选（Task 4 服务基础）
+
+collaboration/candidates.ts 提供 createPrivateCandidate(request, actor)、buildPrivateCandidate(request, signal?, progress?)、readCandidate/readCandidateManifest、candidateFilePath 与 submitCandidate(id, expectedHash, actor)。现有 queue 注入窄调度回调，调度前载入 queue。请求保留 request_key、任务/动作、原 base_content 及可选父候选；重放返回同一 operation/job/私有候选，不重新合成或重新选择历史版本。未配置对齐、主轨缺格或所选源顺序/映射错误均阻断。本任务不增加 HTTP/MCP/CLI 候选路由，适配器由 Task 10 接入。
+
+checkCandidate(id) 使用现有 Pillow Worker 逐项读取全部已保存 PNG 及冻结输入，报告绑定 id、candidate_id、content_hash、manifest_sha256、checked_frame_count、blocking_errors、warnings。缺失/损坏帧算已尝试检查但不能通过。候选路径相对候选根；传输层只允许清单登记文件经 candidateFilePath 解析。最终 PNG 已应用制作变换，显示时不能再次合成。清单保存 raw/mask/RGBA 哈希、源尺寸、Canvas 正逆矩阵、期望 step/source 覆盖、固定图集页/矩形、合成器源码/Pillow 身份与辅助文件哈希。
+
+提交必须同时满足预期哈希、当前文件完整性、完整技术检查通过及下文 Task 5 真实持久自检。缺少、未完成、空、过期或事实不一致的自检返回 SELF_CHECK_REQUIRED。已提交候选重放不会改选历史版本。
+
+
+### 候选采样与观察事实（Task 5）
+
+以下 `/api/v1/collaboration` 路由要求服务绑定的制作能力身份：
+
+| 路由 | 输入 / 结果 |
+| --- | --- |
+| `GET /candidates/:id/sampling?limit=12` | 保存或重放唯一身份绑定 SamplingPlan；调用上限为正整数。 |
+| `POST /candidates/:id/observations` | `{plan_hash,observations}`；整批原子校验和追加事实，返回自检。 |
+| `GET /candidates/:id/selfcheck` | 返回校验过的 CandidateSelfCheck，首次写入前为 null。 |
+
+共用服务位于 collaboration/samplingStore.ts：getCandidateSamplingPlan、recordSampleObservations、readCandidateSelfCheck；submitCandidate 使用相同权威验证器。候选创建/技术检查/提交的 CLI 与 MCP adapter 属 Task 10。身份只读 getRequestActor，body 不能授予权限。
+
+预算为 min(12,max(1,floor(N/2)),冻结要求上限,调用上限)，更大上限不能提高公式。B=1 选最高风险或首帧；B>=2 强制首尾。风险最多新增4帧，常规最多8帧且包含首尾。优先级按小值排序：修复0、修复邻帧100、工具警告高/中/低200/201/202、其它帧内容变化300。线索来自技术元数据、修复关联及 Task 6 完整父候选比较：直接影响优先级300、受影响邻帧100。已有保存计划保留原风险输入与样本集合。同级按序列位置、重复理由确定去重；未覆盖风险只表示最终未选中的风险 ID，与已选但未观察帧分别报告。
+
+常规时刻 j*T/(R-1) 覆盖完整播放区间，使用 BigInt 有理数精确比较。共享边界选早帧，重复目标按到未选区间的精确距离补选，同距选早序列位置。provenance 绑定 rational-interval-v1、完整清单 SHA256、调用/用户上限与规范风险。候选只有一个不可替换的保存计划；之后修改上限/风险元数据不扩展样本集合。源图、Alpha、背景切换仍是同一帧名额。
+
+SampleObservation 绑定候选/内容/计划/帧身份，记录 viewed、ok/issue/uncertain、非空 explanation/evidence_source 与 evidence_candidate_id。省略证据候选时 writer 记录当前候选。复用要求同任务祖先已有 viewed=true 的真实存储记录、完全相同帧内容哈希及原来源/结果/解释，保留原始证据候选。外来、重复、计划外、过期或矛盾事实整批拒绝；viewed=false 只能为 uncertain。部分写入仍未完成；精确重放不新增记录，不同事实返回 OBSERVATION_CONFLICT；已提交记录保留完整观察事实，只允许精确重放或仅刷新当前 technical_check/blocking_errors。自检 ID、保存计划、全部观察及覆盖事实不变；重新记录的技术阻断仍禁止提交。
+
+CandidateSelfCheck 保存 id/candidate_id/content_hash/manifest_sha256/plan_hash、observations、completed、完整 technical_check 与 blocking_errors，以及 viewed_frame_ids、unviewed_frame_ids、reused_frame_ids、issue_frame_ids、uncovered_risks。completed 表示所有选中事实与全量技术报告一致且完整，可诚实记录不确定性与提示问题，不代表美术通过。同一冻结内容重新技术检查后，旧自检失效，writer 可只刷新技术事实并保留原观察与计划。技术阻断仍不能提交。观察不会写人工审核或增加 review_revision；计划/观察/读取/提交均验证文件及清单身份。这些机制不能证明模型实际看过像素，也不能证明未抽中画面没有视觉缺陷。
+
+
+### 候选影响服务（Task 6）
+
+`collaboration/impact.ts` 导出纯函数 `compareCandidates(parent, next): ImpactReport`，本任务不增加传输入口。`changed_frame_ids` 包含仍存在的内容/时长/相对位置直接变化帧与改变的有向连接端点；`recheck_frame_ids` 再加入只扩展一次的旧/新邻帧，均按新候选顺序返回。`inheritable_frame_ids` 仅表示结构继承资格；Task 7 仍须核对当前真实父批准、问题/修复上下文和撤销状态。邻帧即使 PNG 相同也排除继承。`reasons` 提供中文解释并保留被删除的旧帧 ID；旧 ID 不进入新候选复审列表。公共画布/锚点/比例/重采样改变时，`preset_impacts` 标记被比较的动作。
+
+`playback_changed` 表示播放内容改变或要求重新验收，相同播放 hash 不能覆盖遮罩/输入/变换/上下文影响。有理数时长与同模式冻结时长要求精确比较；已知要求变化须对应实际源顺序/时长/对齐结果。根插值、端点保持及偏移继续按序号表达，使用冻结实际几何。纯打包、抽样上限、要求来源标签变化，或来源/质量上下文已知且不变的同字节新遮罩版本标签，可保留结构资格。缺失/未知字段、质量变化、源映射歧义、上下文或父子关系不可证明、合成器变化均保守全量复审。比较器不读文件或证明字节真实性，候选完整性及技术检查仍须执行。
+
+`collaboration/presetImpact.ts` 导出只读 `affectedActionsForPreset(projectId, changedPresetHash): WorkContext[]`。hash 表示调用方的新公共设置 SHA256（64位小写十六进制）。当前预设按项目全局共享且无法独立证明历史绑定，因此服务按 idx/id 返回项目全部动作，包括未对齐动作，不凭可能过期的绑定过滤。项目不存在或 hash 非法则拒绝。调用方将这些上下文与报告的公共预设原因组合展示；不修改历史候选、批准、任务或预设。
+
+### 协作审核事务（Task 7）
+
+`GET /api/v1/collaboration/candidates/:id/reviews` 返回共同 `ReviewState`：完整最终帧集合、判定及有效性、原操作/审核者依据、显式继承链、与候选相关的问题及修复/例外依据、播放状态、类型化错误和当前有效接受代次（`number | null`）。Task 的 `acceptance_epoch` 仍是非空单调计数器。历史候选完成审核不会抢占当前选择。
+
+写入入口为 `POST /api/v1/collaboration/reviews/{frame,playback,issue,repair,source-exception}`，请求 `{context,patch}`。context 为 `{task_id,candidate_id,base_review_revision,request_key}`，patch 分别使用共享帧、播放、问题、修复关联、源缺陷例外类型。`/reviews/inheritance` 请求 `{context,parent_candidate_id}`，服务重算 Task 6 影响；`/reviews/selection` 使用 `CandidateSelectionRequest`（任务、目标候选、预期选中候选、预期任务代次及幂等键）。选择 CAS 独立于候选审核 CAS，不生成批准。广泛 CLI/MCP adapter 属于 Task 10，制作能力不开放人工批准。
+
+只有当前服务签发的 reviewer 可写帧、播放、问题、源缺陷例外、显式继承和选择。Maker 可读、关联完整修复。请求体 actor、角色或旧幂等键不能提升权限；认证早于成功重放。同键同业务输入在 CAS 前返回原结果，允许换用新合法 reviewer 会话，原执行者仍持久保留。改输入报 `REQUEST_CONFLICT`，新键旧修订报 `REVIEW_REVISION_CONFLICT` 或 `TASK_SELECTION_CONFLICT`。`server:` 键保留给服务。
+
+修复 context 绑定原问题候选。要求同任务真实后代及完整稳定问题帧集；部分映射或删除问题帧拒绝。关联固定子候选当前审核修订，只进入 `repair_linked`；之后全范围新的明确人工帧确认及新的子候选播放才派生 `resolved`。此前/继承批准不能代替。撤销或改关联会重算；修复子候选不洗掉原父候选或旁支的缺陷。源缺陷例外需 reviewer 明确范围和理由，只覆盖原已接受的未改变帧内容，不能绕过技术阻断。advisory 保留批准和有效代次。
+
+每个新候选都需独立播放，包括仅打包参数变化。显式帧继承同时核对当前真实父批准、稳定 ID/内容、结构影响及问题/修复排除，保存原操作、修订、执行者和哈希依据。子帧独立重新确认之前依赖当前祖先链；祖先撤销会使依赖接受失效。
+
+接受要求完整准确最终帧 ID 集、当前同身份技术检查/自检、冻结文件、当前选择、全部有效帧批准、播放及无相关阻断。一个 immediate 事务写审核修订/证据、接受快照、递增代次及唯一 `claimed` 的 `deliver_candidate` 操作。提交后调用注入调度器，回调缺失/失败仍保留待交付操作。Task 8 实现队列/打包，Task 9 实现启动协调，本接口不声称它们完成。
+
+`withAcceptedDelivery(request, synchronousCommit)` 是最终发布共用同步边界；核验原操作负载/哈希、当前选择/代次及最新事实。advisory 导致修订前进本身不撤销。失效接受持久撤销，恢复文件或批准也不会复活旧代次；已发布操作/结果/文件保留，检查点追加撤销依据，结果 `approval_status='withdrawn'`。新接受分配新代次/操作。Maker 新私有候选实际提交及 `startRework` 使用相同撤销边界；重放已提交候选不重新选择它。
+
+Task 7 阶段规则：新登记接受必须处于 `awaiting_review`。`startRework` 后的读取、advisory 写入和成功重放保持返工；重放只返回原操作历史结果，不改变当前状态。reviewer 显式选择（包括返工时同一候选）通过任务选择/代次 CAS 开启审核。Maker 新私有候选提交正常开启审核。已有有效接受的重验与新建代次分开，不因私有构建正在运行就撤销它。
+
+### 固定候选交付（Task 8）
+
+人工接受事务提交后唤醒 `queueAcceptedDelivery(operationId)`；既有队列先原子持久化 job 与原 operation 尝试关联，再执行 `deliver_candidate`。`packageAcceptedCandidate(request, signal?, progress?)` 复制固定 PNG/图集及有理数时长，不调用源图合成。其参数顺序与旧 `exportAssets(payload, progress?, signal?)` 不同。
+
+`GET /api/v1/export/resolve?project_id=…&axis_id=…&format=sequence|png_sequence|spritesheet` 返回 `data.mode=legacy`、带固定 `files[{file,url}]` 的 `candidate`，或带全部 `task_ids` 的类型化 `ambiguous`；不猜最近任务。缺少候选固定格式返回 `NEW_CANDIDATE_REQUIRED`，尚未正式提交返回 `DELIVERY_NOT_COMMITTED`。序列下载既有完整包，图集逐页下载原文件；裁定失败绝不降级为浏览器 Canvas。
+
+`GET /api/v1/deliveries/:id` 读取原 succeeded 操作结果。`GET /api/v1/deliveries/:id/file?path=…` 仅允许正式提交清单中的文件，重新校验 hash，并返回 `X-Approval-Status: approved|withdrawn`。仅移动目录不构成交付。撤销保留 succeeded 操作、结果身份、文件和历史。完整 CLI/MCP 发现接口仍属 Task 10；现有 maker 导出/recipe 共用 core 闸门，不增加审核写权限。
+
+所有协作动作旧正式导出的创建、准备、执行和发布都返回 `IMMUTABLE_DELIVERY_REQUIRED`，接受后也不能重渲染。显式草稿保留 `DRAFT_NOT_APPROVED`，不创建协作正式提交。素材、遮罩、骨骼文档和旧历史包读取保留原职责。
+
+包包含原字节 `candidate-manifest.json`、交付 `manifest.json`、记录完整技术检查及实际抽样/viewed/unviewed/reused/uncovered 事实的 `quality-report.json`、固定 PNG/图集/联系表、可选从固定 PNG 生成的 MP4、接入说明和 ZIP。包内 `checksums.json` 只校验 payload，不含自己及 ZIP；原操作结果另存 `archive_sha256`。撤销后包内历史接受快照保留，当前批准状态须读取服务。
+
+交付完整性还要求在归档前将生成 manifest/QA/checksums 的预期序列化字节固定为校验依据。即使 staging 松散文件曾被临时篡改后恢复，实际 ZIP 条目仍必须与同一可信清单一致；包内校验表自洽本身不能授权发布。本次完整性修正不改变 HTTP 契约。
+
+### 稳定操作恢复（Task 9）
+
+`resumeCollaborationOperation(id, actor): Promise<OperationRecord>` 要求当前实例实际认证的 maker / reviewer 对象。队列只使用原规范负载、base 与 operation ID，原子追加尝试 job 后才 pump；先核验原业务提交，再检查后来草稿版本。未提交且输入变化记为 `needs_input / INPUT_IDENTITY_CONFLICT`，归属冲突、损坏文件保留并拒绝自动认领。部分交付继续使用异步操作前保存的预期字节 hash，核验真实 ZIP 条目，不能从暂存文档重新计算预期身份。
+
+`prepareExtractionOperation(payload, {request_key}, actor)` 是下一适配任务可调用的内部稳定抽帧入口，保留 raw / timing、GUI 副本、主轨事务和结果检查点。旧无 operation 抽帧入口保持原兼容行为。`POST /api/v1/jobs/:id/resume` 改为异步；持久 `operation_id` 决定严格恢复，即使调用者省略该字段也必须有当前请求认证。无稳定操作的协作任务不能静默清除 base 重跑；旧正式导出仍受协作闸门约束。
+
+取消先持久化再尽力 abort；已提交业务事实优先于迟到取消，启动不复活明确取消。取消候选只有显式 Task 返工且原内容身份相同才可继续；交付接受撤销永久有效。启动先取得工作区锁再加载 DB，暂停队列、逐操作协调，然后才 pump 并加载监听服务；锁 / DB 全局失败不发布 ready。所有历史尝试和文件保留，进程退出测试不等于断电耐久性认证。
+
+
+
+## 生产1.2制作门面与固定候选HTTP接口
+
+Token模式MCP实际白名单由 `mcp/makerTools.ts` 定义，`inspect_capabilities` 返回全部实际名称、恢复能力与限制。支持项目/动作创建、来源导入与稳定提帧、PNG导入、制作阶段提交、job查询/取消、完整帧与产物读取、显式基础的遮罩编辑/撤回/对齐/时序、任务创建/读取/取消、候选创建/读取/全帧检查/抽样/观察/提交/比较、问题分页与修复关联、返工、原操作读取/恢复/取消，以及已接受固定候选交付。准确英文工具名见本文件末尾清单；无 `apply_review_patch` 或人工批准/继承/源缺陷接受工具。旧审核命令在token模式需要实际当前reviewer。
+
+新任务不可变brief必须保存 `goal:{value:用户原话,origin:"user"}` 和服务核对原件字节的 `source_identity`（原件SHA256及PNG原帧哈希）。客户端不可虚构来源；历史brief不补写原话。已知目标/来源改变或历史上下文不明均保守复审。create_task输入为brief和request_key；context/source必需。缺目标/对齐/PNG时序集中返回needs_input、原因、建议及原输入/幂等键。复用已有制作对齐/时序；默认全源帧、视频有理数PTS、loop=false、sampling_limit=12、max_texture=1024/gap=0/margin=0及PNG/图集/联系表/ZIP，字段标注inferred或preset。PNG不虚构PTS；无内部LLM或隐式模型下载。
+
+`/api/v1/collaboration`下新增白名单POST `/maker/:name`、任务/候选读写、完整帧与问题分页、review-state、原操作读取/恢复/取消、任务取消。GUI薄接口包括候选 `/reviews/frame`、`/reviews/playback`、`/reviews/inherit`、候选issues、issue `/accept-source-defect`、Task `/selection`，必须实际reviewer；issue `/repair`允许maker但不批准。审核body为共享context与patch，路径范围必须一致；继承使用parent_candidate_id，选择使用独立Task CAS。原flat `/reviews/*`别名保留。`/candidates/:id/file?path=…`仅供固定清单列出的已校验字节；`/deliveries/:id`及其file仅用已提交交付权威。`/action-export/resolve`明确多Task歧义；MCP/CLI export_assets可显式task_id，读取已接受交付或恢复原操作，不猜最新、不重渲染。已提交操作可以没有job，外部job_id为null。
+
+帧/问题分页默认32、上限300，完整输出items/total/next_cursor/complete/content_token；依next_cursor读取至complete。draft游标绑定内容与上下文，candidate绑定固定身份；ReviewIssuePage另含并绑定review_revision。变化返回PAGE_CONFLICT。CLI保留完整manifest/影响/问题/嵌套帧数组，每命令stdout一个JSON，日志stderr。新增action create、source extract、task create|inspect|cancel、candidate create|inspect|samples|observe|submit|compare|check、issue list|repair、rework start、operation inspect|resume|cancel、frames list。结构输入--file，明确--request-key/--base-content/--base-mask-version以及ID/游标/上限；`import images --project ID --axis ID --directory DIR --file options.json`使用协作multipart，options包含幂等键/基础/确认时序，省略axis保留旧导入。离线schema新增task_brief/candidate_manifest/review_issue_page/impact。
+
+失败历史查询exit0；等待/执行失败返回非零。超时保留原job/op，timed_out=true且cancelled_job=false，不自动取消。稳定extract_source/build_candidate/deliver_candidate按原payload/base/key恢复。旧协作matting没有稳定操作，恢复明确RECOVERY_UNSUPPORTED；能力与创建响应如实说明。操作取消只针对该操作；Task取消单独epoch CAS并保留协作模式。
+
+stdio逐行最多1,048,576 UTF-8字节，不含LF/CRLF。原始字节有界缓冲，超限丢弃到换行，只发一次id:null错误并继续下一行；不解析超大输入，不宣称进程RSS硬上限。MCP HTTP JSON另限1,048,576字节。inline规范base64跨文件总量786,432 ASCII字符/589,824解码字节。更大文件使用鉴权HTTP multipart；实际Bun请求上限134,217,728字节/128MiB，包含multipart开销。SDK2.0.0使用原鉴权Request及parsedBody，legacy/modern并发保持原请求与actor；无body角色、重建身份、全局lastActor或HTTP自调用。
+
+实际工具名：`inspect_capabilities`, `create_project`, `create_action`, `inspect_project`, `import_source`, `extract_source`, `import_images`, `submit_pipeline`, `get_job`, `cancel_job`, `list_frames`, `get_frame_artifacts`, `get_review_artifacts`, `edit_mask`, `undo_mask`, `save_alignment`, `set_output_timing`, `create_task`, `inspect_task`, `inspect_action_collaboration`, `create_candidate`, `inspect_candidate`, `check_candidate`, `get_candidate_samples`, `record_sample_observations`, `submit_candidate`, `list_review_issues`, `record_issue_repair`, `compare_candidates`, `start_rework`, `inspect_operation`, `resume_operation`, `cancel_operation`, `cancel_task`, `export_assets`。
+
+新的公开任务创建在同一事务内把规范化的实际提交输入绑定到原create_task操作及当时解析的不可变brief。相同输入/键在草稿对齐、时序改变或配置移除后仍复用原brief；显式提交字段改变会冲突。仍先验证当前真实身份，并复核原素材字节。needs_input不占用创建键，可用同键提交回答后首次成功。没有实际提交输入证据的历史记录保持原resolved负载校验，不补写推测的省略字段。
+
+Task11 最终区域契约：审核问题 `rect` 为有限连续像素边界 `[x,y,width,height]`，保留小数。位置非负、宽高为正，全部边界必须位于冻结最终画布内；负值、零宽高、非有限值及越界拒绝。审核身份、幂等键、审核 CAS 与接受失效规则不变。GUI 使用同源 HttpOnly Cookie 和固定候选文件路径，完整读取问题分页并在冲突后重新读取；浏览或播放不会写批准。
+
+### 编辑器协作上下文（生产协议1.2）
+
+`GET /api/v1/collaboration/action?project_id=…&axis_id=…` 与 maker 工具 `inspect_action_collaboration` 返回 shared `ActionCollaborationState`：`{mode, tasks: CollaborationTask[], timing: TaskBrief["timing"] | null}`。两者校验项目/动作归属，要求当前服务认证的制作能力（桌面审核会话同时具备制作能力）。完整列出任务，多任务必须明确选择；取消任务不清除协作模式。`timing` 是当前制作副本的权威策略。
+
+`GET /api/v1/export/resolve` 与 `POST /api/v1/collaboration/action-export/resolve` 可带 `task_id` 明确选择当前动作内的任务；未知或跨动作任务返回 `TASK_CONTEXT_MISMATCH`。省略时保留原有明确歧义结果。仍须通过接受状态、固定格式、原操作和已提交交付校验；不降级实时渲染。
+
+Editor 以已知任务ID打开局部验收模态框。工作台先完成 `start_rework`，再通过 `DraftEditContext` 将任务、父候选和返回内容令牌交给制作副本。显式时序切换复用 `/timing` CAS 操作。maker 的返工和时序适配器将 `{request_key}` 操作身份与负载字段分别传入；CLI、HTTP maker 与 MCP 仍使用相同的内容冲突检查和幂等重放规则。交付展示在挂载、审核变更、连接失效通知及5秒回退轮询时读取任务/审核/操作和已提交交付；短暂任务通知不是发布依据。撤回批准的历史文件保留可读并显示撤回状态。
+
+旧版无令牌服务的 `/collaboration/action` 仍返回401；面板如实显示不可用，不安装推测身份。Alignment正式出口与浏览器导出共用原 `/export/resolve`，因此无协作的旧动作仍能正常导出。解析器鉴权、冲突或其他错误直接中止，绝不作为旧导出的回退信号。输入复用已有严格 `context` schema，输出为上述 shared 类型；无新数据库结构或审核权限。

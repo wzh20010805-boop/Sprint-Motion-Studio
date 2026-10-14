@@ -229,6 +229,10 @@ storage/
 sources 的复制原视频/PNG/timing 与 projects 的可编辑副本隔离。完整抽帧在唯一暂存目录完成，数量/连续索引/尺寸/全解码校验通过才发布，再检查 base_revision 后事务提交主轨。缓存复用也验证完整时序与 PNG；旧结果、取消或失败不提交伪完整项目。源 PTS 以字符串存整数，有理数约分时使用 BigInt；JSON 的数值须为安全整数。
 
 P1 只维护完整原帧和时序，没有场景抠图、地面参考、统一游戏画布或正式 Cocos 导出。VFR 主轨预览可量化并警告，timing.json 为源时序依据。重启遗留 queued/running 标记 interrupted，参数和中间文件保留；恢复命令属于后续阶段。Electron 严格 CSP 通过已安装 Pixi 的无动态代码生成兼容模块运行画布。
+# SFS 人机协作基础层（Task 1）
+
+人机协作基础契约位于 `packages/shared/src/pipeline/collaboration.ts`，离线 JSON schema 位于 `collaborationSchemas.ts`。增量 schema 5 备份已提交 WAL 数据，保留旧批准但不提升为候选批准。`pipeline/collaboration/store.ts` 维护不可变的每版任务要求及持久动作工作流模式；`operations.ts` 通过 SQLite 事务保存规范化请求身份与恢复检查点。候选固定内容与可更新的检查、人工审核附加记录分离。实际制作字段推进 `projects.content_revision`，审核、名称、标签及锁定状态不推进。当前生产握手为1.2；协作HTTP及CLI/MCP门面沿用这些基础契约。
+
 # SFS P2 扩展
 
 Worker自动根据边缘颜色判断是否适合背景色法：98%边缘RGB与中位数最大通道差≤12且边缘不透明时，从外边连通地去除色差≤20的背景；色差5–20保留软边。其他场景仍用CPU Rembg。纯背景区域和几乎不可见结果整批失败，不发布任何新头版本。报告记录处理method与有效前景比例；Windows子进程统一UTF-8，中文错误正常显示。
@@ -240,7 +244,7 @@ Worker自动根据边缘颜色判断是否适合背景色法：98%边缘RGB与�
 
 `pipeline/alignment.ts`保存角色公共预设、动作根轨迹与审核指纹；`export.ts`冻结主轨输入，产生清单/报告/联系表/MP4/ZIP，再核验修订和文件字节后发布新不可变目录。`images.ts`保留PNG原件与原Alpha，建立独立未审核遮罩。`recipe.ts`按schema提交下一未完成阶段，遇人工闸门停止。抠图缓存按项目隔离并校验输出摘要；同输入预览合并进行中的请求。
 
-`AlignmentWorkshop`左右显示原图与共享后端画布。`FrameEditor`保留活跃纹理及8项近期缓存；时间轴惰性载入128px缩略图。GUI、CLI、MCP共用持久队列；`production.ts`提供摘要stdout，`mcpBridge.ts`维持stdio客户租约，`mcp/sfs.ts`只提供九工具。
+`AlignmentWorkshop`左右显示原图与共享后端画布。`FrameEditor`保留活跃纹理及8项近期缓存；时间轴惰性载入128px缩略图。GUI、CLI、MCP共用持久队列；CLI提供完整结构化stdout，`mcpBridge.ts`维持有界stdio客户租约，`mcp/sfs.ts`仅注册制作工具白名单。
 
 `apps/desktop/main.cjs`负责独立Electron单实例、鉴权Cookie、contextIsolation/sandbox、本地CSP与资源、外部导航和权限拒绝、用户可写工作区、关闭任务策略和明确可选模型导入/下载。`distribution.ts`定位旁边的运行时。`build_portable.ts`打包CLI/服务、固定Electron、独立Python、FFmpeg、Worker与许可/清单/SHA256；`verify_portable.ts`进行本机换目录和限制系统PATH测试，不冒称干净虚拟机验收。
 
@@ -249,3 +253,64 @@ Worker自动根据边缘颜色判断是否适合背景色法：98%边缘RGB与�
 导入/人工修正检查实际RGBA非零Alpha，不要求不透明核心；自动抠图仍拦截低置信噪声。旧1.0.0导入提示仅在读取时规范化，不改写文件或审核状态。GUI空图检查采用原始Alpha乘遮罩。服务运行契约升级为1.1，防止新客户端静默调用旧后端。
 
 首页糖果色PNG在apps/web/public/art，CandyDoodle使用固定同源地址。打包脚本复制至runtime/assets/art，断网可用；不改变个人素材或工作区。
+
+### 本机桌面能力初始化
+
+`localSessions.ts` 不依赖 DB，通过服务端 WeakMap 将认证 ActorContext 绑定到 Request。`desktopReviewBroker.ts` 负责有限换行管道帧（4096字节、连接超时3秒）、绑定 PID 的 nonce 与实例清理。工作区锁先于管道及 DB 导入。Windows 在描述文件为空时设置仅当前 owner SID 和 SYSTEM 可访问的受保护 DACL，核验真实 owner/ACE 后才写 bootstrap secret。制作描述不保存审核 Cookie。管道没有另设独立 DACL，因此不宣称跨用户管道隔离或抵御同一 OS 用户的恶意进程。
+
+两个宿主共用 `apps/desktop/review-bootstrap.cjs`。发行宿主和探针共享服务分支的 Cookie、BrowserWindow、webRequest、权限回调使用同一持久工作区哈希 session；每次启动仍重新核对当前服务实例并取得审核能力。工作区分区保留自身界面本地状态，并避免不同工作区 Cookie 冲突。旧 owned P0 snapshot 探针保持原验证用途，不取得审核能力。保留 renderer sandbox、context isolation 和禁用 Node。
+
+协作制作服务集中在 `pipeline/collaboration/drafts.ts`；`timing.ts` 使用动作级settings保存独立期望源选择和绑定稳定帧身份的有理数输出时长。PNG类型源清单位于已有sources.probe_json，原帧与编辑副本分开；视频source_frames保留原NOT NULL PTS约束。`collaborationApi.ts`提供服务鉴权的薄传输适配器。共享timeline时长编辑物化明确输出时长；队列按已验证任务/动作上下文决定单次job完成策略。草稿身份覆盖当前源/raw/mask/RGBA字节、顺序、时长、变换及有效共享对齐预设，排除审核附加字段和旧revision计数。
+
+### 不可变候选制作
+
+Task 4 新增 collaboration/candidates.ts、candidateIdentity.ts、checks.ts 与 workers/image/candidate_checks.py；继续通过现有 queue/runImageWorker 调用 compose.py。每次尝试独占 staging，复制 raw/mask/RGBA，完整合成一次 PNG 和固定图集，再冻结规范清单。正逆矩阵均为 Canvas [a,b,c,d,tx,ty]：x'=a*x+c*y+tx、y'=b*x+d*y+ty；奇异映射返回 null 及原因。根轨迹保留序号插值。manifest_json 是完整内容权威，candidate_frames 保留原有不可变投影，不重建表。
+
+版本化规范 JSON 投影区分完整候选、逐帧内容与播放身份。逐帧身份绑定四种实际字节哈希、稳定 ID、尺寸与实际空间/渲染参数；路径、打包位置、候选 ID、不透明的遮罩版本 ID 和顺序/时长元数据不进入逐帧身份。播放身份绑定有序 ID/PNG/有理数时长/画布/循环。完整来源信息始终保存在清单中，新候选必须重新技术检查。
+
+queue 在 pump 前用一个 immediate 事务持久化 job 与 operation attempt 关联；操作原参数按 kind/hash 验证，不从当前草稿重建。CandidateCheckpoint v1 记录 freezing/prepared/committed、operation/candidate/attempt/job ID、原 base、staging/final 路径、清单/内容哈希及完整冻结文件索引。prepared 先于 rename；文件和 base 校验后，候选/帧/committed 检查点/操作结果在短同步事务中提交。提交前取消不登记，提交后取消保留私有候选。失败 staging 或移动但未登记的目录只是证据；Task 9 负责进程崩溃恢复。不把服务串行化声称为断电/fsync 或任意外部写者保证。
+
+Task 4 并发补充：任务 recovery_json.candidate_operation 保存 version=1、operation_id、selected_candidate_id、acceptance_epoch，表示最新首次关联的候选请求。已排队旧尝试开始运行时不会重新夺取归属。最终提交始终合并事务内当前操作历史；只有归属匹配、选定候选/接受代次未变且仍为 producing 的操作可更新任务阶段。旧尝试保留自身候选/结果/错误。提交到审核时清除这一归属项，保留其它恢复元数据；这是窄生命周期 CAS，不新增队列或协调器。
+
+
+### 确定性采样与持久自检
+
+Task 5 的 collaboration/sampling.ts 为纯选择器，以 BigInt 有理数播放区间与规范风险等级取样，无 DB 或图像 Worker 依赖。collaboration/samplingStore.ts 管理既有 candidates.sampling_plan_json 与 self_check_json 附加记录，从全量技术检查、修复关联及 Task 6 完整候选影响（包括时空邻帧）读取风险线索。共同 SamplingPlan/SampleObservation/CandidateSelfCheck 绑定固定候选/帧字节及策略/上限/来源；不增加平行表、模型、图像队列或人工批准。
+
+每候选计划在即时 SQLite 事务中只保存一次。同一自检 writer/reader 校验观察身份、整批原子性、不可变重放、祖先关系与真实存储的已观察证据；submitCandidate 调用该唯一权威。完成记录全部选中事实及全量技术报告，区分观察/未观察/复用/问题/未覆盖风险。同一身份重新技术检查可刷新技术事实，不替换样本或观察；过期自检不能提交。现有候选任务归属 CAS、恢复元数据、操作历史及全部原件/暂存证据保留。collaborationApi 提供服务鉴权的采样/观察/自检传输，完整 CLI/MCP 候选流程由 Task 10 实现。
+
+
+### 候选依赖影响
+
+Task 6 将纯函数 `collaboration/impact.ts` 与数据库只读枚举 `collaboration/presetImpact.ts` 分离。比较器验证严格冻结清单、稳定源/覆盖/根上下文，再比较逐帧生效输入和几何、精确有理数时长、相对顺序及旧/新有向连接。内容变化只扩展一次邻帧；连接端点不递归扩展。相对顺序还可发现连接集合相同的循环旋转。公共预设变化覆盖整个被比较动作；独立服务枚举项目全部动作，包括未知绑定。不引入多预设订阅模型。
+
+沿用 ImpactReport 区分结构继承资格与真实批准。公共预设、未知要求/来源/几何及合成器变化保守复审，删除 ID 保留解释。比较器无 DB、队列或文件 IO 依赖，不转移候选接受状态。samplingStore 仅在生成新候选初始有限预算风险计划时使用完整报告；已有计划、观察、技术检查及审核事实仍保留既有权威。TS/Pillow 插值与合成语义不变。
+
+### 审核与接受边界
+
+`collaboration/reviews.ts` 统一当前 reviewer 权限、候选审核 CAS/任务选择 CAS、持久操作依据、显式继承、修复派生、共同类型读取和接受判断。`reviewBoundary.ts` 提供 immediate 同步事务及任务当前操作引用的撤销；`candidates.submitCandidate`、`drafts.startRework` 调用此边界，不反向导入审核引擎/队列。未增表、事件平台或鉴权提供器。
+
+唯一 `deliver_candidate` 操作的不可变输入为含 `AcceptanceSnapshot` 的 `DeliveryOperationInput`；调度信封再加 operation_id，避免负载哈希自引用。`AcceptanceCheckpoint` 保留快照和永久 revocation；`recovery_json.acceptance` 只是当前 `DeliveryRequest` 引用，其他恢复字段及操作历史保留。Task 8 扩展检查点/结果时保留这些字段，并通过 `withAcceptedDelivery` 同步提交，禁止在 SQLite 事务内 await 打包。成功发布结果后撤销追加 `approval_status='withdrawn'`，结果内容不删除。Task 9 恢复原操作，不能从当前草稿或目录存在重造授权。`setDeliveryScheduler` 仅是提交后窄回调，不是第二队列。
+
+读取同时核验可覆盖审核行与持久操作依据。修复关联检查点保存子候选审核修订屏障，之后明确的帧和播放事实才能解决；继承保存父/原始确认与内容/影响身份，当前祖先变更会使依赖接受失效。AI 自检不会转换为人工批准。测试仅使用隔离合成图像和服务签发的测试 reviewer 会话，不宣称真实美术验收。
+
+审核阶段属于新接受授权：协调先保留已有有效操作，只在 awaiting_review 中新建代次。reviewer 显式选择即使目标相同也可重新开启关闭的审核阶段，保持任务 CAS 与候选操作归属元数据。读取、advisory 或重放不能结束返工。
+
+### Task 8 交付边界
+
+`collaboration/delivery.ts` 从原 operation 读取经过 kind/hash/base 校验的 `DeliveryOperationInput`；稳定 delivery ID 等于 operation ID。`AcceptanceCheckpoint` 保留不可变 snapshot/永久 revocation，新增类型化 `delivery` 检查点（packaging/prepared/committed、attempt/job、staging/final 路径、原始 hashes 和完整 inventory）。原 operation 的 succeeded `DeliveryResult` 是唯一新正式提交依据，settings、job 状态及目录存在都不能替代它。
+
+复制、归档、可选 FFmpeg 均在 SQLite 临界区外执行，move 前持久化 prepared 清单。最终候选及 staging hashes、最新批准/选择/epoch/issues/checks、move 和同步发布共用 Task 7 `withAcceptedDelivery`；无效接受的永久撤销先提交，再在事务外抛错。移动但未提交目录仅为 Task 9 恢复证据。正式提交优先于晚到取消及 job.result 丢失；真实启动/进程退出恢复仍属 Task 9。
+
+queue 注入 Task 7 aftercommit 调度器，pump 前原子关联 job；worker 不反向导入 queue。浏览器 `exportAnimation` 在任何图像访问前按 `timeline.axis` 查询持久模式；候选分支下载原文件，不解码/Canvas/裁切/重打包。`Editor` 既有 loading/error/finally 已足够，无需重复闸门。薄 HTTP 读取/下载复用 delivery core，广泛 maker adapter 留给 Task 10。
+
+Task 8 fix01 在写入时直接对预期 UTF-8 文档字节建立摘要，包括规范 checksums.json 和 ffconcat 文本。packaging 检查点在异步辅助/归档工作前持久化此预期清单；不能在归档后重新扫描磁盘来定义期望，辅助文件尚未生成时清单可以不完整。既有图像 worker 新增 `verify_archive`，输入 `{directory, files: Record<relativePath,sha256>}`，校验 ZIP 条目集合（无重复/多余）、每条摘要及整个校验期间不变的归档摘要，返回 `{archive_sha256,files}`。delivery 核对返回清单与可信预期清单一致，保留最终松散文件校验及共用审核事务。Task9 提升证据前必须以保留的预期清单校验 ZIP 内容，不能仅信已恢复的松散文件或 ZIP 内校验表。
+
+Task 9 通过注入 operation 调度器保持 `queue → collaboration worker` 单向依赖。`collaboration/extraction.ts` 将显式稳定请求绑定到原 source hash、probe / base、raw / timing 清单、预定 GUI 帧 / 单元格 ID 和同事务原结果。候选与交付恢复消费已有 typed prepared checkpoint 和原操作身份，旧抽帧只有显式关联 operation 才采用严格恢复。`runtimeBootstrap.ts` 暂停队列并协调后才 import `index.ts`，协调期间没有监听 / 写入窗口。单个操作证据冲突要求补输入，不妨碍其他有效操作；DB / 锁全局错误停止启动。取消与业务发布使用同步事务，后来编辑或撤回不抹除原成功提交。实际进程退出测试保留证据，每个场景最多正常恢复两次。
+
+
+Task10门面：mcp/makerTools维护CLI HTTP共用的窄schema/分发白名单，直接调用已有类型服务。mcp/request把原鉴权Request和有界parsedBody交SDK2.0.0，兼容legacy。CLI byteLines按原始UTF8字节限额/丢弃；完整类型对象不摘要。collaboration/{brief,creation,pages,cancellation}校验不可变原话/来源字节、确定性默认、内容/审核分页、操作和Task不同取消。原操作恢复仍归Task9；协作matting明确不支持恢复。reviewer嵌套路由沿用已有审核/选择CAS。当前生产版本1.2，上文foundation-only/九工具为历史阶段描述。真实source-run停在awaiting_review，不构成人工或美术验收。
+
+Task11 新增独立 `CandidateReviewWorkspace` 与 Canvas2D `CandidateReviewCanvas`。固定最终 PNG 不经过 FrameEditor 或实时编辑变换。每个画布独占一个已解码 ImageBitmap 和一个可取消加载请求，代次保护同时处理过期成功及错误，只释放自身资源。原生像素画布通过 CSS 平移、缩放和留边显示，最终像素边界逆映射适应 DPR。`candidatePlayback` 使用 BigInt 有理数半开区间；`candidateReviewGeometry` 验证冻结逆矩阵并映射问题全部四角，不可用、裁切或不匹配时保留最终问题。`candidateReviewApi` 使用 shared 类型、Cookie 身份与 CAS。工作台明确逐帧及播放验收，显示来源、父候选影响及问题，在审核修改、WS 活动、焦点/联网恢复及有限轮询时读取持久操作。现有编辑器入口由 Task12 接入。
+
+编辑器接入：`collaboration/editor.ts` 只读现有任务和制作时序存储，提供窄动作上下文查询。shared `ActionCollaborationState` / `DraftEditContext` 将常驻 `CollaborationPanel` 和局部 `CandidateReviewWorkspace` 模态框接入现有 Editor。只有工作台在返回谱系前执行返工；保留 FrameEditor、MaskWorkshop 和 AlignmentWorkshop 手工路径。持久状态面板独立于 JobPanel 通知过期，订阅 WS 连接失效通知并每5秒回退读取。正式动画出口继续通过 Task8 解析器读取固定文件。

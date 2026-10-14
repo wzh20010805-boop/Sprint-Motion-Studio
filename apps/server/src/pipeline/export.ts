@@ -1,3 +1,5 @@
+import {assertFormalExportAllowed} from './collaboration/delivery';
+import { draftState } from './collaboration/timing';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -12,6 +14,7 @@ import { checkCancelled, runPipelineCommand } from './probe';
 export interface ExportPayload { request:ExportRequest; revision:number; fingerprint:string }
 
 export function exportSnapshot(request:ExportRequest) {
+ if(!request.draft)assertFormalExportAllowed(request);
  const project=getProject(request.project_id),state=alignmentState(project.id,request.axis_id);
  if(request.base_revision!==undefined&&request.base_revision!==project.revision)throw new PipelineError('REVISION_CONFLICT','导出基础修订已变化',409);
  if(!request.draft&&state.approved_revision!==project.revision)throw new PipelineError('ALIGNMENT_REVIEW_REQUIRED','请先确认当前修订的地面根位置、画布与素材',409);
@@ -19,12 +22,13 @@ export function exportSnapshot(request:ExportRequest) {
  const inputs=composeInputs(project.id,request.axis_id);
  if(!request.draft&&inputs.some(f=>!f.reviewed))throw new PipelineError('MASK_REVIEW_REQUIRED','存在尚未确认的遮罩',409);
  const {axis,frames}=axisFrames(project.id,request.axis_id);
+ const outputTiming=draftState({project_id:project.id,axis_id:request.axis_id});
  const exportFrames=inputs.map((input,index)=>{
   const f=frames[index],metadata=JSON.parse(f.metadata??'{}');
   const source=metadata.source_id?db.query('SELECT sha256 FROM sources WHERE id=?').get(metadata.source_id) as any:null;
   return {...input,raw_sha256:fileHash(f.raw_path),source_id:metadata.source_id??null,source_sha256:source?.sha256??null,
    source_frame_id:metadata.source_frame_id??null,source_index:metadata.source_index??index,
-   duration:request.timing==='constant'||!metadata.timing?{num:f.step_duration,den:axis.fps}:metadata.timing.display_duration};
+   duration:request.timing==='constant'?{num:f.step_duration,den:axis.fps}:outputTiming?.durations[f.id]?.duration??(!metadata.timing?{num:f.step_duration,den:axis.fps}:metadata.timing.display_duration)};
  });
  const settings={max_texture:request.max_texture??2048,gap:request.gap??2,margin:request.margin??1};
  if(!Number.isSafeInteger(settings.max_texture)||settings.max_texture<16||settings.max_texture>8192||![settings.gap,settings.margin].every(v=>Number.isSafeInteger(v)&&v>=0&&v<=64)||!['source_pts','constant'].includes(request.timing??'source_pts'))throw new PipelineError('INVALID_EXPORT','纹理大小、间距或时序模式无效');
@@ -45,6 +49,7 @@ export function exportRecord(id:string) {
 }
 
 function verifySnapshot(payload:ExportPayload) {
+ if(!payload.request.draft)assertFormalExportAllowed(payload.request);
  if(getProject(payload.request.project_id).revision!==payload.revision)throw new PipelineError('STALE_JOB_RESULT','项目已更新，旧产物已保留但未发布',409);
  if(exportSnapshot(payload.request).fingerprint!==payload.fingerprint)throw new PipelineError('STALE_JOB_RESULT','输入文件或参数已变化，不能发布旧结果',409);
 }
@@ -59,7 +64,7 @@ export async function exportAssets(payload:ExportPayload,progress?:(text:string)
  checkCancelled(signal);
  if(!snapshot.draft&&result.checks.some((c:any)=>c.overflow||c.empty))throw new PipelineError('ALIGNMENT_REVIEW_REQUIRED','正式输出存在空帧或裁切，旧导出版本未覆盖',409);
  const manifest={schema_version:'1.0',generator:{name:'soldier-frame-studio',version:packageInfo.version},export_id:id,
-  character:getProject(snapshot.project).name,clip:snapshot.clip_name,axis_id:snapshot.axis,project_id:snapshot.project,
+  release_mode:snapshot.draft?'DRAFT':'reviewed',character:getProject(snapshot.project).name,clip:snapshot.clip_name,axis_id:snapshot.axis,project_id:snapshot.project,
   input_revision:snapshot.revision,input_fingerprint:payload.fingerprint,coordinate_system:'top-left-x-right-y-down-pixel-edges',
   canvas:snapshot.alignment!.canvas,anchor_pixels:snapshot.alignment!.anchor,
   cocos_anchor:{x:snapshot.alignment!.anchor[0]/snapshot.alignment!.canvas.width,y:1-snapshot.alignment!.anchor[1]/snapshot.alignment!.canvas.height},

@@ -1,3 +1,4 @@
+import { collaborationApi } from './pipeline/collaborationApi';
 import { Elysia, ElysiaCustomStatusResponse, t } from "elysia";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -63,6 +64,7 @@ function acceptsGzip(value: string | null): boolean {
 
 export const app = new Elysia()
   .use(productionApi)
+  .use(collaborationApi)
   .use(masksApi)
   // 不在全局 hook 读取 body：MCP 需要直接消费原始 Request stream。
   .onBeforeHandle(({ request }) => beginProjectUndo(request, undefined))

@@ -35,10 +35,14 @@ async function healthy(info: ServiceInfo) {
   } catch { return false; }
 }
 
+export function assertProductionApiVersion(actual: unknown, expected = PRODUCTION_API_VERSION) {
+ if(actual!==expected)throw new CliError('BACKEND_VERSION_CONFLICT','工作区仍运行旧版或不兼容服务。请保存并关闭旧GUI，待后台任务完成后重启；当前服务和任务未被强行关闭。',6);
+}
+
 async function compatibleService(info:ServiceInfo) {
  const response=await fetch(info.url+'/api/config',{headers:{Authorization:`Bearer ${info.token}`},signal:AbortSignal.timeout(2000)});
  const config=await response.json() as any;
- if(!response.ok||config.sfs?.production_api_version!==PRODUCTION_API_VERSION)throw new CliError('BACKEND_VERSION_CONFLICT','工作区仍运行旧版或不兼容服务。请保存并关闭旧GUI，待后台任务完成后重启；当前服务和任务未被强行关闭。',6);
+ assertProductionApiVersion(response.ok ? config.sfs?.production_api_version : undefined);
  return info;
 }
 
@@ -100,9 +104,11 @@ export async function requestService(info: ServiceInfo, path: string, init: Requ
 }
 
 export async function waitJob(info: ServiceInfo, id: string, timeoutSeconds: number) {
+  let operationId:string|undefined;
   const deadline = Date.now() + timeoutSeconds * 1000;
   while (Date.now() < deadline) {
     const body = await requestService(info, `/api/v1/jobs/${encodeURIComponent(id)}`);
+    operationId=body.data?.job?.operation_id??operationId;
     const status = body.status;
     if (["succeeded", "done", "failed", "error", "cancelled", "interrupted", "waiting_user"].includes(status)) {
       const exitCode = ["succeeded", "done"].includes(status) ? 0 : status === "cancelled" ? 5 : status === "waiting_user" ? 4 : errorExit(body.error?.code ?? body.data?.job?.error_code);
@@ -110,5 +116,5 @@ export async function waitJob(info: ServiceInfo, id: string, timeoutSeconds: num
     }
     await Bun.sleep(100);
   }
-  throw new CliError("WAIT_TIMEOUT", "等待超时；任务仍在后台，可查询job status", 1);
+  throw new CliError("WAIT_TIMEOUT", "等待超时；任务仍在后台，可查询job status", 1,{schema_version:'1.0',ok:false,status:'running',job_id:id,operation_id:operationId??null,timed_out:true,cancelled_job:false,error:{code:'WAIT_TIMEOUT',message:'等待超时；原任务未取消，可继续查询'}});
 }

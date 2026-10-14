@@ -4,6 +4,8 @@
 
 **[下载 Windows 便携安装包](https://github.com/wzh20010805-boop/Sprint-Motion-Studio/releases/latest)** · [使用说明](docs/p3-p5-guide.md) · [开发与验证记录](docs/evidence/p2-p5/report.md) · [二次开发说明](README_SFS.md)
 
+**版本范围：已发布便携版为 1.0.7 / 生产 API 1.1；当前源码为生产 API 1.2。** 下文的协作任务、固定候选与独立验收是源码新增功能，新协作便携包的集成与验证尚未完成，当前下载包不包含这些更新。
+
 ## 界面与工作流程示例
 
 以下为 **1.0.7 版实拍界面**，使用现有 test 项目的 14 帧动作，以及保留的原视频和完整抽帧素材。
@@ -30,6 +32,16 @@
 
 [下载此案例的原视频](docs/media/sfs/source-run.mp4)。展示媒体用于说明本项目工作流程；沿用用户此前提供的素材，不属于项目 MIT 源码许可授权的素材库。
 
+## 六动作制作案例 · 待人工验收
+
+本次沿用用户已有素材，展示告别挥手、连续口播、指向画面右侧、开场招呼、走动入场、指向画面左侧六个动作，统一画布为 **512 × 640**。这些是**制作候选展示，待人工验收**（`draft_pending_human_review`）；动图经过展示采样，不能替代全部最终帧与整体播放的人工检查。
+
+![六动作制作候选预览，待人工验收](docs/media/sfs/cases-2026-10-14/actions-preview.gif)
+
+![六动作代表帧联系表，待人工验收](docs/media/sfs/cases-2026-10-14/actions-contact-sheet.png)
+
+[查看案例说明与透明 PNG](docs/media/sfs/cases-2026-10-14/README.md) · [查看案例状态与帧数](docs/media/sfs/cases-2026-10-14/case-info.json)。棋盘格仅是透明区域的展示背景；展示素材用于说明流程，不属于项目 MIT 源码许可授权的素材库。
+
 ## 可以做什么
 
 - 导入 MP4 / GIF 或 PNG 序列，保留原文件、完整显示帧与源时序。
@@ -38,7 +50,17 @@
 - 素材库按“项目 → 视频 / 照片”浏览，支持跨项目复用与原件保留；照片分区包含视频抽帧图片。
 - 调整公共画布、比例、地面根点及逐帧偏移，通过预览核对动作。
 - 经审核导出透明 PNG 序列、规则多页图集、manifest、联系表、背景 MP4 与完整 ZIP；未审核内容可以显式导出草稿。
-- GUI、CLI 与九工具 MCP 共用同一工作区、修订号与导出逻辑。
+- GUI、CLI 与 MCP 共用同一工作区；源码的制作工具可以创建、检查和提交候选，人工批准由桌面验收入口完成。
+
+## 源码新增协作流程 · 生产 API 1.2
+
+- 协作 Task 保存用户原话、经核验的来源身份和制作要求；制作草稿与不可变候选分开，候选固定最终 PNG、图集及有理数时长。
+- 全帧自动技术检查与有界抽样观察保留各自证据和未观察范围；检查完成不代表人工质量验收通过。
+- 独立 Canvas 验收窗口读取固定候选，可切换最终图、源图、Alpha 及棋盘格 / 黑 / 白背景。用户逐帧审核并确认整体播放；检查全部最终帧和播放后，也可明确选择“确认整个动作并允许导出”。未解决问题和需修复帧会阻止整段确认。
+- 问题可关联帧和区域；重新修改保留父候选，生成新候选后显示变化及复审范围，再由人工确认。
+- 人工验收后从固定候选打包透明 PNG、图集、联系表、manifest、质量报告与 ZIP；支持原操作恢复，输入变化或批准撤回会阻止无效交付，历史文件和记录保留。
+
+CLI / MCP 的 maker 工具负责制作、检查、提交与读取交付，不提供人工批准能力。实际工具和接口见 [API 1.2 说明](docs/api.zh-CN.md#生产12制作门面与固定候选http接口)；本次源码更新及播放、对齐、抠图修复见 [Unreleased 变更日志](docs/CHANGELOG.zh-CN.md#unreleased)。
 
 ## Windows 安装与启动
 
@@ -53,6 +75,8 @@
 
 ## CLI 与 Codex
 
+以下为已发布 1.0.7 便携包的基础 CLI 示例：
+
 ```powershell
 .\sfs.exe doctor --json
 .\sfs.exe project list --json
@@ -61,7 +85,7 @@
 .\sfs.exe mcp --stdio --workspace "D:\素材工作区"
 ```
 
-完整参数、审核规则和 recipe 示例见 [P3–P5 使用说明](docs/p3-p5-guide.md)。项目提供 [本地 Skill](skills/soldier-frame-studio/SKILL.md)，不会自动修改全局 Codex 配置。
+便携版参数、审核规则和 recipe 示例见 [P3–P5 使用说明](docs/p3-p5-guide.md)。当前源码使用 `sfs.cmd`，新增 Task、候选、自检、返工与原操作恢复命令，见 [API / CLI / MCP 说明](docs/api.zh-CN.md#生产12制作门面与固定候选http接口)。项目提供 [本地 Skill](skills/soldier-frame-studio/SKILL.md)，不会自动修改全局 Codex 配置。
 
 ## 从源码开发
 
@@ -73,7 +97,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup_sfs.ps1 -Inc
 .\Start-SFS.cmd
 ```
 
-源码启动需要 FFmpeg / ffprobe；安装说明见 [README_SFS.md](README_SFS.md)。开发检查：`bun test tests`、`bun run typecheck`、`python -m pytest workers/image/tests`。用户工作区、模型、虚拟环境及构建输出不提交到 Git。
+源码统一通过 `Start-SFS.cmd` 启动桌面入口；CLI / MCP 使用相同 `--workspace`，从工作区发现并复用本地服务，无需固定访问 3000 端口。源码启动需要 FFmpeg / ffprobe；安装说明见 [README_SFS.md](README_SFS.md)。开发检查：`bun test tests`、`bun run typecheck`、`python -m pytest workers/image/tests`。用户工作区、模型、虚拟环境及构建输出不提交到 Git。
 
 ## 来源与许可
 

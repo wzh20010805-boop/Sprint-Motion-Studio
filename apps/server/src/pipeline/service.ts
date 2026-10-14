@@ -1,7 +1,7 @@
 import { constants, copyFileSync, existsSync, mkdirSync, readFileSync, statfsSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { createHash } from "node:crypto";
-import type { SourceTiming, VideoProbe } from "@framebaker/shared";
+import type { PngSourceProbe, SourceTiming, SourceFrameTiming, VideoProbe } from "@framebaker/shared";
 import { db, STORAGE_ROOT, uid } from "../db";
 import { invalidateProjectUndo } from "../undo";
 import { broadcast } from "../ws";
@@ -30,7 +30,14 @@ export function getProject(projectId: string): ProjectRecord {
   return project;
 }
 
-function sourceRecord(row: SourceRow) { const { probe_json, ...source } = row; return { ...source, probe: JSON.parse(probe_json) as VideoProbe }; }
+function sourceRecord(row: SourceRow) {
+  const {probe_json,...source}=row, probe=JSON.parse(probe_json);
+  return probe.kind==='png_sequence' ? {...source,probe:probe as PngSourceProbe} : {...source,probe:probe as VideoProbe & {kind?:'video'}};
+}
+export function requireVideoSource(source:ReturnType<typeof getSource>) {
+  if(source.probe.kind==='png_sequence')throw new PipelineError('VIDEO_SOURCE_REQUIRED','PNG序列没有视频PTS，不能按视频抽帧');
+  return {...source,probe:source.probe};
+}
 export function getSource(projectId: string, sourceId: string) {
   getProject(projectId); validateId(sourceId);
   const row = db.query("SELECT * FROM sources WHERE id=?").get(sourceId) as SourceRow | null;
@@ -89,7 +96,7 @@ export async function importVideo(projectId: string, input: string | { name: str
     retainSourceOriginal({ id, original_name: originalName, original_path: originalPath, sha256, probe });
   })();
   broadcast('materials_changed', {});
-  return getSource(projectId, id);
+  return requireVideoSource(getSource(projectId, id));
 }
 
 function previewFps(probe: VideoProbe): number {
@@ -98,7 +105,7 @@ function previewFps(probe: VideoProbe): number {
 }
 
 export function createClip(projectId: string, sourceId: string, name: string) {
-  const source = getSource(projectId, sourceId);
+  const source = requireVideoSource(getSource(projectId, sourceId));
   if (!name.trim()) throw new PipelineError("INVALID_NAME", "动作名称不能为空");
   const clipId = uid(); const fps = previewFps(source.probe);
   db.transaction(() => {
@@ -139,38 +146,57 @@ export function prepareSourceExtraction(projectId: string, clipId: string, baseR
   return { projectId, sourceId: clip.source_id, clipId, baseRevision: expected };
 }
 
+export interface ExtractionCell {frame:SourceFrameTiming;path:string;ticks:number;frameId:string;stepId:string}
+export interface ExtractionServiceHooks {
+ verifiedTiming?:SourceTiming;cells?:ExtractionCell[];
+ onArtifacts?:NonNullable<Parameters<typeof extractAll>[2]['onCheckpoint']>;
+ onCells?:(cells:ExtractionCell[])=>void;
+ onCheckpoint?:(phase:'gui_copy'|'main_track_before'|'main_track_committed'|'result',index?:number)=>void;
+ beforeCommit?:()=>void;commit?:(result:unknown)=>void;
+}
 /** queue → service 单向调用；产物先完整验证，再在单个事务内投影到上游主轨。 */
-export async function extractSource(payload: SourceExtractPayload, progress: (text: string) => void = () => {}, signal?: AbortSignal) {
+export async function extractSource(payload: SourceExtractPayload, progress: (text: string) => void = () => {}, signal?: AbortSignal,hooks:ExtractionServiceHooks={}) {
   if (signal?.aborted) throw new JobCancelledError();
   const clip = getClip(payload.projectId, payload.clipId);
   if (clip.source_id !== payload.sourceId) throw new PipelineError("SOURCE_CLIP_MISMATCH", "动作源素材不匹配", 409);
   if (clip.revision !== payload.baseRevision) throw new PipelineError("STALE_JOB_RESULT", "项目修订已变化，旧任务不能覆盖当前项目", 409);
-  const source = getSource(payload.projectId, payload.sourceId);
+  const source = requireVideoSource(getSource(payload.projectId, payload.sourceId));
   const directory = join(STORAGE_ROOT, "sources", source.id);
   if (createHash("sha256").update(readFileSync(source.original_path)).digest("hex") !== source.sha256) throw new PipelineError("SOURCE_FINGERPRINT_MISMATCH", "原视频校验和已变化");
   let timing: SourceTiming; let warnings: string[];
-  if (existsSync(join(directory, "timing.json")) && existsSync(join(directory, "raw"))) {
+  if(hooks.verifiedTiming){timing=hooks.verifiedTiming;warnings=[...timing.warnings];}
+  else if (existsSync(join(directory, "timing.json")) && existsSync(join(directory, "raw"))) {
     timing = await validateSourceArtifacts(directory, source.id, source.probe, signal); warnings = [...timing.warnings];
   } else {
-    const extracted = await extractAll(source.original_path, directory, { sourceId: source.id, signal, onProgress: progress });
+    const extracted = await extractAll(source.original_path, directory, { sourceId: source.id, signal, onProgress: progress,onCheckpoint:hooks.onArtifacts });
     timing = extracted.timing; warnings = [...extracted.warnings];
   }
   if (!timing.frames.length || timing.source_id !== source.id) throw new PipelineError("INVALID_TIMING", "源时间清单无效");
   if (signal?.aborted) throw new JobCancelledError();
   const copies = join(STORAGE_ROOT, "projects", payload.projectId, "raw", clip.id, uid());
   mkdirSync(copies, { recursive: true });
-  const cells = timing.frames.map((frame, index) => {
+  const cells = hooks.cells??timing.frames.map((frame, index) => {
     if (signal?.aborted) throw new JobCancelledError();
     if (frame.source_index !== index || !/^raw\/frame_\d{6}\.png$/.test(frame.file)) throw new PipelineError("INVALID_TIMING", "源帧索引或文件路径无效");
     const path = join(copies, basename(frame.file));
-    copyFileSync(join(directory, frame.file), path, constants.COPYFILE_EXCL);
+
     const seconds = frame.display_duration.num / frame.display_duration.den;
     const ticks = Math.max(1, Math.round(seconds * clip.fps));
     if (Math.abs(ticks / clip.fps - seconds) > 1e-9 && !warnings.includes("PREVIEW_TIMING_QUANTIZED")) warnings.push("PREVIEW_TIMING_QUANTIZED");
     return { frame, path, ticks, frameId: uid(), stepId: uid() };
   });
+  hooks.onCells?.(cells);
+  for(const [index,cell] of cells.entries()){
+    if(signal?.aborted)throw new JobCancelledError();mkdirSync(join(cell.path,'..'),{recursive:true});
+    if(!existsSync(cell.path))copyFileSync(join(directory,cell.frame.file),cell.path,constants.COPYFILE_EXCL);
+    if(!readFileSync(cell.path).equals(readFileSync(join(directory,cell.frame.file))))throw new PipelineError('ARTIFACT_INTEGRITY_CONFLICT','GUI副本内容不符',409);
+    hooks.onCheckpoint?.('gui_copy',index);
+  }
   if (signal?.aborted) throw new JobCancelledError();
+  hooks.onCheckpoint?.('main_track_before');
+  let committedResult:unknown;
   db.transaction(() => {
+    hooks.beforeCommit?.();
     const current = getClip(payload.projectId, payload.clipId);
     if (current.revision !== payload.baseRevision) throw new PipelineError("STALE_JOB_RESULT", "项目修订已变化，旧产物已保留但未提交", 409);
     if (current.status === "extracted" || db.query("SELECT 1 FROM animation_steps WHERE axis_id=? LIMIT 1").get(clip.axis_id)) throw new PipelineError("CLIP_NOT_EMPTY", "动作已有编辑数据，不能覆盖", 409);
@@ -183,10 +209,14 @@ export async function extractSource(payload: SourceExtractPayload, progress: (te
     db.query("UPDATE sources SET status='extracted' WHERE id=?").run(source.id);
     db.query("UPDATE clips SET status='extracted' WHERE id=?").run(clip.id);
     retainSourceFrames(source.id, directory, timing, source.original_name.replace(/\.[^.]+$/, ''));
+    committedResult={ source_id: source.id, clip_id: clip.id, frame_count: cells.length, revision: getProject(payload.projectId).revision, source_duration: timing.duration, preview_duration_seconds: cells.reduce((sum, cell) => sum + cell.ticks / clip.fps, 0), warnings, artifacts: [{ kind: "source_timing", path: join(directory, "timing.json") }, { kind: "source_frames", path: join(directory, "raw") }] };
+    hooks.commit?.(committedResult);
   })();
+  hooks.onCheckpoint?.('main_track_committed');
   broadcast('materials_changed', {});
   invalidateProjectUndo(payload.projectId);
   broadcast("timeline_changed", { projectId: payload.projectId });
   broadcast("frames_changed", { projectId: payload.projectId });
-  return { source_id: source.id, clip_id: clip.id, frame_count: cells.length, revision: getProject(payload.projectId).revision, source_duration: timing.duration, preview_duration_seconds: cells.reduce((sum, cell) => sum + cell.ticks / clip.fps, 0), warnings, artifacts: [{ kind: "source_timing", path: join(directory, "timing.json") }, { kind: "source_frames", path: join(directory, "raw") }] };
+  hooks.onCheckpoint?.('result');
+  return committedResult as {source_id:string;clip_id:string;frame_count:number;revision:number;source_duration:SourceTiming['duration'];preview_duration_seconds:number;warnings:string[];artifacts:{kind:string;path:string}[]};
 }

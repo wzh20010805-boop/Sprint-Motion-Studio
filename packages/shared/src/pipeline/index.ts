@@ -51,3 +51,9 @@ export interface ExtractionResult {
 export * from './masks';
 export * from './alignment';
 export * from './schemas';
+export * from './collaboration';
+export * from './collaborationSchemas';
+
+/** PNG 清单保存原件映射，不提供视频 PTS。 */
+export interface PngSourceFrame { source_frame_id:string; source_index:number; original_name:string; canonical_path:string; sha256:string; width:number; height:number }
+export interface PngSourceProbe { kind:'png_sequence'; schema_version:'1.0'; order_origin:'explicit'|'natural'; frames:PngSourceFrame[]; timing:import('./collaboration').TaskBrief['timing']; warnings:string[] }

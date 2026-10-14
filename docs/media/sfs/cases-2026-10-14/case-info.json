@@ -1,0 +1,88 @@
+{
+  "date": "2026-10-14",
+  "approval_status": "draft_pending_human_review",
+  "canvas": {
+    "width": 512,
+    "height": 640
+  },
+  "preview": {
+    "file": "actions-preview.gif",
+    "sample_fps": 10,
+    "frames": 81,
+    "tile_size": [
+      192,
+      240
+    ],
+    "checkerboard": "display background only",
+    "note": "Each action repeats at its original rational duration; this sampled GIF is not an acceptance recording."
+  },
+  "cases": [
+    {
+      "name": "告别挥手",
+      "example": "01-goodbye.png",
+      "frame_count": 145,
+      "duration": {
+        "num": 145,
+        "den": 24
+      },
+      "example_frame_number": 73,
+      "example_sha256": "d48bfbf0a37e87f5fbad68e2da20995021c4205b3f5fd670669bd7cff47fddcc"
+    },
+    {
+      "name": "连续口播",
+      "example": "02-speaking.png",
+      "frame_count": 193,
+      "duration": {
+        "num": 193,
+        "den": 24
+      },
+      "example_frame_number": 97,
+      "example_sha256": "b4aec3cf741fdb76e9cdff6f447463b443e4a49ac614c99b85a2cd23b96d269c"
+    },
+    {
+      "name": "指向画面右侧",
+      "example": "03-point-right.png",
+      "frame_count": 121,
+      "duration": {
+        "num": 121,
+        "den": 24
+      },
+      "example_frame_number": 61,
+      "example_sha256": "fb9e50143fd770b6e3e2f33b94bb5b6293f374071fe375bd1abc31e1f200f808"
+    },
+    {
+      "name": "开场招呼",
+      "example": "04-greeting.png",
+      "frame_count": 97,
+      "duration": {
+        "num": 97,
+        "den": 24
+      },
+      "example_frame_number": 49,
+      "example_sha256": "c5ffbbd6caf8a407a8be0f207baa8cd4a74eb14a958aa2cfe26f6e247c5f1583"
+    },
+    {
+      "name": "走动入场",
+      "example": "05-walk-in.png",
+      "frame_count": 145,
+      "duration": {
+        "num": 145,
+        "den": 24
+      },
+      "example_frame_number": 73,
+      "example_sha256": "4a6b29e6e7ba495dd5204c14f10326d503a16fc5b732fa623e378add704ef928"
+    },
+    {
+      "name": "指向画面左侧",
+      "example": "06-point-left.png",
+      "frame_count": 121,
+      "duration": {
+        "num": 121,
+        "den": 24
+      },
+      "example_frame_number": 61,
+      "example_sha256": "db08951263efb76543cd28a52c80ee5d138bcf6724e6a8ead4aa8291378e0d5d"
+    }
+  ],
+  "license": "User-provided demonstration media; not covered by the repository MIT license."
+}

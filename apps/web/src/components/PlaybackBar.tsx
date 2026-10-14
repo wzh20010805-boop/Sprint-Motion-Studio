@@ -24,6 +24,8 @@ export default function PlaybackBar({ dragConstraints, fps, paused, cursor, tota
   const dragControls = useDragControls();
   const start = (range?.start ?? 0) + 1;
   const end = (range?.end ?? Math.max(0, total - 1)) + 1;
+  // 按总帧数预留当前/总数的最大位数，避免跨9/99帧和循环回首帧时控制条伸缩。
+  const counterWidth = `${String(Math.max(0, total)).length * 2 + 3}ch`;
   const [startDraft, setStartDraft] = useState(String(start));
   const [endDraft, setEndDraft] = useState(String(end));
   useEffect(() => { setStartDraft(String(start)); setEndDraft(String(end)); }, [start, end, range === null]);
@@ -68,8 +70,8 @@ export default function PlaybackBar({ dragConstraints, fps, paused, cursor, tota
       </IconBtn>
       <label className="fps-ctl">
         FPS
-        <input type="range" min={1} max={24} value={fps} onChange={(e) => onFpsChange(Number(e.target.value))} />
-        <span>{fps}</span>
+        <input type="range" min={1} max={120} value={fps} onChange={(e) => onFpsChange(Number(e.target.value))} />
+        <span className="playback-fps-value">{fps}</span>
       </label>
       <div className="playback-range" title={t("playback.rangeHint")}>
         <select aria-label={t("playback.mode")} value={range === null ? "all" : "range"} disabled={total === 0}
@@ -86,7 +88,7 @@ export default function PlaybackBar({ dragConstraints, fps, paused, cursor, tota
             onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }} /></label>
         </>}
       </div>
-      <span className="frame-indicator">{total ? `${cursor + 1} / ${total}` : "0 / 0"}</span>
+      <span className="frame-indicator" style={{ width: counterWidth }}>{total ? `${cursor + 1} / ${total}` : "0 / 0"}</span>
       <span className="fps-ctl" title={t("msg.toolbar_or_cmd_ctrl_wheel_to_zoom")}>{t("msg.zoom_pct", { pct: Math.round(zoom * 100) })}</span>
     </motion.div>
   );

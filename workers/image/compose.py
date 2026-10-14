@@ -5,6 +5,16 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 
+def candidate_mapping(image, config, index, transform=None):
+    """与实际合成共享 affine；正逆矩阵都采用 Canvas 六元组。"""
+    a, b, tx, d, e, ty, _ = affine(image, config, index, transform)
+    determinant = a*e-b*d
+    if not determinant:
+        return dict(matrix=None, inverse_matrix=None, noninvertible_reason='ZERO_DETERMINANT')
+    return dict(matrix=[a, d, b, e, tx, ty], inverse_matrix=[e/determinant, -d/determinant,
+        -b/determinant, a/determinant, (b*ty-e*tx)/determinant, (d*tx-a*ty)/determinant], noninvertible_reason=None)
+
+
 def root_at(config, index):
     points = sorted(config['roots'], key=lambda p: p['index'])
     if config['mode'] == 'fixed' or index <= points[0]['index']:
@@ -124,6 +134,7 @@ def export_package(request):
         elapsed += Fraction(duration['num'], duration['den'])
         entries.append({k: v for k, v in frame.items() if k not in ('path',)})
         entries[-1].update(file=file, sheet=sheets[-1]['file'], rect=[x, y, w, h], root=list(root_at(config, frame.get('index', i))))
+        entries[-1]['source_to_canvas'] = candidate_mapping(source, config, frame.get('index', i), frame.get('transform'))
         if i < count:
             preview = Image.new('RGBA', rendered.size, (38, 26, 61, 255))
             preview.alpha_composite(rendered)
@@ -133,7 +144,7 @@ def export_package(request):
             ImageDraw.Draw(contact).text((px, py+thumb[1]), str(i+1), fill='white')
         print(__import__('json').dumps({'progress': i+1, 'total': len(request['frames'])}), flush=True)
     contact.save(directory / 'previews/contact-sheet.png')
-    return {'frames': entries, 'sheets': sheets, 'checks': checks,
+    return {'frames': entries, 'sheets': sheets, 'checks': checks, 'pillow_version': __import__('PIL').__version__,
             'duration': {'num': elapsed.numerator, 'den': elapsed.denominator},
             'release_mode': 'draft' if request.get('draft') else 'reviewed',
             'grid': {'cell': [w, h], 'margin': margin, 'gap': gap, 'columns': cols, 'rows': rows},

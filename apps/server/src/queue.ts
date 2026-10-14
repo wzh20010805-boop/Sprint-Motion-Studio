@@ -1,3 +1,8 @@
+import type {DeliveryRequest} from '@framebaker/shared';
+import {assertFormalExportAllowed,packageAcceptedCandidate,recoverAcceptedDelivery,readDelivery,readDeliveryRequest} from './pipeline/collaboration/delivery';
+import {setDeliveryScheduler,withAcceptedDelivery} from './pipeline/collaboration/reviews';
+import {activeAcceptance,invalidateAcceptance,reviewTransaction} from './pipeline/collaboration/reviewBoundary';
+import {axisWorkflowMode,readTaskRecord} from './pipeline/collaboration/store';
 import type { JobType } from "@framebaker/shared";
 import { db, uid } from "./db";
 import { broadcast } from "./ws";
@@ -6,23 +11,29 @@ import { getSettingJson } from "./provider";
 import { matte } from "./jobs/matting";
 import { JobCancelledError } from "./jobs/run";
 import { splitImageLayers, type ImageLayersPayload } from "./jobs/imageLayers";
-import { extractSource, getSource, PipelineError, prepareSourceExtraction, type SourceExtractPayload } from "./pipeline/service";
+import { extractSource, getSource, getClip, PipelineError, prepareSourceExtraction, type SourceExtractPayload } from "./pipeline/service";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { STORAGE_ROOT } from "./db";
-import { matteBatch, prepareMatte } from './pipeline/masks';
+import { matteBatch, prepareMatte, type PreparedMatteRequest } from './pipeline/masks';
 import type { MatteRequest } from '@framebaker/shared';
 import type { ExportRequest } from '@framebaker/shared';
 import { exportAssets,prepareExport,type ExportPayload } from './pipeline/export';
+import type {CandidateBuildRequest} from '@framebaker/shared';
+import {buildPrivateCandidate,inspectCandidateRecovery,recoverPreparedCandidate,markCandidateProducing,finishCandidateTaskAttempt,setCandidateScheduler} from './pipeline/collaboration/candidates';
+import {operationJson,readOperation,readOperationInput,setOperationRecoveryScheduler} from './pipeline/collaboration/operations';
 
 export interface JobPayload {
+  recoveryOperation?: string;
+  acceptedDelivery?: DeliveryRequest;
+  candidateBuild?: {request:CandidateBuildRequest;operation_id:string};
   productionExport?: ExportPayload;
   extract?: ExtractPayload;
   generate?: GeneratePayload;
   matting?: { target: "frame" | "material"; id: string };
   imageLayers?: ImageLayersPayload;
   sourceExtract?: SourceExtractPayload;
-  sceneMatting?: MatteRequest & { base_revision: number };
+  sceneMatting?: PreparedMatteRequest;
 }
 
 // 内存缓存仅服务本次队列；完整参数与结果持久化，重启后明确标记 interrupted。
@@ -30,6 +41,15 @@ const payloads = new Map<string, JobPayload>();
 const controllers = new Map<string, AbortController>();
 const waiting: string[] = [];
 let running = 0;
+let paused=process.env.SFS_STARTUP_RECONCILE==='1';
+const idleWaiters:Array<()=>void>=[];
+export function pauseQueue():void {paused=true;}
+export function startQueue():void {paused=false;pump();}
+export function waitForQueueIdle():Promise<void> {return running===0&&waiting.length===0?Promise.resolve():new Promise(resolve=>idleWaiters.push(resolve));}
+export type QueueCheckpoint='job_result'|'job_done';
+let checkpointObserver:((phase:QueueCheckpoint,id:string)=>void)|undefined;
+export function setQueueCheckpointObserver(observer:typeof checkpointObserver):void {checkpointObserver=observer;}
+
 
 /**
  * 任务队列并发数：settings.queueConcurrency 优先（clamp 1~16），env FRAMEBAKER_QUEUE_CONCURRENCY 兜底，默认 2。
@@ -47,27 +67,50 @@ export function getQueueConcurrency(): number {
 // 启动时把上次进程遗留的 queued/running 任务标记为中断（负载随内存丢失，不可能再继续）
 db.query("UPDATE jobs SET status = 'interrupted', error = '服务重启，任务中断；请从抽帧阶段重新开始', error_code='SERVICE_RESTARTED', updated_at=? WHERE status IN ('queued', 'running')").run(Date.now());
 
-export function createJob(projectId: string, type: JobType, payload: JobPayload): string {
+export function createJob(projectId: string, type: JobType, payload: JobPayload, beforePump?:(id:string)=>void): string {
+  if(payload.productionExport&&!payload.productionExport.request.draft)assertFormalExportAllowed(payload.productionExport.request);
   const id = uid();
   const directory = join(STORAGE_ROOT, "jobs", id);
   mkdirSync(directory, { recursive: true });
   const logPath = join(directory, "job.log");
   appendFileSync(logPath, `${new Date().toISOString()} queued\n`);
   const source = payload.sourceExtract ? getSource(projectId, payload.sourceExtract.sourceId) : null;
-  db.query("INSERT INTO jobs (id, project_id, type, status, created_at, updated_at,payload,clip_id,base_revision,input_fingerprint,backend,log_path) VALUES (?, ?, ?, 'queued', ?, ?, ?, ?, ?, ?, ?, ?)").run(
+  db.transaction(()=>{db.query("INSERT INTO jobs (id, project_id, type, status, created_at, updated_at,payload,clip_id,base_revision,input_fingerprint,backend,log_path) VALUES (?, ?, ?, 'queued', ?, ?, ?, ?, ?, ?, ?, ?)").run(
     id,
     projectId,
     type,
     Date.now(), Date.now(), JSON.stringify(payload), payload.sourceExtract?.clipId ?? null,
     payload.sourceExtract?.baseRevision ?? payload.sceneMatting?.base_revision ?? payload.productionExport?.revision ?? null, source?.sha256 ?? payload.productionExport?.fingerprint ?? null,
     payload.sourceExtract ? "ffmpeg-passthrough" : payload.sceneMatting ? 'rembg-cpu/u2netp' : payload.productionExport ? 'pillow-straight-alpha' : null, logPath
-  );
+  );beforePump?.(id);}).immediate();
   payloads.set(id, payload);
   waiting.push(id);
   broadcast("job_queued", { id, projectId, type });
   pump();
   return id;
 }
+
+setCandidateScheduler((request,operation)=>createJob(request.project_id,'build_candidate',{candidateBuild:{request,operation_id:operation.id}},id=>{
+  const current=readOperation(operation.id);
+  if(current.state!=='claimed'||current.attempt_job_ids.length)throw new PipelineError('OPERATION_NEEDS_RECOVERY','候选操作需要恢复而非替换输入',409);
+  db.query('UPDATE jobs SET operation_id=?,attempt_number=? WHERE id=?').run(operation.id,1,id);
+  db.query("UPDATE collab_operations SET state='queued',attempt_job_ids_json=?,updated_at=? WHERE id=?").run(operationJson([id]),Date.now(),operation.id);
+  markCandidateProducing(request.task_id,operation.id);
+}));
+
+/** 原操作唯一调度身份；事务持久 job/attempt 后才启动既有 pump。 */
+export function queueAcceptedDelivery(operationId:string):{operation_id:string;job_id:string} {
+ const request=readDeliveryRequest(operationId),op=readOperation(operationId),job=op.attempt_job_ids.at(-1);
+ if(op.state==='succeeded'){readDelivery(operationId);return {operation_id:operationId,job_id:job??''};}
+ if(job)return {operation_id:operationId,job_id:job};
+ withAcceptedDelivery(request,()=>{if(op.state!=='claimed')throw new PipelineError('OPERATION_NEEDS_RECOVERY','交付操作需要恢复',409);});
+ const id=createJob(readTaskRecord(request.task_id).context.project_id,'deliver_candidate',{acceptedDelivery:request},id=>withAcceptedDelivery(request,()=>{
+  const current=readOperation(operationId);if(current.state!=='claimed'||current.attempt_job_ids.length)throw new PipelineError('OPERATION_NEEDS_RECOVERY','交付操作已关联尝试',409);
+  db.query('UPDATE jobs SET operation_id=?,attempt_number=1 WHERE id=?').run(operationId,id);
+  db.query("UPDATE collab_operations SET state='queued',attempt_job_ids_json=?,updated_at=? WHERE id=?").run(operationJson([id]),Date.now(),operationId);
+ }));return {operation_id:operationId,job_id:id};
+}
+setDeliveryScheduler(request=>{queueAcceptedDelivery(request.operation_id);});
 
 export function createSourceExtractionJob(projectId: string, clipId: string, baseRevision?: number): string {
   const sourceExtract = prepareSourceExtraction(projectId, clipId, baseRevision);
@@ -83,15 +126,18 @@ export function createSceneMattingJob(request: MatteRequest): string {
 }
 
 export function createExportJob(request:ExportRequest):string {
+ if(!request.draft)assertFormalExportAllowed(request);
  if(db.query("SELECT 1 FROM jobs WHERE project_id=? AND status IN ('queued','running')").get(request.project_id))throw new PipelineError('PROJECT_BUSY','项目已有任务，请完成或取消后导出',409);
  return createJob(request.project_id,'export_assets',{productionExport:prepareExport(request)});
 }
 
-export function resumeJob(id:string):string {
+export async function resumeJob(id:string,actor?:import("@framebaker/shared").ActorContext):Promise<string> {
  const job=getPersistedJob(id);
  if(!job)throw new PipelineError('JOB_NOT_FOUND','任务不存在',404);
+ if(job.operation_id){const {resumeCollaborationOperation}=await import('./pipeline/collaboration/operations');if(!actor)throw new PipelineError('UNAUTHORIZED','恢复需要当前服务身份',401);const op=await resumeCollaborationOperation(String(job.operation_id),actor);return op.attempt_job_ids.at(-1)??'';}
  if(!['interrupted','error','cancelled'].includes(String(job.status)))throw new PipelineError('JOB_NOT_RESUMABLE','只能恢复中断、失败或取消的任务',409);
  const p=job.payload;
+ if(p.sceneMatting?.completion_policy==='collaboration'||p.sourceExtract&&axisWorkflowMode({project_id:p.sourceExtract.projectId,axis_id:getClip(p.sourceExtract.projectId,p.sourceExtract.clipId).axis_id})==='collaboration')throw new PipelineError('RECOVERY_UNSUPPORTED','协作制作必须使用原稳定操作，不能按当前草稿重跑',409);
  if(p.productionExport)return createExportJob({...p.productionExport.request,base_revision:undefined});
  if(p.sourceExtract)return createSourceExtractionJob(String(job.project_id),p.sourceExtract.clipId);
  if(p.sceneMatting)return createSceneMattingJob({...p.sceneMatting,base_revision:undefined});
@@ -131,10 +177,30 @@ export function cancelJob(id: string): boolean {
     status: string;
   } | null;
   if (!job) return false;
+  const stored=getPersistedJob(id),operationId=typeof stored?.operation_id==='string'?stored.operation_id:null;
+  if(operationId){
+    const op=readOperation(operationId);if(op.state==='succeeded')return false;
+    if(op.attempt_job_ids.at(-1)!==id)return false;
+    if(op.state==='cancelled')return true;
+    reviewTransaction(()=>{
+      if(readOperation(operationId).state==='succeeded')return;
+      if(op.kind==='deliver_candidate'){const req=readDeliveryRequest(operationId);if(activeAcceptance(req.task_id)?.operation_id===op.id)invalidateAcceptance(req.task_id,'delivery_cancelled');}
+      db.query("UPDATE collab_operations SET state='cancelled',updated_at=? WHERE id=? AND state!='succeeded'").run(Date.now(),op.id);
+      if(op.kind==='build_candidate'){const req=readOperationInput(op.id,op.kind) as CandidateBuildRequest;finishCandidateTaskAttempt(req.task_id,op.id,'needs_input');}
+      db.query("UPDATE jobs SET error_code='OPERATION_CANCELLED',updated_at=? WHERE id=?").run(Date.now(),id);
+    });
+  }
   if (job.status === "queued") {
     const idx = waiting.indexOf(id);
     if (idx >= 0) waiting.splice(idx, 1);
-    setJob(id, "cancelled", "已取消", null);
+    db.transaction(()=>{
+      setJob(id, "cancelled", "已取消", null);
+      const candidate=payloads.get(id)?.candidateBuild;
+      if(candidate){
+        db.query("UPDATE collab_operations SET state='cancelled',updated_at=? WHERE id=? AND state='queued'").run(Date.now(),candidate.operation_id);
+        finishCandidateTaskAttempt(candidate.request.task_id,candidate.operation_id,'needs_input');
+      }
+    }).immediate();
     payloads.delete(id);
     broadcast("job_cancelled", { id, projectId: job.project_id, type: job.type });
     return true;
@@ -144,7 +210,7 @@ export function cancelJob(id: string): boolean {
     if (c && !c.signal.aborted) c.abort();
     return true;
   }
-  return false;
+  return operationId!==null;
 }
 
 /** 同一 frame/material 是否已有排队或运行中的抠图任务 */
@@ -190,6 +256,7 @@ function enqueueGeneratedFollowUp(source: GeneratePayload, referenceMaterialId: 
 }
 
 function pump() {
+  if(paused)return;
   while (running < getQueueConcurrency() && waiting.length > 0) {
     const id = waiting.shift()!;
     // 可能已被取消但尚未移出（竞态兜底）
@@ -202,6 +269,7 @@ function pump() {
     runJob(id).finally(() => {
       running--;
       pump();
+      if(running===0&&waiting.length===0)for(const resolve of idleWaiters.splice(0))resolve();
     });
   }
 }
@@ -244,7 +312,17 @@ async function runJob(id: string) {
   broadcast("job_running", { id, projectId: job.project_id });
   try {
     if (signal.aborted) throw new JobCancelledError();
-    if (payload.productionExport) {
+    if(payload.recoveryOperation){
+      const op=readOperation(payload.recoveryOperation);
+      if(op.kind==='build_candidate')result=recoverPreparedCandidate(op.id,signal);
+      else if(op.kind==='deliver_candidate')result=await recoverAcceptedDelivery(op.id,signal);
+      else if(op.kind==='extract_source'){const {executeExtractionOperation}=await import('./pipeline/collaboration/extraction');result=await executeExtractionOperation(op.id,signal,report);}
+      else throw new PipelineError('RECOVERY_UNSUPPORTED','不支持此操作恢复',409);
+    } else if(payload.acceptedDelivery){
+      result=await packageAcceptedCandidate(payload.acceptedDelivery,signal,report);
+    } else if(payload.candidateBuild){
+      result=await buildPrivateCandidate(payload.candidateBuild.request,signal,report,{job_id:id});
+    } else if (payload.productionExport) {
       result = await exportAssets(payload.productionExport,report,signal);
     } else if (job.type === "extract_frames" && payload.sourceExtract) {
       result = await extractSource(payload.sourceExtract, report, signal);
@@ -266,14 +344,24 @@ async function runJob(id: string) {
     } else {
       throw new Error(`未知任务类型: ${job.type}`);
     }
-    if (signal.aborted) throw new JobCancelledError();
+    if (signal.aborted && !(payload.recoveryOperation&&readOperation(payload.recoveryOperation).state==='succeeded') && !(payload.acceptedDelivery && readOperation(payload.acceptedDelivery.operation_id).state==='succeeded') && !(payload.candidateBuild && readOperation(payload.candidateBuild.operation_id).state==='succeeded')) throw new JobCancelledError();
     if (generatedReferenceId && payload.generate) enqueueGeneratedFollowUp(payload.generate, generatedReferenceId);
     db.query("UPDATE jobs SET result=?,checkpoint=? WHERE id=?").run(result === null ? null : JSON.stringify(result), JSON.stringify({ stage: "complete" }), id);
-    const needsReview = !!payload.sceneMatting;
+    checkpointObserver?.('job_result',id);
+    const needsReview = !!payload.sceneMatting && payload.sceneMatting.completion_policy!=='collaboration';
     db.query('UPDATE jobs SET requires_user_action=? WHERE id=?').run(needsReview ? 1 : 0,id);
     setJob(id, needsReview ? 'waiting_user' : 'done', needsReview ? '抠图初稿已生成，请检查武器与边缘' : completionProgress);
+    checkpointObserver?.('job_done',id);
     broadcast("job_done", { id, projectId: job.project_id, type: job.type, status: needsReview ? 'waiting_user' : 'done', progress: needsReview ? '抠图初稿已生成，请检查武器与边缘' : completionProgress });
   } catch (err) {
+    if(payload.recoveryOperation){
+      const op=readOperation(payload.recoveryOperation);
+      if(op.state==='succeeded'){repairOperationJob(op.id);return;}
+      if(op.state!=='cancelled')markRecoveryFailure(op.id,err);
+    }
+    if(payload.acceptedDelivery&&readOperation(payload.acceptedDelivery.operation_id).state==='succeeded'){
+      const committed=readDelivery(payload.acceptedDelivery.operation_id);db.query('UPDATE jobs SET result=? WHERE id=?').run(operationJson(committed),id);setJob(id,'done','完成');return;
+    }
     if (err instanceof JobCancelledError || signal.aborted) {
       setJob(id, "cancelled", "已取消", null);
       broadcast("job_cancelled", { id, projectId: job.project_id, type: job.type });
@@ -289,4 +377,61 @@ async function runJob(id: string) {
     controllers.delete(id);
     payloads.delete(id);
   }
+}
+
+function repairOperationJob(operationId:string):void {
+ const op=readOperation(operationId),id=op.attempt_job_ids.at(-1);if(!id)return;
+ let result:unknown=op.result;
+ if(op.kind==='build_candidate'){const resultId=(op.result as any)?.candidate_id;result=inspectCandidateRecovery(op.id).committed;if(!resultId||!result)throw new PipelineError('RECOVERY_IDENTITY_CONFLICT','提交身份无效',409);}
+ db.query("UPDATE jobs SET status='done',result=?,checkpoint=?,error=NULL,error_code=NULL,updated_at=? WHERE id=? AND operation_id=?").run(operationJson(result),operationJson({stage:'complete'}),Date.now(),id,op.id);
+}
+function markRecoveryFailure(id:string,error:unknown):void {
+ const op=readOperation(id),code=error instanceof PipelineError?(error.code==='OPERATION_INPUT_MISMATCH'?'RECOVERY_IDENTITY_CONFLICT':error.code):'RECOVERY_INCOMPLETE';
+ if(op.state==='succeeded')return;
+ db.query("UPDATE collab_operations SET state='needs_input',result_json=?,updated_at=? WHERE id=? AND state NOT IN ('succeeded','cancelled')").run(operationJson({error_code:code,message:error instanceof Error?error.message:String(error)}),Date.now(),id);
+ if(op.kind==='build_candidate'){try{const req=readOperationInput(id,op.kind) as CandidateBuildRequest;finishCandidateTaskAttempt(req.task_id,id,'needs_input');}catch{}}
+}
+const recovering=new Map<string,Promise<import('@framebaker/shared').OperationRecord>>();
+setOperationRecoveryScheduler((id,explicit=false)=>{
+ const current=recovering.get(id);if(current)return current;
+ const work=recoverOperation(id,explicit);recovering.set(id,work);void work.finally(()=>recovering.delete(id)).catch(()=>{});return work;
+});
+async function recoverOperation(id:string,explicit:boolean):Promise<import('@framebaker/shared').OperationRecord> {
+ let op=readOperation(id);
+ try{
+  const input=readOperationInput(id,op.kind) as any;
+  // 已提交原事实先于当前 base；显式取消不自动复活。
+  if(op.kind==='build_candidate'){
+   const inspected=inspectCandidateRecovery(id);if(inspected.committed){repairOperationJob(id);return readOperation(id);}
+  }else if(op.kind==='deliver_candidate'){
+   readDeliveryRequest(id);if(op.state==='succeeded'){await recoverAcceptedDelivery(id);repairOperationJob(id);return readOperation(id);}
+  }else if(op.kind==='extract_source'){
+   const {inspectExtractionOperation}=await import('./pipeline/collaboration/extraction');if(inspectExtractionOperation(id).committed){repairOperationJob(id);return readOperation(id);}
+  }else if(op.state==='succeeded')return op;else throw new PipelineError('RECOVERY_UNSUPPORTED','此操作不能自动恢复',409);
+  if(op.state==='cancelled'){
+   if(!explicit||op.kind==='deliver_candidate'||op.kind!=='build_candidate'||readTaskRecord(input.task_id).state!=='reworking')return op;
+   const {readDraftContent}=await import('./pipeline/collaboration/drafts');
+   if(operationJson(readDraftContent({project_id:input.project_id,axis_id:input.axis_id}).token)!==operationJson(op.base_content))throw new PipelineError('INPUT_IDENTITY_CONFLICT','原草稿身份已变化',409);
+   db.query("UPDATE collab_operations SET state='interrupted',updated_at=? WHERE id=? AND state='cancelled'").run(Date.now(),id);op=readOperation(id);
+  }
+  const active=db.query("SELECT id FROM jobs WHERE operation_id=? AND status IN ('queued','running')").all(id) as {id:string}[];
+  if(active.length>1)throw new PipelineError('RECOVERY_IDENTITY_CONFLICT','存在多个有效尝试',409);
+  if(active.length)return op;
+  let projectId:string,type:JobType,payload:JobPayload;
+  if(op.kind==='build_candidate'){
+   const {readDraftContent}=await import('./pipeline/collaboration/drafts');
+   if(operationJson(readDraftContent({project_id:input.project_id,axis_id:input.axis_id}).token)!==operationJson(op.base_content))throw new PipelineError('INPUT_IDENTITY_CONFLICT','原草稿身份已变化',409);
+   projectId=input.project_id;type='build_candidate';
+   if(op.checkpoint){if((op.checkpoint as any).phase!=='prepared')throw new PipelineError('RECOVERY_INCOMPLETE','固定候选尚未完整准备',409);payload={recoveryOperation:id};}
+   else payload={candidateBuild:{request:input,operation_id:id}};
+  }else if(op.kind==='deliver_candidate'){
+   const request=readDeliveryRequest(id);withAcceptedDelivery(request,()=>{});projectId=readTaskRecord(request.task_id).context.project_id;type='deliver_candidate';payload={recoveryOperation:id};
+  }else{projectId=input.payload.projectId;type='extract_frames';payload={recoveryOperation:id};}
+  createJob(projectId,type,payload,jobId=>{
+   op=readOperation(id);if(op.state==='cancelled'||op.state==='succeeded'||db.query("SELECT 1 FROM jobs WHERE operation_id=? AND status IN ('queued','running')").get(id))throw new PipelineError('RECOVERY_ATTEMPT_CONFLICT','恢复尝试已被关联',409);
+   db.query('UPDATE jobs SET operation_id=?,attempt_number=? WHERE id=?').run(id,op.attempt_job_ids.length+1,jobId);
+   db.query("UPDATE collab_operations SET state='queued',attempt_job_ids_json=?,updated_at=? WHERE id=?").run(operationJson([...op.attempt_job_ids,jobId]),Date.now(),id);
+   if(op.kind==='build_candidate')markCandidateProducing(input.task_id,id);
+  });return readOperation(id);
+ }catch(error){if(error&&typeof error==='object'&&'code' in error&&String(error.code).startsWith('SQLITE'))throw error;if(readOperation(id).state==='succeeded')throw error;markRecoveryFailure(id,error);return readOperation(id);}
 }

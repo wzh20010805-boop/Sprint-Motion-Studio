@@ -1,0 +1,23 @@
+import {test,expect} from 'bun:test';
+import {runCollaborationScript} from './collaborationFixtures';
+test('real SDK legacy and modern concurrent HTTP preserve original Elysia Request and authenticated actor',async()=>{
+ const r=await runCollaborationScript(String.raw`
+ import assert from 'node:assert/strict';import {writeFileSync} from 'node:fs';import {join} from 'node:path';
+ const sdk=await import('./apps/server/node_modules/@modelcontextprotocol/server');const z=await import('./apps/server/node_modules/zod/v4');const {Elysia}=await import('./apps/server/node_modules/elysia');
+ const auth=await import('./apps/server/src/localSessions');const {authenticatedMcpFetch}=await import('./apps/server/src/mcp/request');auth.initializeLocalSessions('sdk-test','maker');
+ const secret1=auth.issueReviewerSession('sdk-test'),secret2=auth.issueReviewerSession('sdk-test'),originals=new Map(),clones=new Map(),actors=new Map(),observed=[];
+ const sdkHandler=sdk.createMcpHandler(()=>{const s=new sdk.McpServer({name:'diagnostic-only',version:'1'});s.registerTool('identity',{inputSchema:z.object({pause:z.number()})},async(input,ctx)=>{const req=ctx.http.req,label=req.headers.get('x-label'),actor=auth.getRequestActor(req);await Bun.sleep(input.pause);const value={label,original:req===originals.get(label),same_actor:actor===actors.get(label)&&actor===auth.getRequestActor(req),role:actor.role,session:actor.session_id};observed.push(value);return {content:[{type:'text',text:JSON.stringify(value)}]};});return s;});
+ const app=new Elysia().all('/mcp',({request})=>authenticatedMcpFetch(request,sdkHandler));
+ const server=Bun.serve({hostname:'127.0.0.1',port:0,async fetch(req){const label=req.headers.get('x-label');originals.set(label,req);clones.set(label,req.clone());try{actors.set(label,auth.authenticateLocalRequest(req,new URL(req.url).host));}catch{}return app.handle(req);}});
+ const invoke=async(label,credential,modern,pause=0)=>{const params={name:'identity',arguments:{pause},...(modern?{_meta:{[sdk.PROTOCOL_VERSION_META_KEY]:'2026-07-28',[sdk.CLIENT_INFO_META_KEY]:{name:'test',version:'1'},[sdk.CLIENT_CAPABILITIES_META_KEY]:{}}}:{})};const res=await fetch(server.url.origin+'/mcp',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json, text/event-stream','x-label':label,...credential,...(modern?{'Mcp-Protocol-Version':'2026-07-28','Mcp-Method':'tools/call','Mcp-Name':'identity'}:{})},body:JSON.stringify({jsonrpc:'2.0',id:label,method:'tools/call',params})});const text=await res.text();return {status:res.status,text};};
+ try{const results=await Promise.all([invoke('legacy-maker',{Authorization:'Bearer maker'},false,60),invoke('legacy-reviewer',{Cookie:'sfs_reviewer='+secret1},false,30),invoke('modern-reviewer',{Cookie:'sfs_reviewer='+secret2},true,10),invoke('modern-maker',{Authorization:'Bearer maker'},true,40)]);
+ writeFileSync(join(process.env.SFS_WORKSPACE,'sdk-results.json'),JSON.stringify({results,observed,keys:{protocol:sdk.PROTOCOL_VERSION_META_KEY}},null,2));assert.equal(observed.length,4,JSON.stringify(results));assert.ok(observed.every(x=>x.original&&x.same_actor));assert.equal(observed.find(x=>x.label==='legacy-maker').role,'maker');assert.notEqual(observed.find(x=>x.label==='legacy-reviewer').session,observed.find(x=>x.label==='modern-reviewer').session);
+ const original=originals.get('legacy-maker');assert.throws(()=>auth.getRequestActor(clones.get('legacy-maker')),e=>e.code==='UNAUTHORIZED');
+ for(const [body,status] of [['{',400],['',400],['x'.repeat(1048577),413]]){const res=await fetch(server.url.origin+'/mcp',{method:'POST',headers:{Authorization:'Bearer maker','Content-Type':'application/json'},body});assert.equal(res.status,status);assert.equal((await res.json()).id,null);}
+ const unauth=await fetch(server.url.origin+'/mcp',{method:'POST',headers:{'Content-Type':'application/json'},body:'{'});assert.equal(unauth.status,401);assert.equal((await unauth.json()).error.message,'UNAUTHORIZED');
+ const type=await fetch(server.url.origin+'/mcp',{method:'POST',headers:{Authorization:'Bearer maker','Content-Type':'text/plain'},body:'{}'});assert.equal(type.status,415);
+ const badModern=await fetch(server.url.origin+'/mcp',{method:'POST',headers:{Authorization:'Bearer maker','Content-Type':'application/json','Mcp-Protocol-Version':'2026-07-28'},body:JSON.stringify({jsonrpc:'2.0',id:'bad',method:'tools/list',params:{}})});assert.equal(badModern.status,400);assert.ok((await badModern.json()).error);
+ assert.equal(observed.length,4);
+ }finally{server.stop(true);}
+ `,'t10');expect(r.exit_code,r.stderr+' '+r.workspace).toBe(0);
+},30000);

@@ -3,6 +3,103 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 import pytest
 import json
+import builtins
+
+
+def test_plain_background_does_not_load_rembg_or_model_session(tmp_path, monkeypatch):
+    raw = tmp_path / 'raw.png'
+    image = Image.new('RGB', (64, 64), 'white')
+    ImageDraw.Draw(image).rectangle((20, 14, 40, 50), fill='red')
+    image.save(raw)
+    frame = {'id': 'plain', 'raw': str(raw), **{k: str(tmp_path / (k+'.png')) for k in ('mask', 'rgba', 'preview')}}
+    original_import = builtins.__import__
+    def guarded_import(name, *args, **kwargs):
+        if name == 'rembg' or name.startswith('rembg.'):
+            raise AssertionError('纯色背景不应加载 rembg')
+        return original_import(name, *args, **kwargs)
+    monkeypatch.setattr(builtins, '__import__', guarded_import)
+    result = worker.main({'action': 'batch', 'models': str(Path(__file__).parents[3] / '.models'), 'model': 'u2netp', 'frames': [frame]})
+    assert result['session_count'] == 0
+    assert result['frames'][0]['method'] == 'edge_color'
+    assert Image.open(frame['rgba']).getpixel((25, 25)) == (255, 0, 0, 255)
+
+
+def test_compression_background_is_clear_but_enclosed_light_detail_survives():
+    image = Image.new('RGB', (64, 64), (245, 239, 232))
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((3, 3, 12, 12), fill=(237, 233, 229))
+    draw.rectangle((20, 14, 40, 50), fill=(40, 50, 80))
+    draw.rectangle((24, 20, 35, 35), fill=(245, 239, 232))
+    mask = worker.plain_background_mask(image)
+    assert mask.getpixel((5, 5)) == 0
+    assert mask.getpixel((28, 25)) == 255
+
+
+def test_marked_enclosed_background_is_removed_without_erasing_matching_clothes():
+    image = Image.new('RGB', (96, 96), (245, 239, 232))
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((12, 8, 82, 86), fill=(35, 40, 60))
+    draw.rectangle((18, 15, 75, 30), fill=(245, 239, 232))  # 同色围裙
+    draw.rectangle((43, 43, 54, 80), fill=(245, 239, 232))  # 腿间封闭空隙
+    draw.rectangle((23, 43, 35, 78), fill=(245, 239, 232))  # 同色袜子
+    mask = worker.plain_background_mask(image, [[48, 60]])
+    assert mask.getpixel((48, 60)) == 0
+    assert mask.getpixel((48, 18)) == 255
+    assert mask.getpixel((28, 60)) == 255
+    assert mask.getpixel((41, 60)) == 255
+    assert worker.plain_background_mask(image).getpixel((48, 60)) == 255
+
+
+def test_background_seed_rejects_foreground_and_out_of_bounds():
+    image = Image.new('RGB', (32, 32), 'white')
+    ImageDraw.Draw(image).rectangle((10, 8, 22, 27), fill='black')
+    for points in ([[12, 12]], [[32, 10]], [[-1, 10]], [[1.5, 2]]):
+        with pytest.raises(ValueError): worker.plain_background_mask(image, points)
+
+
+def test_marked_pale_ground_shadow_clears_without_erasing_boots_or_apron():
+    image = Image.new('RGB', (96, 96), (245, 239, 232))
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((34, 12, 60, 76), fill=(35, 40, 60))
+    draw.rectangle((38, 20, 56, 36), fill=(245, 239, 232))
+    draw.ellipse((15, 79, 80, 89), fill=(205, 206, 221))
+    draw.rectangle((36, 72, 45, 87), fill=(30, 30, 35))
+    draw.rectangle((50, 72, 59, 87), fill=(30, 30, 35))
+    assert worker.plain_background_mask(image).getpixel((20, 83)) == 255
+    mask = worker.plain_background_mask(image, [[20, 83]])
+    assert mask.getpixel((20, 83)) == 0
+    assert mask.getpixel((40, 83)) == 255
+    assert mask.getpixel((48, 28)) == 255
+
+
+def test_background_adjacent_light_fringe_is_soft_but_internal_white_survives():
+    image = Image.new('RGB', (64, 64), (245, 239, 232))
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((20, 14, 40, 50), fill=(218, 218, 218))
+    draw.rectangle((21, 15, 39, 49), fill=(35, 40, 60))
+    draw.rectangle((24, 20, 35, 35), fill=(245, 239, 232))
+    mask = worker.plain_background_mask(image)
+    assert 0 < mask.getpixel((20, 25)) < 255
+    assert mask.getpixel((21, 25)) == 255
+    assert mask.getpixel((28, 25)) == 255
+
+
+def test_background_points_are_part_of_batch_cache_identity(tmp_path):
+    raw = tmp_path / 'raw.png'
+    image = Image.new('RGB', (64, 64), 'white')
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((15, 10, 48, 54), fill='black')
+    draw.rectangle((28, 25, 35, 48), fill='white')
+    image.save(raw)
+    frame = {'id': 'seed-cache', 'raw': str(raw), **{k: str(tmp_path / (k+'.png')) for k in ('mask', 'rgba', 'preview')}}
+    request = {'action': 'batch', 'models': str(Path(__file__).parents[3] / '.models'), 'model': 'u2netp', 'frames': [frame], 'cache': str(tmp_path / 'cache')}
+    assert worker.main(request)['cache_hits'] == 0
+    assert Image.open(frame['rgba']).getpixel((31, 35))[3] == 255
+    seeded = {**request, 'background_points': {frame['id']: [[31, 35]]}}
+    assert worker.main(seeded)['cache_hits'] == 0
+    assert Image.open(frame['rgba']).getpixel((31, 35))[3] == 0
+    assert worker.main(request)['cache_hits'] == 1
+    assert Image.open(frame['rgba']).getpixel((31, 35))[3] == 255
 
 spec = importlib.util.spec_from_file_location('worker', Path(__file__).parents[1] / 'worker.py')
 worker = importlib.util.module_from_spec(spec)

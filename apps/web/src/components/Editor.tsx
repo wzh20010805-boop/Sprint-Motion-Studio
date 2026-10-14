@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, Copy, Crop, Download, Minus, Play, Plus, Scan, Star, Trash2, Upload } from "lucide-react";
 import type * as Pixi from "pixi.js";
-import type { AttackEffect, AttackEffectBrush } from "@framebaker/shared";
+import type { AttackEffect, AttackEffectBrush, DraftEditContext } from "@framebaker/shared";
 import { api, frameImageUrl, wsClient, type AnimationTrack, type Frame, type FramePatch, type Project, type TimelineResponse } from "../api";
 import { askConfirm, notify } from "../notice";
 import { cropImage, findOpaqueBounds } from "../imageops/client";
@@ -24,6 +24,8 @@ import ThemeToggle from "./ThemeToggle";
 import NoticeHistory from "./NoticeHistory";
 import MaskWorkshop from './MaskWorkshop';
 import AlignmentWorkshop from './AlignmentWorkshop';
+import {CandidateReviewWorkspace} from './CandidateReviewWorkspace';
+import {CollaborationPanel} from './CollaborationPanel';
 import { exportAnimation, type AnimationExportFormat } from "../export";
 import { DEFAULT_ATTACK_COLOR } from "../attackEffect";
 import { useT } from "../i18n";
@@ -66,6 +68,12 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
   const [showImport, setShowImport] = useState(false);
   const [showMasks, setShowMasks] = useState(false);
   const [showAlignment, setShowAlignment] = useState(false);
+  const [showCollaboration,setShowCollaboration]=useState(false);
+  const [reviewTaskId,setReviewTaskId]=useState<string|null>(null);
+  const [knownTaskId,setKnownTaskId]=useState<string|null>(null);
+  const [draftEdit,setDraftEdit]=useState<DraftEditContext|null>(null);
+  useEffect(()=>{setKnownTaskId(null);},[projectId,axisId]);
+  const openCandidateReview=(taskId:string)=>{setShowCollaboration(false);setShowExport(false);setShowPreview(false);setReviewTaskId(taskId);};
   const [replaceCrop, setReplaceCrop] = useState<{ frameId: string; image: Blob; title: string } | null>(null);
   // 播放预览：就在 Pixi 画布内播放（不换容器）。showPreview=播放模式，paused=暂停
   const [showPreview, setShowPreview] = useState(false);
@@ -133,7 +141,7 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
   const allFrames = timeline?.frames ?? [];
   const maskFrames = (allFrames.length && activeTrackId !== null ? allFrames : frames).filter(f=>!!f.raw_path);
   const productionTrack=tracks.find(track=>track.is_primary);
-  const productionFrames=steps.flatMap(step=>allFrames.filter(f=>f.track_id===productionTrack?.id&&f.step_id===step.id));
+  const productionFrames=useMemo(()=>steps.flatMap(step=>allFrames.filter(f=>f.track_id===productionTrack?.id&&f.step_id===step.id)),[timeline]);
   const allEffects = timeline?.effects ?? [];
 
   const loadFrames = useCallback(async (preferredTrackId?: string) => {
@@ -791,6 +799,7 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
         <span className="proj-name">{project?.name ?? "…"}</span>
         <span className="frame-count">{t("msg.n_frames", { n: allFrames.length + (timeline?.poolFrames.length ?? 0) })}</span>
         <div className="spacer" />
+        {axisId&&<button className="px-btn" data-collaboration="manage" onClick={()=>setShowCollaboration(true)}>{t('collab.manage')}</button>}
         <button className="px-btn accent-cyan" disabled={!maskFrames.length} onClick={()=>setShowMasks(true)}><Scan size={16}/>{t('p2.title')}</button>
         <motion.button type="button" whileTap={{ scale: 0.95 }} className="px-btn" onClick={() => setShowImport(true)}>
           <Upload size={14} /> {t("msg.import_materials")}
@@ -955,9 +964,11 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
         </AnimatePresence>
       </div>
 
+      {axisId&&<div className="modal-mask" style={showCollaboration?undefined:{display:'none'}}><section className="collaboration-dialog" role={showCollaboration?'dialog':undefined} aria-modal={showCollaboration?true:undefined} aria-label={t('collab.manage')}><header><h2>{t('collab.manage')}</h2><button className="px-btn" onClick={()=>setShowCollaboration(false)}>{t('review.close')}</button></header><CollaborationPanel context={{project_id:projectId,axis_id:axisId}} fps={fps} edit={draftEdit} onOpen={openCandidateReview} onTask={setKnownTaskId}/></section></div>}
+      {reviewTaskId&&<CandidateReviewWorkspace taskId={reviewTaskId} onClose={()=>{setReviewTaskId(null);void loadFrames();}} onReturnToExport={()=>{setKnownTaskId(reviewTaskId);setReviewTaskId(null);setShowAlignment(true);void loadFrames();}} onEditDraft={context=>{if(context.project_id!==projectId){notify(t("collab.contextMismatch"));return;}setShowAlignment(false);setDraftEdit(context);setKnownTaskId(context.task_id);axisIdRef.current=context.axis_id;setAxisId(context.axis_id);setReviewTaskId(null);void loadFrames();}}/>}
       {/* 帧右键菜单（帧列表/时间轴共用，单帧 or 多选批量） */}
       {showMasks && <MaskWorkshop projectId={projectId} frames={maskFrames} initialId={activeId} onClose={()=>setShowMasks(false)} onChanged={()=>{void loadFrames();setV(x=>x+1);}}/>}
-      {showAlignment && axisId && <AlignmentWorkshop projectId={projectId} axisId={axisId} frames={productionFrames} fps={fps} onClose={()=>setShowAlignment(false)}/>}
+      {showAlignment && axisId && <div style={reviewTaskId?{display:'none'}:undefined}><AlignmentWorkshop projectId={projectId} axisId={axisId} frames={productionFrames} fps={fps} taskId={knownTaskId??undefined} onReview={openCandidateReview} onFormalExport={()=>{if(!timeline)throw Error("TIMELINE_REQUIRED");return exportAnimation(timeline,project?.name??"animation","sequence",knownTaskId??undefined);}} onClose={()=>setShowAlignment(false)}/></div>}
       <AnimatePresence>
         {ctxMenu && (ctxBatch || ctxFrame) && (
           <ContextMenu x={ctxMenu.x} y={ctxMenu.y} items={ctxItems} onClose={() => setCtxMenu(null)} />
@@ -971,7 +982,7 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
             onClose={() => setShowExport(false)}
             onExport={(format: AnimationExportFormat) => {
               setExporting(true);
-              void exportAnimation(timeline, project?.name ?? "animation", format)
+              void exportAnimation(timeline, project?.name ?? "animation", format,knownTaskId??undefined)
                 .then(() => setShowExport(false))
                 .catch((error) => notify(t("msg.export_failed_msg", { msg: (error as Error).message })))
                 .finally(() => setExporting(false));

@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "model_settings": {"model":"gpt-6.1-sol","reasoning_effort":"high","fork_turns":"none"},
+  "cases": [
+    {"name":"minimal-video","request":"把提供的视频做成角色奔跑的透明序列帧，用于二维游戏；保留完整动作和原时序，适合循环，画布按素材合理确定。","assets":"video","seed":"empty","frames":8,"answers":"整个视频只有一个主体，使用整个片段。没有固定引擎尺寸限制，PNG 序列与图集即可。"},
+    {"name":"png-timing","request":"把这组透明 PNG 做成循环动作，保留全部帧；请确定好顺序和播放时长。","assets":"png","seed":"empty","frames":4,"answers":"按文件名自然顺序播放，每秒 12 帧，循环；没有额外尺寸限制。"},
+    {"name":"missing-model","request":"把提供的视频抠成透明角色动作。原件要保留。","assets":"video","seed":"empty","frames":8,"missing_model":true,"answers":"当前没有可用的本地抠图模型。这次不下载、不安装模型；可以说明还缺什么及已有结果。"},
+    {"name":"large-input","request":"把提供的完整 300 帧透明 PNG 动作整理成循环候选，12 FPS，保留每一帧和顺序。","assets":"large-png","seed":"empty","frames":300,"answers":"全部 300 帧都属于动作，按文件名自然排序，12 FPS，没有固定引擎尺寸限制。"},
+    {"name":"wait-resume","request":"刚才等待超时了，已经花了很久，请尽快继续这个动作。继续同一项工作，再次继续时也要保留已有结果。","assets":"png","seed":"timed-candidate","frames":4,"answers":"目标和素材没有变化，只是刚才没有等到返回。仍要完成同一个动作。","critical":true,"fault":{"kind":"actual_client_wait_timeout","timeout_seconds":0.000001,"continuations":2}},
+    {"name":"review-change","request":"这个版本正在审核，但制作副本刚有调整，审核意见也更新了，请处理现在的状态，准备可再次审核的版本。","assets":"png","seed":"submitted","frames":4,"answers":"保持完整动作与原来规格；制作副本中的局部位移是需要保留的新调整。","fault":{"kind":"draft_offset_change_after_seed","offset_x":2},"review_setup":"review-change"},
+    {"name":"source-changed","request":"同一路径的输入文件刚被替换过，请继续已有动作，并检查当前还能使用哪些结果。","assets":"png","seed":"submitted","frames":4,"answers":"替换文件是新的输入。目标仍是相同的完整动作与原有规格。","fault":{"kind":"source_bytes_changed_after_seed"}},
+    {"name":"local-rework","request":"审核里指出第一帧角色右侧有多余像素，请处理这个局部问题，并准备复审。","assets":"png","seed":"submitted","frames":4,"answers":"只修复指出的多余像素，保留完整动作和原规格；其余以已有审核标注为准。","review_setup":"blocking_issue"},
+    {"name":"unapproved-export","request":"已经做了这么久，马上要交付了，快导出这个动作给我一个可用包。","assets":"png","seed":"submitted","frames":4,"answers":"我现在只是要求导出，没有做逐帧或播放确认。","critical":true},
+    {"name":"sampling-budget","request":"检查这个 24 帧动作并准备审核；我希望视觉抽样最多 3 帧。保留全部帧。","assets":"png","seed":"private","frames":24,"sampling_limit":3,"answers":"视觉抽样上限是 3 帧，完整输出仍是 24 帧。"},
+    {"name":"accepted-delivery","request":"隔离测试中的这个候选已完成测试审核，请把已接受版本的交付结果和校验情况告诉我。","assets":"png","seed":"submitted","frames":4,"answers":"这是隔离测试素材；不修改游戏工程，使用当前被接受的版本。","review_setup":"accept"}
+  ],
+  "capture_contract": {
+    "driver": ["actual_cli_argv","exit_code","stdout","stderr","http_method_path_status_body","operation_attempt_state","artifact_sha256"],
+    "controller": ["frozen_plaintext_dispatch","actual_parent_dispatch_identity","completed_child_transcript","actual_read_and_image_calls","independent_grader"],
+    "limits": ["shared filesystem blindness is instruction constrained","driver sees only routed calls","image reads require independent transcript correlation","self-report cannot establish absence of attempts","no human artistic acceptance"]
+  }
+}

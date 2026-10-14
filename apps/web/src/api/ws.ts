@@ -7,6 +7,8 @@ class WSClient {
   private ws: WebSocket | null = null;
   private listeners = new Set<Listener>();
   private started = false;
+  private reconnectListeners = new Set<() => void>();
+  subscribeConnection(listener:()=>void){this.reconnectListeners.add(listener);return()=>{this.reconnectListeners.delete(listener);};}
 
   start() {
     if (this.started) return;
@@ -18,6 +20,7 @@ class WSClient {
     const proto = location.protocol === "https:" ? "wss" : "ws";
     const ws = new WebSocket(`${proto}://${location.host}/ws`);
     this.ws = ws;
+    ws.onopen = () => this.reconnectListeners.forEach(listener=>listener());
     ws.onmessage = (e) => {
       try {
         const msg = JSON.parse(e.data as string) as WSMessage;

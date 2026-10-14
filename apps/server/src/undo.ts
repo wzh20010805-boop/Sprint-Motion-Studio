@@ -20,7 +20,7 @@ mkdirSync(pendingRoot, { recursive: true });
 mkdirSync(restoreRoot, { recursive: true });
 
 type SnapshotTable = "animation_axes" | "animation_tracks" | "animation_steps" | "frames" | "attack_effects";
-type SnapshotTables = Record<SnapshotTable, Array<Record<string, unknown>>>;
+type SnapshotTables = Record<SnapshotTable, Array<Record<string, unknown>>> & {draft_settings?: Array<{key:string;value:string;updated_at:number}>};
 type ReleaseLock = () => void;
 
 interface PendingUndo {
@@ -98,7 +98,9 @@ function mutationForRequest(request: Request, body: unknown): { projectId: strin
 }
 
 function captureTables(projectId: string): SnapshotTables {
+  const prefix=`sfs.draft.${projectId}.`;
   return {
+    draft_settings: db.query('SELECT key,value,updated_at FROM settings WHERE substr(key,1,?)=?').all(prefix.length,prefix) as Array<{key:string;value:string;updated_at:number}>,
     animation_axes: db.query("SELECT * FROM animation_axes WHERE project_id=?").all(projectId) as Array<Record<string, unknown>>,
     animation_tracks: db.query("SELECT * FROM animation_tracks WHERE axis_id IN (SELECT id FROM animation_axes WHERE project_id=?)").all(projectId) as Array<Record<string, unknown>>,
     animation_steps: db.query("SELECT * FROM animation_steps WHERE axis_id IN (SELECT id FROM animation_axes WHERE project_id=?)").all(projectId) as Array<Record<string, unknown>>,
@@ -113,6 +115,13 @@ function parseSnapshot(value: string): SnapshotTables {
 }
 
 function restoreTables(projectId: string, snapshot: SnapshotTables) {
+  // 旧快照不清除后建立的源选择；新快照只恢复本项目制作时序，不恢复审核或内容修订。
+  if(snapshot.draft_settings!==undefined){
+    const prefix=`sfs.draft.${projectId}.`;
+    if(snapshot.draft_settings.some(row=>!row.key.startsWith(prefix)))throw new Error('制作快照包含其他项目设置');
+    db.query('DELETE FROM settings WHERE substr(key,1,?)=?').run(prefix.length,prefix);
+    for(const row of snapshot.draft_settings)db.query('INSERT INTO settings(key,value,updated_at) VALUES(?,?,?)').run(row.key,row.value,row.updated_at);
+  }
   db.query("DELETE FROM attack_effects WHERE project_id=?").run(projectId);
   db.query("DELETE FROM frames WHERE project_id=?").run(projectId);
   db.query("DELETE FROM animation_steps WHERE axis_id IN (SELECT id FROM animation_axes WHERE project_id=?)").run(projectId);

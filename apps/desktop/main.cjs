@@ -3,6 +3,7 @@ const {spawn}=require('node:child_process');
 const fs=require('node:fs');
 const path=require('node:path');
 const {createHash}=require('node:crypto');
+const {initializeDesktopSession}=require('./review-bootstrap.cjs');
 
 const root=path.resolve(process.resourcesPath,'..');
 const smoke=process.argv.includes('--smoke');
@@ -53,14 +54,15 @@ async function selectWorkspace(){
 }
 async function launch(){
  await startService();
- await session.defaultSession.cookies.set({url:origin+'/',name:'sfs_token',value:info.token,httpOnly:true,sameSite:'strict',path:'/'});
+ const {session:desktopSession}=await initializeDesktopSession(session,workspace,info);
+ report.events.push('review-session-ready');
  const html=await(await service('/')).text();const hashes=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map(m=>m[1].replace(/\r\n?/g,'\n')).filter(Boolean).map(s=>`'sha256-${createHash('sha256').update(s).digest('base64')}'`);
  const csp=`default-src 'self'; script-src 'self' ${hashes.join(' ')}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' data: blob: ${origin.replace('http:','ws:')}; worker-src 'self' blob:; media-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-src 'none'; form-action 'self'`;
- session.defaultSession.webRequest.onBeforeRequest((details,callback)=>{const allowed=details.url.startsWith(origin+'/')||details.url.startsWith(origin.replace('http:','ws:')+'/')||/^(data:|blob:)/.test(details.url);if(!allowed)report.networkBlocked.push(details.url);callback({cancel:!allowed});});
- session.defaultSession.webRequest.onHeadersReceived((details,callback)=>callback({responseHeaders:{...details.responseHeaders,'Content-Security-Policy':[csp]}}));
- session.defaultSession.setPermissionRequestHandler((_w,_p,callback)=>callback(false));
- session.defaultSession.setPermissionCheckHandler(()=>false);
- window=new BrowserWindow({width:1360,height:900,show:!smoke||process.env.SFS_SMOKE_VISIBLE==='1',title:'素材创意工坊 · Sprite Motion Studio',autoHideMenuBar:true,webPreferences:{contextIsolation:true,sandbox:true,nodeIntegration:false,nodeIntegrationInWorker:false,webSecurity:true}});
+ desktopSession.webRequest.onBeforeRequest((details,callback)=>{const allowed=details.url.startsWith(origin+'/')||details.url.startsWith(origin.replace('http:','ws:')+'/')||/^(data:|blob:)/.test(details.url);if(!allowed)report.networkBlocked.push(details.url);callback({cancel:!allowed});});
+ desktopSession.webRequest.onHeadersReceived((details,callback)=>callback({responseHeaders:{...details.responseHeaders,'Content-Security-Policy':[csp]}}));
+ desktopSession.setPermissionRequestHandler((_w,_p,callback)=>callback(false));
+ desktopSession.setPermissionCheckHandler(()=>false);
+ window=new BrowserWindow({width:1360,height:900,show:!smoke||process.env.SFS_SMOKE_VISIBLE==='1',title:'素材创意工坊 · Sprite Motion Studio',autoHideMenuBar:true,webPreferences:{session:desktopSession,contextIsolation:true,sandbox:true,nodeIntegration:false,nodeIntegrationInWorker:false,webSecurity:true}});
  report.windowVisible=window.isVisible();
  report.preferences=window.webContents.getLastWebPreferences();
  if(smoke)window.webContents.setBackgroundThrottling(false);

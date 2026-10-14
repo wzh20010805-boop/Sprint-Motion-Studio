@@ -2,7 +2,8 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 const root = resolve(import.meta.dir, '..');
-const evidence = join(root, 'fixtures/generated/editor-navigation-ui', new Date().toISOString().replaceAll(':', '-'));
+const evidence = process.argv.includes('--public-runtime')?join(root,'fixtures/generated/human-ai','t12-editor-'+crypto.randomUUID().replaceAll('-','').slice(0,8)):join(root, 'fixtures/generated/editor-navigation-ui', new Date().toISOString().replaceAll(':', '-'));
+const electron=process.argv.includes('--public-runtime')?join(root,'fixtures/generated/human-ai/desktop-runtime/1b7dd865-7c23-48b7-a305-5ba4603021fc/electron.exe'):join(root,'probes/desktop/node_modules/electron/dist/electron.exe');
 mkdirSync(evidence, { recursive: true });
 const build = await Bun.build({ entrypoints: [join(root, 'probes/desktop/editor-navigation-fixture.tsx')], target: 'browser', outdir: evidence });
 if (!build.success) throw new Error(build.logs.join('\n'));
@@ -28,16 +29,17 @@ const server = Bun.serve({ hostname: '127.0.0.1', port: 0, async fetch(request) 
   if (url.pathname === '/fixture/mutations') return Response.json(mutations.filter(m => m.path !== '/api/settings/layout'));
   if (url.pathname === '/api/projects/fixture') return Response.json({ project: { id: 'fixture', name: '逐帧预览测试', kind: 'frame', fps: 1 } });
   if (url.pathname === '/api/projects/fixture/timeline') return Response.json({ axis, axes: [axis], tracks, steps, frames, effects: [], poolFrames: assetFrames, assetFrames });
+  if (url.pathname === '/api/v1/collaboration/action') return Response.json({ok:true,data:{mode:'legacy',tasks:[],timing:null}});
   if (url.pathname === '/api/settings') return Response.json({});
   if (url.pathname.endsWith('/image.png')) return new Response(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAANklEQVR4nO3QQQ0AMAgEwVJdKMYkBBV85gzsZaKz+h3uX8YdIECAAAECBAgQIECAAAECBFZgAKv/AySb4DmAAAAAAElFTkSuQmCC', 'base64'), { headers: { 'Content-Type': 'image/png' } });
   if (url.pathname.startsWith('/fonts/')) return new Response(Bun.file(join(root, 'apps/web/public', url.pathname)));
   return new Response('Fixture route not found', { status: 404 });
 } });
 try {
-  const child = Bun.spawn([join(root, 'probes/desktop/node_modules/electron/dist/electron.exe'), join(root, 'probes/desktop/editor-navigation-check.cjs')], { cwd: root, windowsHide: true, stdout: 'pipe', stderr: 'pipe', env: { ...process.env, EDITOR_CHECK_URL: server.url.toString(), EDITOR_CHECK_OUTPUT: evidence } });
+  const child = Bun.spawn([electron, join(root, 'probes/desktop/editor-navigation-check.cjs')], { cwd: root, windowsHide: true, stdout: 'pipe', stderr: 'pipe', env: { ...process.env, EDITOR_CHECK_URL: server.url.toString(), EDITOR_CHECK_OUTPUT: evidence } });
   const [exit, out, err] = await Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()]);
   writeFileSync(join(evidence, 'command-output.txt'), out + '\n' + err);
   const report = JSON.parse(readFileSync(join(evidence, 'report.json'), 'utf8'));
   console.log(JSON.stringify({ exit, evidence, ...report }, null, 2));
   process.exitCode = exit;
-} finally { server.stop(true); }
+} finally { await server.stop(true); writeFileSync(join(evidence,'fixture-lifecycle.json'),JSON.stringify({electron_awaited:true,listener_stop_awaited:true,pending_requests:server.pendingRequests})); }

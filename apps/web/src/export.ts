@@ -1,3 +1,5 @@
+import {t} from './i18n';
+import {resolveAnimationExport} from './collaborationEditor';
 import { buildFbanimV2Entries, type MotionClip, type SkeletalProjectDocument, type Skeleton } from "@framebaker/shared";
 import { api, frameImageUrl, materialImageUrl, type Frame, type TimelineResponse } from "./api";
 import type { AttackEffectCell } from "./api";
@@ -146,7 +148,15 @@ export function spriteSheetLayout(cellWidth: number, cellHeight: number, count: 
 }
 
 /** 导出 PNG 序列或自动换行的单张精灵图；两者都烘焙图片变换和攻击特效。 */
-export async function exportAnimation(timeline: TimelineResponse, name: string, format: AnimationExportFormat) {
+export async function exportAnimation(timeline: TimelineResponse, name: string, format: AnimationExportFormat, taskId?:string) {
+  // 持久动作模式在任何实时像素、解码或 Canvas 之前由服务裁定；错误不得降级。
+  const resolution=await resolveAnimationExport({project_id:timeline.axis.project_id,axis_id:timeline.axis.id},format,taskId);
+  if(resolution.mode==='candidate'){
+    if(!resolution.files?.length)throw new Error(t("export.fixedFilesMissing"));
+    for(const file of resolution.files){const fixed=await fetch(file.url);if(!fixed.ok)throw new Error(t("export.fixedFileReadFailed"));download(await fixed.blob(),`${safeFilename(name)}_${file.file.replaceAll('/','_')}`);}
+    return;
+  }
+  if(resolution.mode!=='legacy')throw new Error(t("export.unknownMode"));
   const ordered = [...timeline.steps].sort((a,b)=>a.idx-b.idx);
   const visible = [...timeline.tracks].filter((t)=>t.visible).sort((a,b)=>a.idx-b.idx);
   const frames = timeline.frames.filter((f)=>visible.some((t)=>t.id===f.track_id));

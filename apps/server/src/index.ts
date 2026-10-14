@@ -2,12 +2,13 @@ import { serve } from "bun";
 import index from "../../web/index.html";
 import { app } from "./app";
 import { wsHandlers } from "./ws";
-import { authorizeLocalRequest } from "./runtime";
+import { authenticateLocalRequest, validateLocalAuthority, LocalAuthError } from "./localSessions";
 import { db } from "./db";
 import { maskBackend } from './pipeline/masks';
 import { PRODUCTION_API_VERSION } from '@framebaker/shared';
 import { retainExistingImports } from './materialRetention';
 import { backfillMaterialProjects } from './materialProjects';
+import {MULTIPART_BODY_BYTES} from './mcp/request';
 
 // 升级时先独立保留旧项目资料，用户以后删除库素材不会被重复补登记。
 retainExistingImports();
@@ -20,6 +21,7 @@ let lastActivity = Date.now();
 export const server = serve({
   hostname: "127.0.0.1",
   port,
+  maxRequestBodySize:MULTIPART_BODY_BYTES,
   routes: {
     "/": index,
     "/project/:id": index, // 编辑器页复用同一 HTML，前端读 location.pathname
@@ -31,8 +33,13 @@ export const server = serve({
     const url = new URL(req.url);
     lastActivity = Date.now();
     if (token) {
-      const rejected = authorizeLocalRequest(req, token, `127.0.0.1:${server.port}`);
-      if (rejected) return Response.json({ schema_version: "1.0", ok: false, status: "failed", error: { code: rejected === 401 ? "UNAUTHORIZED" : "INVALID_ORIGIN", message: "本地服务请求未授权" } }, { status: rejected });
+      try {
+        validateLocalAuthority(req, `127.0.0.1:${server.port}`);
+        if (url.pathname !== "/api/health") authenticateLocalRequest(req, `127.0.0.1:${server.port}`);
+      } catch (error) {
+        const failure = error instanceof LocalAuthError ? error : new LocalAuthError('UNAUTHORIZED', 401);
+        return Response.json({ ok: false, error: { code: failure.code, message: "本地服务请求未授权" } }, { status: failure.status });
+      }
       if (url.pathname === "/api/health") return Response.json({ ok: true, name: "Sprite Motion Studio", instance_id: process.env.SFS_INSTANCE_ID, pid: process.pid });
       if (url.pathname === "/api/config") return Response.json({
         sfs: { phase: "P5", production_api_version: PRODUCTION_API_VERSION, extraction_mode: "all", matting_ready: maskBackend().ready },

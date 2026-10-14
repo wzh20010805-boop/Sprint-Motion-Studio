@@ -20,7 +20,7 @@ export const FRAME_SOURCES = [
 ] as const;
 export type FrameSource = (typeof FRAME_SOURCES)[number];
 
-export const JOB_TYPES = ["extract_frames", "generate_frames", "matting", "image_layers", "export_assets"] as const;
+export const JOB_TYPES = ["extract_frames", "generate_frames", "matting", "image_layers", "export_assets", "build_candidate", "deliver_candidate"] as const;
 export type JobType = (typeof JOB_TYPES)[number];
 
 /** Qwen-Image-Layered /images/layers 当前服务端允许的单次图层数 */

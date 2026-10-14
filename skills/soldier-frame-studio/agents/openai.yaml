@@ -1,0 +1,6 @@
+interface:
+  display_name: "Sprite Motion Studio 素材制作"
+  short_description: "批量制作透明序列帧，复用预设与已有结果，减少工具调用和返工"
+  default_prompt: "使用 $soldier-frame-studio 将这些素材批量整理成可审核的透明动作资产，并记录质量、调用数和耗时。"
+policy:
+  allow_implicit_invocation: true

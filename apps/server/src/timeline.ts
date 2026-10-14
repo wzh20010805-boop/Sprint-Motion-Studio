@@ -1,7 +1,14 @@
+import { materializeStepDuration } from './pipeline/collaboration/timing';
 import type { AnimationAxis, AnimationTrack, AttackEffectCellRow, Frame, TimelineResponse, TimelineStep } from "@framebaker/shared";
 import { db, getFrame, nextFrameIdx, serializeAttackEffect, serializeFrame, uid } from "./db";
 
 type Defaults = { axis: AnimationAxis; track: AnimationTrack };
+export function createAnimationAction(projectId:string,name:string,fps=8):Defaults {
+ if(!db.query('SELECT id FROM projects WHERE id=?').get(projectId)||!name.trim()||name.length>200||!Number.isInteger(fps)||fps<1||fps>120)throw new Error('动作参数无效');
+ return db.transaction(()=>{const id=uid(),tid=uid(),idx=(db.query('SELECT COALESCE(MAX(idx),-1)+1 n FROM animation_axes WHERE project_id=?').get(projectId) as {n:number}).n;
+ db.query('INSERT INTO animation_axes VALUES(?,?,?,?,?,?)').run(id,projectId,name.trim(),idx,fps,Date.now());db.query("INSERT INTO animation_tracks VALUES(?,?,'Main',0,1,0,1)").run(tid,id);
+ return {axis:db.query('SELECT * FROM animation_axes WHERE id=?').get(id) as AnimationAxis,track:db.query('SELECT * FROM animation_tracks WHERE id=?').get(tid) as AnimationTrack};}).immediate();
+}
 
 export function ensureDefaultTimeline(projectId: string): Defaults {
   return db.transaction(() => {
@@ -116,7 +123,7 @@ export function syncAxis(axisId: string) {
 }
 
 export function setStepDuration(stepId: string, duration: number) {
-  db.transaction(() => { db.query("UPDATE animation_steps SET duration=? WHERE id=?").run(duration, stepId); db.query("UPDATE frames SET duration=? WHERE step_id=?").run(duration, stepId); })();
+  db.transaction(() => { materializeStepDuration(stepId,duration); db.query("UPDATE animation_steps SET duration=? WHERE id=?").run(duration, stepId); db.query("UPDATE frames SET duration=? WHERE step_id=?").run(duration, stepId); })();
 }
 
 export function deleteFrameCell(frameId: string) {

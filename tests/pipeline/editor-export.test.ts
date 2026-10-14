@@ -41,6 +41,12 @@ test('editor transforms affect shared preview, reviewed export and fingerprints;
   const result=await exportAssets(prepareExport({project_id:project.id,axis_id:imported.axis_id}));
   const manifest=JSON.parse(readFileSync(join(result.directory,'manifest.json'),'utf8'));assert.deepEqual(manifest.frames[0].transform,snapshot.frames[0].transform);
   assert.deepEqual(preview,readFileSync(join(result.directory,manifest.frames[0].file)));
+  if(alpha===128){
+   const {setAxisWorkflowMode}=await import('./apps/server/src/pipeline/collaboration/store');
+   const late=prepareExport({project_id:project.id,axis_id:imported.axis_id});
+   await assert.rejects(exportAssets(late,()=>setAxisWorkflowMode({project_id:project.id,axis_id:imported.axis_id},'collaboration')),e=>e.code==='IMMUTABLE_DELIVERY_REQUIRED');
+   assert.throws(()=>prepareExport(late.request),e=>e.code==='IMMUTABLE_DELIVERY_REQUIRED');
+  }
   db.query('UPDATE frames SET offset_x=.4,offset_y=.4,scale=.001,rotation=0,opacity=1 WHERE id=?').run(id);
   const disappeared=await checkAlignment(project.id,imported.axis_id);assert.equal(disappeared.checks[0].empty,true);assert.equal(disappeared.checks[0].overflow,false);
   await assert.rejects(approveAlignment(project.id,imported.axis_id,getProject(project.id).revision,'empty resampled frame','regression test'),e=>e.code==='ALIGNMENT_REVIEW_REQUIRED');

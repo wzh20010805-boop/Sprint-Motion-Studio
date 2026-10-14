@@ -45,18 +45,29 @@ export function alignmentState(project:string,axis:string) {
  return {config,revision:getProject(project).revision,approved_revision:review?.revision??null,approved_fingerprint:review?.fingerprint??null,frame_count:frames.length};
 }
 
+const publicPreset=(config:Pick<AlignmentConfig,'canvas'|'anchor'|'scale'|'resampling'>)=>({canvas:{width:config.canvas.width,height:config.canvas.height},anchor:[...config.anchor],scale:config.scale,resampling:config.resampling});
+
+/** 任务要求不能静默覆盖已有公共预设；根轨迹和逐帧偏移仍按动作独立保存。 */
+export function saveTaskAlignment(project:string,axis:string,config:AlignmentConfig,count:number) {
+ const validated=validateAlignment(config,count),existing=setting(presetKey(project)),requested=publicPreset(validated);
+ if(existing&&JSON.stringify(publicPreset(existing))!==JSON.stringify(requested))throw new PipelineError('ALIGNMENT_PRESET_CONFLICT','任务公共画布、锚点、比例或重采样与现有角色预设不一致',409);
+ put(key(project,axis),{config:validated});
+ if(!existing)put(presetKey(project),requested);
+}
+
 export function saveAlignment(project:string,axis:string,config:AlignmentConfig,revision:number) {
  const {frames}=axisFrames(project,axis);const validated=validateAlignment(config,frames.length);
  if(getProject(project).revision!==revision)throw new PipelineError('REVISION_CONFLICT','项目已变化，请重新载入',409);
- db.transaction(()=>{put(key(project,axis),{config:validated});put(presetKey(project),{canvas:validated.canvas,anchor:validated.anchor,scale:validated.scale,resampling:validated.resampling});db.query('UPDATE projects SET revision=revision+1 WHERE id=?').run(project);})();
+ db.transaction(()=>{put(key(project,axis),{config:validated});put(presetKey(project),publicPreset(validated));db.query('UPDATE projects SET revision=revision+1 WHERE id=?').run(project);})();
  broadcast('frames_changed',{projectId:project});return alignmentState(project,axis);
 }
 
-export function composeInputs(project:string,axis:string) {
+export function composeInputs(project:string,axis:string,frameId?:string) {
  const {frames}=axisFrames(project,axis),state=alignmentState(project,axis);
  if(!state.config)throw new PipelineError('ALIGNMENT_REVIEW_REQUIRED','请先标注地面基准和公共画布',409);
  validateAlignment(state.config,frames.length);
- return frames.map((f,index)=>{
+ const selected=frames.map((frame,index)=>({frame,index})).filter(item=>frameId===undefined||item.frame.id===frameId);
+ return selected.map(({frame:f,index})=>{
   const mask=maskState(f.id);if(!mask.current)throw new PipelineError('MASK_REVIEW_REQUIRED','部分帧没有有效抠图，请生成或修复遮罩',409);
   const transform:FrameRenderTransform={offset_x:f.offset_x,offset_y:f.offset_y,scale:f.scale,rotation:f.rotation,opacity:f.opacity};
   if(!Object.values(transform).every(v=>typeof v==='number'&&Number.isFinite(v))||transform.opacity<0||transform.opacity>1)throw new PipelineError('INVALID_FRAME_TRANSFORM','帧变换必须是有限数，透明度须在0到1之间');
@@ -90,7 +101,7 @@ export async function approveAlignment(project:string,axis:string,revision:numbe
 
 const pendingPreviews=new Map<string,Promise<void>>();
 export async function previewFrame(project:string,axis:string,frameId:string) {
- const state=alignmentState(project,axis),frames=composeInputs(project,axis),frame=frames.find(f=>f.id===frameId);
+ const state=alignmentState(project,axis),frames=composeInputs(project,axis,frameId),frame=frames.find(f=>f.id===frameId);
  if(!frame)throw new PipelineError('FRAME_NOT_FOUND','此帧不属于动作',404);
  const fingerprint=createHash('sha256').update(JSON.stringify({config:state.config,frame})).digest('hex');
  const directory=join(STORAGE_ROOT,'cache','compose',fingerprint);mkdirSync(directory,{recursive:true});

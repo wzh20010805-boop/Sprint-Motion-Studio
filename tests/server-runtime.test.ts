@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { app } from "../apps/server/src/app";
 import { db, getFrame, getMaterial, nextFrameIdx, serializeFrame, serializeMaterial, STORAGE_ROOT } from "../apps/server/src/db";
 import { JobCancelledError, runCmd } from "../apps/server/src/jobs/run";
@@ -83,7 +84,7 @@ describe("媒体响应", () => {
   });
 
   test("图片支持版本化缓存与 ETag 条件请求", async () => {
-    const path = `/tmp/framebaker-media-${crypto.randomUUID()}.png`;
+    const path = join(tmpdir(), `framebaker-media-${crypto.randomUUID()}.png`);
     try {
       await Bun.write(path, "image-bytes");
       const response = serveMediaFile(path, new Request("http://localhost/image.png?v=1"), "image/png");

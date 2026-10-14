@@ -3,7 +3,8 @@ import { join, resolve } from 'node:path';
 
 // 独立的合成页面：只验证真实组件，不连接工作区或正式后台。
 const root = resolve(import.meta.dir, '..');
-const evidence = join(root, 'fixtures/generated/mask-navigation', new Date().toISOString().replaceAll(':', '-'));
+const evidence = process.argv.includes('--public-runtime')?join(root,'fixtures/generated/human-ai','t12-mask-'+crypto.randomUUID().replaceAll('-','').slice(0,8)):join(root, 'fixtures/generated/mask-navigation', new Date().toISOString().replaceAll(':', '-'));
+const electron=process.argv.includes('--public-runtime')?join(root,'fixtures/generated/human-ai/desktop-runtime/1b7dd865-7c23-48b7-a305-5ba4603021fc/electron.exe'):join(root,'probes/desktop/node_modules/electron/dist/electron.exe');
 mkdirSync(evidence, { recursive: true });
 const build = await Bun.build({ entrypoints: [join(root, 'probes/desktop/mask-navigation-fixture.tsx')], target: 'browser', outdir: evidence });
 if (!build.success) throw new Error(build.logs.join('\n'));
@@ -20,10 +21,10 @@ const server = Bun.serve({ hostname: '127.0.0.1', port: 0, async fetch(request) 
   return new Response('Fixture route not found', { status: 404 });
 } });
 try {
-  const child = Bun.spawn([join(root, 'probes/desktop/node_modules/electron/dist/electron.exe'), join(root, 'probes/desktop/mask-navigation-check.cjs')], { cwd: root, windowsHide: true, stdout: 'pipe', stderr: 'pipe', env: { ...process.env, MASK_CHECK_URL: server.url.toString(), MASK_CHECK_OUTPUT: evidence } });
+  const child = Bun.spawn([electron, join(root, 'probes/desktop/mask-navigation-check.cjs')], { cwd: root, windowsHide: true, stdout: 'pipe', stderr: 'pipe', env: { ...process.env, MASK_CHECK_URL: server.url.toString(), MASK_CHECK_OUTPUT: evidence } });
   const [exit, out, err] = await Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()]);
   writeFileSync(join(evidence, 'command-output.txt'), out + '\n' + err);
   const report = JSON.parse(readFileSync(join(evidence, 'report.json'), 'utf8'));
   console.log(JSON.stringify({ exit, evidence, ...report }, null, 2));
   process.exitCode = exit;
-} finally { server.stop(true); }
+} finally { await server.stop(true); writeFileSync(join(evidence,'fixture-lifecycle.json'),JSON.stringify({electron_awaited:true,listener_stop_awaited:true,pending_requests:server.pendingRequests})); }

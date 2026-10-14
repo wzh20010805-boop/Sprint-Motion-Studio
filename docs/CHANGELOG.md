@@ -4,6 +4,30 @@ This document records features, changes, and bug fixes by release. Main releases
 
 ## [Unreleased]
 
+- Add explicit whole-action approval after a human has checked all final frames and playback. Record per-frame approvals and playback atomically with candidate hashes, CAS, reviewer provenance, replay, revocation and existing delivery gates; unresolved issues and repair verdicts still block. Collaboration alignment confirmation now opens candidate review.
+
+- Keep the alignment dialog stable during playback by reserving the loading status line and the full frame-counter width, preventing status visibility and digit changes from moving the centered dialog or controls.
+
+- Fix alignment playback staying on frame one when background updates reset its timer. Stabilize production frame lists, bind timing to current-frame identity and duration, wait for image readiness before advancing, and show loading status. Single-frame previews read only the selected image instead of the full action.
+
+- Fit the alignment workshop's initial canvas within a 512×320 preview area instead of enlarging every canvas 2×. A 512×640 asset opens at 50%; add 25%/50%/100%/200% display zoom and clarify that preview zoom does not change export dimensions.
+
+- Move collaboration/review into a dialog; collapse the job queue by default and support persistent bulk notice dismissal and restoration. Add review-to-export navigation, frozen timing explanations and decoded playback buffering to avoid per-frame request stalls.
+
+- Fix INVALID_REQUEST from maker MCP/CLI rework and output timing: adapters project only request_key into the strict request identity while preserving operation payloads, content conflict checks and idempotent replay.
+
+- Keep playback controls stable across frame-number digit boundaries and loop wraparound by reserving the full counter width and a three-digit FPS value; preserve dragging and range playback.
+
+- Support per-frame background points for enclosed near-solid background regions such as leg gaps. Wire CLI, HTTP, shared recipe and maker MCP; version caches to v5 while preserving unmarked matching clothes and original pixels.
+
+- Raise the main editor playback FPS slider limit from 24 to 120, matching the existing backend axis range. Candidate review retains the frozen candidate's original rational timing.
+
+- Real character batches exposed eager rembg/pymatting startup before plain-background frames: initialize the model only for complex backgrounds and reuse its session within the batch. Use existing scipy four-connected labeling for faster plain-background removal and clear translucent compression haze in connected background regions. Version the cache algorithm while preserving enclosed light details and detached parts.
+
+- Add production1.2 maker MCP/CLI and scoped review HTTP adapters, immutable user goal/source provenance, complete pagination, bounded byte transport, and original-operation resume/cancellation contracts.
+
+- Add separate local maker/reviewer sessions, protected desktop bootstrap, shared desktop handshake and production API1.2 compatibility checks.
+
 ## [1.0.7] - 2026-10-12
 
 - Add left/right keyboard navigation to the main frame editor so the current animation axis can be inspected step by step without clicking each timeline cell. Preserve input, dialog and canvas interaction shortcuts.

@@ -1,10 +1,29 @@
-# 素材创意工坊：P2–P5 / Windows 便携版
+# 素材创意工坊：源码协作流程 / Windows 便携版
 
-**P2–P5 功能已实现并生成独立便携包。** 从 [最新 Release](https://github.com/wzh20010805-boop/Sprint-Motion-Studio/releases/latest) 下载并完整解压，双击 `SpriteMotionStudio.exe` 或 `START.cmd`，无需启动 bun dev。本仓库的最新打包产物位于 `dist/最新便携版/`。P2遮罩修正、P3地面轨迹/公共比例/画布、P4正式透明序列/图集/ZIP与任务恢复/CLI/九工具MCP、P5独立本地运行时已接通。详见 [使用与Codex接入](docs/p3-p5-guide.md) 与 [变更日志](docs/CHANGELOG.zh-CN.md)；[实施验证报告](docs/evidence/p2-p5/report.md)保留最初P2–P5阶段的验证记录。真实动作人工质量确认、干净Windows虚拟机验收仍待完成；P6不在本次范围。
+**已发布 Windows 便携版为 1.0.7 / 生产 API 1.1，当前源码为生产 API 1.2。** 从 [最新 Release](https://github.com/wzh20010805-boop/Sprint-Motion-Studio/releases/latest) 下载并完整解压，双击 `SpriteMotionStudio.exe` 或 `START.cmd`，无需启动 bun dev。该便携版包含 P2遮罩修正、P3地面轨迹/公共比例/画布、P4透明序列/图集/ZIP与任务恢复/CLI/MCP、P5独立本地运行时；下文源码新增的协作 Task、固定候选及独立验收尚未包含在下载包中，新协作便携包的集成与验证尚未完成。
+
+便携版说明见 [使用与Codex接入](docs/p3-p5-guide.md)；[实施验证报告](docs/evidence/p2-p5/report.md)保留最初 P2–P5 阶段的验证记录。当前源码说明见 [API 1.2](docs/api.zh-CN.md#生产12制作门面与固定候选http接口) 与 [Unreleased 变更日志](docs/CHANGELOG.zh-CN.md#unreleased)。真实动作人工质量确认、干净 Windows 虚拟机验收仍待完成；P6不在本次范围。
 
 基于 FrameBaker 原有 React / Pixi、Bun / Elysia / SQLite 开发，保留完整上游 Git 历史。当前可以创建项目、导入视频、完整抽帧和场景抠图修正；GUI 与 CLI 共用一个后端和数据库。
 
-**原始素材独立保留；工作台另行生成透明 RGBA。** 当前便携包未内置CPU模型。在没有模型的电脑上，首次自动抠图需通过「素材工坊」菜单离线导入或明确下载 u2netp；模型保存在 `%LOCALAPPDATA%\SpriteMotionStudio\models`，以后会继续复用，准备好后自动抠图可断网运行，无需CUDA。本机已安装的模型不会自动打入发行ZIP。正式输出要求当前遮罩与地面轨迹审核，修订或文件字节变化后重新确认。没有修改现有游戏或个人知识库。
+**原始素材独立保留；工作台另行生成透明 RGBA。** 当前便携包未内置CPU模型。在没有模型的电脑上，首次自动抠图需通过「素材工坊」菜单离线导入或明确下载 u2netp；模型保存在 `%LOCALAPPDATA%\SpriteMotionStudio\models`，以后会继续复用，准备好后自动抠图可断网运行，无需CUDA。本机已安装的模型不会自动打入发行ZIP。便携版正式输出要求当前遮罩与地面轨迹审核；源码协作动作要求最终候选逐帧与整体播放的人工验收，内容变化后按影响重新确认。没有修改现有游戏或个人知识库。
+
+## 当前源码：制作 → 候选 → 人工验收 → 固定交付
+
+- 协作 Task 固定用户原话、服务核验的来源身份和制作要求；草稿可继续修改，不可变候选保存最终 PNG、图集、有理数时长及来源记录。
+- 制作侧执行全帧技术检查和有界抽样观察，保留未观察帧及不确定性；自动检查和 maker 自检均不授予人工批准。
+- 独立 Canvas 验收读取冻结像素，可对照源图、Alpha、父候选和变化范围，记录逐帧判定、区域问题及整体播放确认。用户检查全部最终帧和播放后，可以明确选择“确认整个动作并允许导出”；未解决问题和需修复帧仍阻止确认。
+- 重新修改保留旧候选及问题记录，返回制作副本，提交新候选后再人工验收。正式交付复制已接受候选的固定字节，包含透明序列、图集、联系表、manifest、质量报告与 ZIP；支持抽帧、候选构建和交付的原操作恢复，历史尝试和文件保留。
+
+CLI / MCP 的 maker 工具仅负责制作、检查、提交与读取交付；人工批准来自当前桌面审核会话。实际工具由 `inspect_capabilities` 返回，完整契约见 [API / CLI / MCP 说明](docs/api.zh-CN.md#生产12制作门面与固定候选http接口)。
+
+### 六动作案例：制作候选展示，待人工验收
+
+沿用用户已有素材，六动作依次为告别挥手、连续口播、指向画面右侧、开场招呼、走动入场、指向画面左侧，统一 **512 × 640** 画布；状态均为 `draft_pending_human_review`。
+
+![六动作制作候选预览，待人工验收](docs/media/sfs/cases-2026-10-14/actions-preview.gif)
+
+[查看代表帧联系表](docs/media/sfs/cases-2026-10-14/actions-contact-sheet.png) · [案例说明与透明 PNG](docs/media/sfs/cases-2026-10-14/README.md)。动图经过展示采样，不能代替全部最终帧与整体播放的人工检查。展示素材用于说明流程，不属于项目 MIT 源码许可授权的素材库；此前公开的 [奔跑案例](README.zh-CN.md#奔跑案例)继续保留。
 
 ## 本机运行
 
@@ -17,9 +36,11 @@
 .\Start-SFS.cmd
 ```
 
-`Start-SFS.cmd` 使用已经安装的 Electron 开发宿主，进入现有素材库。新建项目后，在项目编辑器的“导入 → 上传文件”选择 MP4；默认“全部原始帧”。旧 FPS 采样是显式选项，会主动跳帧。导入后点击“场景抠图与修正”处理前景。
+`Start-SFS.cmd` 使用已经安装的 Electron 开发宿主，进入现有素材库。CLI / MCP 传入相同 `--workspace`，从该工作区发现并复用本地服务，无需固定访问 3000 端口；生产 API 版本不兼容时明确拒绝连接。新建项目后，在项目编辑器的“导入 → 上传文件”选择 MP4；默认“全部原始帧”。旧 FPS 采样是显式选项，会主动跳帧。导入后点击“场景抠图与修正”处理前景。
 
 ### 只预览指定帧
+
+主编辑器播放控制条的 FPS 范围为1–120，48/60/120可加快浏览原24fps序列；每个步骤若含多个tick，按步骤时长停留。提高播放FPS不会生成中间帧。候选验收使用冻结候选的原始有理数时长，独立于主编辑器FPS。源码改动需重启本地服务与窗口后加载。
 
 主编辑器和场景抠图窗口支持键盘 ← / → 快速逐帧预览；输入框、弹窗、绘画和拖放期间保留原有按键行为。
 
@@ -36,6 +57,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup_sfs.ps1 -Inc
 该脚本仅使用本工作区的 `.runtime`、仓库依赖和 `.venv-image`；固定 Bun 1.4.2，按锁文件安装 JS 依赖，Python 验证依赖仅 Pillow / pytest。FFmpeg 和 ffprobe 使用现有 PATH，不自动安装 GPU 栈或模型。Electron 是开发宿主，首次获取需要网络。
 
 ## 不开 GUI 的最小流程
+
+以下为基础导入与抽帧流程。协作 Task、候选和返工命令见 [API / CLI / MCP 说明](docs/api.zh-CN.md#生产12制作门面与固定候选http接口)；人工验收仍需桌面入口。
 
 ```powershell
 $ws = Join-Path $PWD 'workspaces\my-soldier'
@@ -56,7 +79,7 @@ $clip = .\sfs.cmd clip create --workspace $ws --project $pidSfs --source $import
 
 ```text
 workspaces/<name>/
-  framebaker.db                 # 唯一上游数据库，schema 3 增量迁移
+  framebaker.db                 # 唯一数据库；当前源码 schema 5 增量迁移
   workspace.json               # 工作区标识
   backups/                     # 迁移前 SQLite 一致快照，包括 WAL
   sources/<source-id>/

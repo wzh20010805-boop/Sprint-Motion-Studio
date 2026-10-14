@@ -12,11 +12,14 @@ const TYPE_LABEL: Record<Job["type"], string> = {
   matting: "msg.matting",
   image_layers: "layers.action",
   export_assets: "正式素材导出",
+  build_candidate: "job.buildCandidate",
+  deliver_candidate: "job.deliverCandidate",
 };
 
 const DONE_TTL = 6000; // 完成/取消任务停留 6s 后自动移除
 const MAX_ITEMS = 20;
 const POS_KEY = "framebaker-jobpanel-pos";
+const HIDDEN_KEY = "framebaker-jobpanel-hidden";
 const PANEL_W = 264;
 const NAV_H = 60; // 顶部导航栏高度，拖拽下限需避开以免头部被遮挡无法抓取
 
@@ -104,6 +107,11 @@ const JobItem = memo(function JobItem({
 export default function JobPanel({ syncOnEnter = false }: { syncOnEnter?: boolean }) {
   const t = useT();
   const [jobs, setJobs] = useState<Record<string, Job>>({});
+  const [expanded,setExpanded]=useState(false);
+  const [initialHidden]=useState<Record<string,Job['status']>>(()=>{try{const value=JSON.parse(localStorage.getItem(HIDDEN_KEY)??'{}');return value&&typeof value==='object'&&!Array.isArray(value)?value:{};}catch{return {};}});
+  const hidden=useRef(initialHidden);
+  const [hiddenCount,setHiddenCount]=useState(Object.keys(hidden.current).length);
+  const saveHidden=useCallback(()=>{setHiddenCount(Object.keys(hidden.current).length);try{localStorage.setItem(HIDDEN_KEY,JSON.stringify(hidden.current));}catch{/* 本地存储不可用时仍可本次隐藏 */}},[]);
   const [cancelling, setCancelling] = useState<Set<string>>(new Set());
   const timers = useRef(new Map<string, number>());
   const jobsRef = useRef(jobs);
@@ -135,6 +143,7 @@ export default function JobPanel({ syncOnEnter = false }: { syncOnEnter?: boolea
   const onPointerDown = (e: React.PointerEvent) => {
     // 只响应主键，且不拦截头部内按钮的点击
     if (e.button !== 0) return;
+    if((e.target as HTMLElement).closest('button'))return;
     const el = panelRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
@@ -198,14 +207,17 @@ export default function JobPanel({ syncOnEnter = false }: { syncOnEnter?: boolea
   /** 写入/覆盖单条 job（来自初始加载、轮询、job_queued） */
   const upsertJob = useCallback(
     (job: Job) => {
+      if(hidden.current[job.id]===job.status)return;
+      if(hidden.current[job.id]){delete hidden.current[job.id];saveHidden();}
       setJobs((prev) => ({ ...prev, [job.id]: job }));
       if (isTransient(job)) scheduleDismiss(job.id);
     },
-    [scheduleDismiss]
+    [scheduleDismiss,saveHidden]
   );
 
   /** 局部 patch 单条 job（来自 WS 进度/状态事件）；未知 id 主动拉取，覆盖初始加载与 WS 的竞态 */
   const patchJob = useCallback((id: string, patch: Partial<Job>) => {
+    if(hidden.current[id]&&(!patch.status||patch.status===hidden.current[id]))return;
     if (!jobsRef.current[id]) {
       void api.getJob(id).then(upsertJob).catch(() => {});
       return;
@@ -219,6 +231,8 @@ export default function JobPanel({ syncOnEnter = false }: { syncOnEnter?: boolea
   }, [scheduleDismiss, upsertJob]);
 
   const dismiss = useCallback((id: string) => {
+    const job=jobsRef.current[id];if(!job||isActive(job))return;
+    hidden.current[id]=job.status;saveHidden();
     const timer = timers.current.get(id);
     if (timer) {
       clearTimeout(timer);
@@ -229,7 +243,7 @@ export default function JobPanel({ syncOnEnter = false }: { syncOnEnter?: boolea
       delete next[id];
       return next;
     });
-  }, []);
+  }, [saveHidden]);
 
   const cancel = useCallback(
     async (id: string) => {
@@ -258,10 +272,14 @@ export default function JobPanel({ syncOnEnter = false }: { syncOnEnter?: boolea
   const syncJobs = useCallback(async () => {
     const before = jobsRef.current;
     const list = await api.listJobs();
-    const active = list.filter(job=>isActive(job)||job.status==='waiting_user').slice(0, MAX_ITEMS);
+    let changed=false;
+    for(const job of list)if(hidden.current[job.id]&&hidden.current[job.id]!==job.status){delete hidden.current[job.id];changed=true;}
+    if(changed)saveHidden();
+    const visible=list.filter(job=>hidden.current[job.id]!==job.status);
+    const active = visible.filter(job=>isActive(job)||job.status==='waiting_user');
     setJobs((prev) => {
       const next = { ...prev };
-      for (const job of list) {
+      for (const job of visible) {
         // 请求期间若 WS 已更新该任务，以较新的实时状态为准。
         if (next[job.id] && prev[job.id] === before[job.id]) next[job.id] = job;
       }
@@ -273,7 +291,7 @@ export default function JobPanel({ syncOnEnter = false }: { syncOnEnter?: boolea
     for (const job of list) {
       if (isTransient(job)) scheduleDismiss(job.id);
     }
-  }, [scheduleDismiss]);
+  }, [scheduleDismiss,saveHidden]);
 
   // 应用启动时接管一次；之后每次从其他页面进入素材库都重新对账。
   const didInitialSync = useRef(false);
@@ -369,8 +387,14 @@ export default function JobPanel({ syncOnEnter = false }: { syncOnEnter?: boolea
     })
     .slice(0, MAX_ITEMS);
 
-  if (ordered.length === 0) return null;
-  const activeCount = ordered.filter(isActive).length;
+  const activeCount = Object.values(jobs).filter(isActive).length;
+  const waitingCount=Object.values(jobs).filter(job=>job.status==='waiting_user').length;
+  const clearNotices=()=>{for(const job of Object.values(jobsRef.current))if(!isActive(job))dismiss(job.id);};
+  const restoreNotices=async()=>{
+    try{const list=await api.listJobs();hidden.current={};saveHidden();for(const job of list)upsertJob(job);}
+    catch(e){notify(String(e));}
+  };
+  if(!expanded)return <button className="px-btn job-queue-launcher" data-jobs="open" aria-expanded={false} onClick={()=>{setExpanded(true);void syncJobs().catch(e=>notify(String(e)));}}><ListTodo size={14}/>{t('msg.job_queue')} {activeCount>0?`(${activeCount})`:''}</button>;
 
   return (
     <div
@@ -390,9 +414,13 @@ export default function JobPanel({ syncOnEnter = false }: { syncOnEnter?: boolea
         <ListTodo size={13} />
         <span>{t("msg.job_queue")}</span>
         <span className="count">
-          {activeCount > 0 ? t("msg.n_running", { n: activeCount }) : t("msg.all_done")}
+          {activeCount > 0 ? t("msg.n_running", { n: activeCount }) : waitingCount>0?t('queue.waiting',{n:waitingCount}):t("msg.all_done")}
         </span>
+        <button type="button" data-jobs="collapse" title={t('queue.collapse')} aria-label={t('queue.collapse')} onClick={()=>setExpanded(false)}><X size={14}/></button>
       </div>
+      <div className="job-panel-actions"><button className="px-btn" data-jobs="clear" disabled={!Object.values(jobs).some(job=>!isActive(job))} onClick={clearNotices}>{t('queue.clear')}</button><button className="px-btn" data-jobs="restore" disabled={!hiddenCount} onClick={()=>void restoreNotices()}>{t('queue.restore')} ({hiddenCount})</button></div>
+      <p className="job-panel-hint">{t('queue.hint')}</p>
+      {!ordered.length&&<p>{t('queue.empty')}</p>}
       <AnimatePresence initial={false}>
         {ordered.map((j) => (
           <JobItem

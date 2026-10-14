@@ -63,7 +63,13 @@ test('真实CPU批量初稿、修笔、冲突、撤销、待人工任务与重�
   const edited=await invoke(['mask','edit','--frame',saved.frame,'--strokes',strokes]);expect(edited.exit,edited.err).toBe(0);expect(edited.body.data.current.kind).toBe('manual');
   const undone=await invoke(['mask','undo','--frame',saved.frame]);expect(undone.exit,undone.err).toBe(0);expect(undone.body.data.version_id).toBe(saved.autoId);
   const draft=await invoke(['matte','--project',saved.project,'--frames',saved.frame,'--wait']);expect(draft.exit,JSON.stringify(draft.body)).toBe(4);expect(draft.body.requires_user_action).toBe(true);
-  const approved=await invoke(['mask','review','--frame',saved.frame]);expect(approved.exit,approved.err).toBe(0);expect(approved.body.data.reviewed).toBe(true);
+  const denied=await invoke(['mask','review','--frame',saved.frame]);expect(denied.exit).not.toBe(0);expect(denied.body.error.code).toBe('ROLE_FORBIDDEN');
+  const {obtainDesktopReviewSession}=await import('../../apps/desktop/review-bootstrap.cjs');
+  serviceInfo=await Bun.file(join(workspace,'.sfs/service.json')).json();
+  const reviewer=await obtainDesktopReviewSession(workspace,serviceInfo);
+  const current=await invoke(['mask','show','--frame',saved.frame]);expect(current.exit,current.err).toBe(0);expect(current.body.data.reviewed).toBe(false);
+  const response=await fetch(serviceInfo.url+'/api/v1/masks/'+saved.frame+'/review',{method:'POST',headers:{'Content-Type':'application/json',Cookie:`sfs_reviewer=${reviewer.reviewer_cookie}`},body:JSON.stringify({version_id:current.body.data.version_id,revision:current.body.data.revision})});
+  expect(response.status).toBe(200);const approved=await response.json();expect(approved.data.reviewed).toBe(true);
   const finished=await invoke(['job','wait','--job',draft.body.job_id]);expect(finished.exit,finished.err).toBe(0);
  }finally{try{serviceInfo=await Bun.file(join(workspace,'.sfs/service.json')).json();process.kill(serviceInfo.pid);}catch{/*服务已经退出*/}}
  writeFileSync(join(workspace,'test-report.txt'),first.out+first.err+second.out+second.err);

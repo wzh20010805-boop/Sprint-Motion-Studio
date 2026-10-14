@@ -80,9 +80,10 @@ def compose(raw, mask):
     return result
 
 
-def plain_background_mask(crop):
+def plain_background_mask(crop, background_points=None):
     """边缘近纯色时只去除与外边连通的背景，保留内部浅色与分离装备。"""
     import numpy as np
+    from scipy.ndimage import label, binary_dilation
     pixels = np.asarray(crop.convert('RGBA')).astype(np.int16)
     edge = np.concatenate((pixels[0], pixels[-1], pixels[:, 0], pixels[:, -1]))
     if np.min(edge[:, 3]) < 250:
@@ -92,12 +93,35 @@ def plain_background_mask(crop):
     if np.percentile(edge_distance, 98) > 12:
         return None
     distance = np.max(np.abs(pixels[:, :, :3] - background), axis=2)
-    candidates = Image.fromarray(np.where(distance <= 20, 255, 0).astype('uint8'))
-    padded = ImageOps.expand(candidates, border=1, fill=255)
-    ImageDraw.floodfill(padded, (0, 0), 128)
-    connected = np.asarray(padded)[1:-1, 1:-1] == 128
-    # 少量压缩噪声直接透明，过渡颜色保留软边；不修改原图RGB。
-    alpha = np.where(connected, np.clip((distance - 5) * 255 / 15, 0, 255), 255).astype('uint8')
+    # scipy 是 rembg 现有依赖；C 实现的四邻域标记替代逐像素 Python floodfill。
+    padded = np.pad(distance <= 20, 1, constant_values=True)
+    labels, count = label(padded)
+    selected = np.zeros(count + 1, dtype=bool)
+    selected[labels[0, 0]] = True
+    shadow_regions = []
+    for point in background_points or []:
+        if len(point) != 2 or not all(isinstance(v, int) and not isinstance(v, bool) for v in point):
+            raise ValueError('INVALID_BACKGROUND_POINT: 背景点须为整数像素坐标')
+        x, y = point
+        if not 0 <= x < crop.width or not 0 <= y < crop.height:
+            raise ValueError('INVALID_BACKGROUND_POINT: 背景点越界')
+        if distance[y, x] <= 20:
+            selected[labels[y + 1, x + 1]] = True
+        else:
+            color = pixels[y, x, :3]
+            # 显式标记的浅色地面阴影；深色/高饱和角色点仍拒绝。
+            if y < crop.height * .75 or color.min() < 160 or color.max()-color.min() > 36 or distance[y, x] > 80:
+                raise ValueError('INVALID_BACKGROUND_POINT: 点不是近背景色或浅色地面阴影')
+            shadow_labels, _ = label(np.max(np.abs(pixels[:, :, :3]-color), axis=2) <= 20)
+            shadow_regions.append(shadow_labels == shadow_labels[y, x])
+    connected = selected[labels[1:-1, 1:-1]]
+    for region in shadow_regions:
+        connected |= region
+    # 连通近背景色全部透明，避免压缩噪声变成整片灰雾；内部浅色仍保留。
+    alpha = np.where(connected, 0, 255).astype('uint8')
+    # 仅柔化贴背景的一像素浅色混合边，内部白衣和深色轮廓保持。
+    fringe = binary_dilation(connected) & ~connected & (distance < 40)
+    alpha[fringe] = np.clip((distance[fringe]-20)*255/20, 0, 255).astype('uint8')
     return Image.fromarray(alpha)
 
 
@@ -116,7 +140,39 @@ def inspect(mask, allow_soft=False):
     return {'reasons': reasons, 'foreground_fraction': foreground/count, 'visible_fraction': visible/count, 'soft_pixels': sum(histogram[1:255]), 'alpha_range': list(mask.getextrema())}
 
 
+def verify_archive(request):
+    """对服务预先固定的清单校验实际 ZIP；不从松散文件或包内 checksums 推导新期望。"""
+    expected = request['files']
+    if not isinstance(expected, dict) or not expected:
+        raise ValueError('DELIVERY_ARCHIVE_CHANGED: missing expected inventory')
+    def digest(stream):
+        value = hashlib.sha256()
+        for chunk in iter(lambda: stream.read(1024 * 1024), b''):
+            value.update(chunk)
+        return value.hexdigest()
+    with (Path(request['directory']).resolve() / 'assets.zip').open('rb') as source:
+        before = digest(source)
+        source.seek(0)
+        with zipfile.ZipFile(source) as archive:
+            names = archive.namelist()
+            if len(names) != len(set(names)) or set(names) != set(expected):
+                raise ValueError('DELIVERY_ARCHIVE_CHANGED: entry inventory mismatch')
+            for name in names:
+                with archive.open(name) as entry:
+                    if digest(entry) != expected[name]:
+                        raise ValueError('DELIVERY_ARCHIVE_CHANGED: entry hash mismatch: ' + name)
+        source.seek(0)
+        if digest(source) != before:
+            raise ValueError('DELIVERY_ARCHIVE_CHANGED: archive changed during verification')
+    return {'archive_sha256': before, 'files': expected}
+
+
 def main(request):
+    if request['action'] == 'verify_archive':
+        return verify_archive(request)
+    if request['action'] == 'check_candidate':
+        from candidate_checks import check_candidate
+        return check_candidate(request)
     if request['action'] == 'archive':
         directory = Path(request['directory']).resolve()
         with zipfile.ZipFile(directory / 'assets.zip', 'x', compression=zipfile.ZIP_DEFLATED) as archive:
@@ -136,18 +192,15 @@ def main(request):
         path = require_model(request['models'], request['model'])
         return {'model': request['model'], 'sha256': hashlib.sha256(path.read_bytes()).hexdigest(), 'bytes': path.stat().st_size, 'rembg': importlib.metadata.version('rembg'), 'onnxruntime': onnxruntime.__version__, 'provider': 'CPUExecutionProvider'}
     session = None
+    remove = None
     if action == 'batch':
         model_path = require_model(request['models'], request['model'])
-        os.environ['U2NET_HOME'] = request['models']
-        os.environ['OMP_NUM_THREADS'] = '2'
-        from rembg import remove
-        session = local_session(model_path, request['model'])
     entries = []
     cache_hits = 0
     for index, frame in enumerate(request['frames']):
         cache = None
         if action == 'batch' and request.get('cache'):
-            fingerprint = hashlib.sha256(json.dumps({'raw': hashlib.sha256(Path(frame['raw']).read_bytes()).hexdigest(), 'model': hashlib.sha256(model_path.read_bytes()).hexdigest(), 'region': request.get('region'), 'algorithm': 'p2-edge-rembg-v2'}, sort_keys=True).encode()).hexdigest()
+            fingerprint = hashlib.sha256(json.dumps({'raw': hashlib.sha256(Path(frame['raw']).read_bytes()).hexdigest(), 'model': hashlib.sha256(model_path.read_bytes()).hexdigest(), 'region': request.get('region'), 'background_points': request.get('background_points', {}).get(frame['id'], []), 'algorithm': 'p2-edge-rembg-v5'}, sort_keys=True).encode()).hexdigest()
             cache = Path(request['cache']) / fingerprint
             try:
                 saved = json.loads((cache / 'checkpoint.json').read_text())
@@ -170,9 +223,20 @@ def main(request):
             # 纯色/近纯色背景也会被小模型归一化成噪声，不能当作有角色。
             if max(ImageStat.Stat(crop).stddev) < 2:
                 raise ValueError(f'REGION_NO_FOREGROUND: 帧 {index+1} 的区域几乎全是背景。请框住角色及装备，或使用完整画面重新生成；上一版保留。')
-            crop_mask = plain_background_mask(crop)
+            points = request.get('background_points', {}).get(frame['id'], [])
+            if any(not box[0] <= p[0] < box[2] or not box[1] <= p[1] < box[3] for p in points):
+                raise ValueError('INVALID_BACKGROUND_POINT: 背景点不在保留区域内')
+            crop_mask = plain_background_mask(crop, [[p[0]-box[0], p[1]-box[1]] for p in points])
             method = 'edge_color' if crop_mask is not None else 'rembg'
             if crop_mask is None:
+                if points:
+                    raise ValueError('BACKGROUND_POINTS_REQUIRE_PLAIN_BACKGROUND: 背景点只适用于近纯色背景')
+                # 仅复杂背景加载模型；纯色帧和缓存命中不承担 rembg/JIT 初始化成本。
+                if session is None:
+                    os.environ['U2NET_HOME'] = request['models']
+                    os.environ['OMP_NUM_THREADS'] = '2'
+                    from rembg import remove
+                    session = local_session(model_path, request['model'])
                 crop_mask = remove(crop, session=session, only_mask=True, post_process_mask=False).convert('L')
             mask = Image.new('L', raw.size, 0)
             mask.paste(crop_mask, box[:2])

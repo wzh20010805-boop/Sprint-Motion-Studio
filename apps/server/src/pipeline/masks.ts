@@ -14,7 +14,7 @@ export const imagePython = () => process.env.SFS_IMAGE_PYTHON ?? join(REPO_ROOT,
 export const maskBackend = () => ({ ready: existsSync(imagePython()) && existsSync(join(modelDirectory(), 'u2netp.onnx')), python: imagePython(), model: 'u2netp', models: modelDirectory() });
 const hash = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');
 
-export async function runImageWorker(request: unknown, directory: string, signal?: AbortSignal, progress?: (text: string) => void): Promise<any> {
+export async function runImageWorker(request: unknown, directory: string, signal?: AbortSignal, progress?: (text: string) => void, formatProgress=(done:number,total:number)=>`场景抠图 ${done}/${total}`): Promise<any> {
   if (signal?.aborted) throw new JobCancelledError();
   if (!existsSync(imagePython())) throw new PipelineError('DEPENDENCY_MISSING', '独立 Python 图像环境未准备', 503);
   mkdirSync(directory, { recursive: true });
@@ -27,7 +27,7 @@ export async function runImageWorker(request: unknown, directory: string, signal
   const stdout = (async () => {
     const reader = proc.stdout.getReader(); const decoder = new TextDecoder(); let pending = '';
     for (;;) { const { value, done } = await reader.read(); if (done) break; pending += decoder.decode(value, { stream: true }); let end: number;
-      while ((end = pending.indexOf('\n')) >= 0) { const line = pending.slice(0, end); pending = pending.slice(end+1); try { const p = JSON.parse(line); if (p.progress) progress?.(`场景抠图 ${p.progress}/${p.total}`); } catch { /* 库普通输出不充当进度 */ } }
+      while ((end = pending.indexOf('\n')) >= 0) { const line = pending.slice(0, end); pending = pending.slice(end+1); try { const p = JSON.parse(line); if (p.progress) progress?.(formatProgress(p.progress,p.total)); } catch { /* 库普通输出不充当进度 */ } }
     }
   })();
   try {
@@ -59,14 +59,30 @@ export function maskState(frameId: string) {
   return { frame_id: frameId, revision: (getProject(frame.project_id) as any).revision, version_id: head?.version_id ?? null, reviewed: !!head?.reviewed&&!sourceChanged, source_changed:sourceChanged, current:sourceChanged?null:current, versions, raw_path:sourceChanged?frame.raw_path:current?.raw_path ?? frame.raw_path };
 }
 
-export function prepareMatte(request: MatteRequest): MatteRequest & { base_revision: number } {
+export type PreparedMatteRequest = MatteRequest & {base_revision:number; completion_policy:'legacy'|'collaboration'};
+export function prepareMatte(request: MatteRequest): PreparedMatteRequest {
   const project = getProject(request.project_id) as any;
   const base = request.base_revision ?? project.revision;
   if (base !== project.revision) throw new PipelineError('REVISION_CONFLICT', '项目已修改，请刷新后重试', 409);
   if (!request.frame_ids.length || request.frame_ids.length > 2000 || new Set(request.frame_ids).size !== request.frame_ids.length) throw new PipelineError('INVALID_INPUT', '请选择1到2000个不同帧');
   for (const id of request.frame_ids) { validateId(id); const frame = getFrame(id); if (!frame || frame.project_id !== request.project_id || !frame.raw_path) throw new PipelineError('FRAME_PROJECT_MISMATCH', '帧不存在、无原图或不属于此项目'); }
+  let completion_policy:PreparedMatteRequest['completion_policy']='legacy';
+  if(request.collaboration){
+    const c=request.collaboration;
+    const task=db.query('SELECT id FROM collab_tasks WHERE id=? AND project_id=? AND axis_id=?').get(c.task_id,request.project_id,c.axis_id);
+    if(!task||!db.query('SELECT 1 FROM axis_workflow_modes WHERE project_id=? AND axis_id=?').get(request.project_id,c.axis_id))throw new PipelineError('TASK_CONTEXT_MISMATCH','抠图协作上下文无效',409);
+    for(const id of request.frame_ids)if(!db.query('SELECT 1 FROM frames f JOIN animation_tracks t ON t.id=f.track_id JOIN animation_steps s ON s.id=f.step_id WHERE f.id=? AND t.axis_id=? AND s.axis_id=? AND t.is_primary=1').get(id,c.axis_id,c.axis_id))throw new PipelineError('TASK_CONTEXT_MISMATCH','协作抠图不能包含其他动作帧',409);
+    completion_policy='collaboration';
+  }
   if (!maskBackend().ready) throw new PipelineError('MODEL_NOT_READY', '请先运行 scripts/setup_p2.ps1 准备本地 CPU 模型', 503);
-  return { ...request, base_revision: base };
+  if(request.background_points){
+    if(Object.keys(request.background_points).length>2000)throw new PipelineError('INVALID_INPUT','背景点帧数超出限制');
+    for(const [id,points] of Object.entries(request.background_points)){
+      if(!request.frame_ids.includes(id)||!Array.isArray(points)||points.length>128||points.some(p=>!Array.isArray(p)||p.length!==2||p.some(v=>!Number.isSafeInteger(v)||v<0)))throw new PipelineError('INVALID_INPUT','背景点必须属于本批帧且使用非负整数源坐标');
+    }
+  }
+  // 不接受调用方指定完成策略，仅保留已验证的上下文和制作参数。
+  return {project_id:request.project_id,frame_ids:[...request.frame_ids],...(request.region?{region:request.region}:{}),...(request.background_points?{background_points:structuredClone(request.background_points)}:{}),...(request.collaboration?{collaboration:{...request.collaboration}}:{}),base_revision:base,completion_policy};
 }
 
 function commitVersions(projectId: string, revision: number, entries: any[], kind: string, info: any[]) {
@@ -91,14 +107,14 @@ function entry(frameId: string, directory: string, rawOverride?: string) {
   return { id: frameId, version, sourcePath: frame.raw_path!, sourceHash: hash(frame.raw_path!), raw, mask: join(dir,'mask.png'), rgba: join(dir,'foreground.png'), preview: join(dir,'preview.png') };
 }
 
-export async function matteBatch(request: MatteRequest & { base_revision: number }, progress?: (text: string) => void, signal?: AbortSignal) {
+export async function matteBatch(request: MatteRequest & { base_revision: number;completion_policy?:'legacy'|'collaboration' }, progress?: (text: string) => void, signal?: AbortSignal) {
   const dir = join(STORAGE_ROOT, 'projects', request.project_id, 'masks', uid());
   const backend = maskBackend();
   const model = await runImageWorker({ action:'doctor', models:backend.models, model:backend.model }, join(dir,'model'), signal);
   const entries = request.frame_ids.map(id => entry(id, dir));
-  const result = await runImageWorker({ action:'batch', frames:entries, model:backend.model, models:backend.models, region:request.region,cache:join(STORAGE_ROOT,'cache','matting',request.project_id) }, dir, signal, progress);
+  const result = await runImageWorker({ action:'batch', frames:entries, model:backend.model, models:backend.models, region:request.region,background_points:request.background_points,cache:join(STORAGE_ROOT,'cache','matting',request.project_id) }, dir, signal, progress);
   commitVersions(request.project_id, request.base_revision, entries, 'automatic', result.frames);
-  const report = { model, session_count:result.session_count, cache_hits:result.cache_hits, frame_count:entries.length, region:request.region ?? null, abnormal_frames:result.frames.filter((f:any) => f.reasons.length), requires_user_action:true, artifacts:entries.map(e=>({frame_id:e.id,kind:'rgba_draft',path:e.rgba,mask:e.mask,preview:e.preview})) };
+  const report = { model, session_count:result.session_count, cache_hits:result.cache_hits, frame_count:entries.length, region:request.region ?? null, abnormal_frames:result.frames.filter((f:any) => f.reasons.length), requires_user_action:request.completion_policy!=='collaboration', artifacts:entries.map(e=>({frame_id:e.id,kind:'rgba_draft',path:e.rgba,mask:e.mask,preview:e.preview})) };
   const reportPath=join(dir,'review.json'); writeFileSync(reportPath, JSON.stringify(report,null,2));
   return { ...report, report_path:reportPath };
 }

@@ -24,7 +24,7 @@ function fail(message: string): never {
 async function read(path: string): Promise<string> {
   const file = Bun.file(join(ROOT, path));
   if (!(await file.exists())) fail(`文件不存在：${path}`);
-  return file.text();
+  return (await file.text()).replaceAll("\r\n", "\n");
 }
 
 function parseVersion(value: string): [number, number, number] {

@@ -84,7 +84,7 @@ export async function validateSourceArtifacts(directory: string, sourceId: strin
   return expected;
 }
 
-export async function extractAll(input: string, sourceDirectory: string, options: { sourceId: string; signal?: AbortSignal; onProgress?: (msg: string) => void; ffmpeg?: string; ffprobe?: string }): Promise<ExtractionResult> {
+export async function extractAll(input: string, sourceDirectory: string, options: { sourceId: string; signal?: AbortSignal; onProgress?: (msg: string) => void; ffmpeg?: string; ffprobe?: string; onCheckpoint?:(phase:'prepared'|'raw_renamed'|'timing_renamed',stage:string,timing:SourceTiming,probe:VideoProbe)=>void }): Promise<ExtractionResult> {
   checkCancelled(options.signal);
   if (!options.sourceId?.trim()) throw new Error("sourceId 不能为空");
   const directory = resolve(sourceDirectory), rawDirectory = join(directory, "raw"), timingPath = join(directory, "timing.json");
@@ -108,11 +108,14 @@ export async function extractAll(input: string, sourceDirectory: string, options
     await writeFile(join(stage, "timing.json"), JSON.stringify(timing, null, 2) + "\n", { flag: "wx" });
     checkCancelled(options.signal);
     if (existsSync(rawDirectory) || existsSync(timingPath)) throw new Error("原始帧 raw 或 timing.json 已存在，拒绝覆盖");
+    options.onCheckpoint?.('prepared',stage,timing,probe);
     // 服务为唯一业务写入者；同一进程的重复任务由 activeSources 拦截。
     // 同步发布两项防止取消在二者之间进入，失败将 raw 移回暂存并保留证据。
     renameSync(stagedRaw, rawDirectory); publishedRaw = true;
+    options.onCheckpoint?.('raw_renamed',stage,timing,probe);
     renameSync(join(stage, "timing.json"), timingPath);
     publishedRaw = false;
+    options.onCheckpoint?.('timing_renamed',stage,timing,probe);
     return { sourceId: options.sourceId, frameCount: timing.frames.length, rawDirectory, timing, probe, warnings: timing.warnings };
   } catch (error) {
     if (publishedRaw) renameSync(rawDirectory, stagedRaw);
