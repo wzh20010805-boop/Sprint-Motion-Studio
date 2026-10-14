@@ -8,7 +8,7 @@ const build=await Bun.build({entrypoints:[join(root,'probes/desktop/candidate-re
 if(!build.success)throw Error(build.logs.join('\n'));
 if(process.argv.includes('--build-only')){console.log(JSON.stringify({build:true,output:build.outputs[0]!.path}));process.exit(0);}
 const result=await runCollaborationScript(reviewSetup+String.raw`
-const repo=process.cwd(),runtime=join(repo,'fixtures/generated/human-ai/desktop-runtime/1b7dd865-7c23-48b7-a305-5ba4603021fc');
+const repo=process.cwd(),runtime=join(repo,'probes/desktop/node_modules/electron/dist');
 const {request}=await seedCandidate(FRAME_COUNT);const parent=await c.buildPrivateCandidate(request());await submit(parent);
 d.startRework(parent.task_id,parent.id,d.readDraftContent(context).token,{request_key:uid()},actor);
 const first=c.readCandidateManifest(parent.id).frames[0];db.query('UPDATE frames SET offset_x=3,rotation=0.1,scale=-0.8,opacity=0.75 WHERE id=?').run(first.frame_id);

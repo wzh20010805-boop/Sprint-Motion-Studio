@@ -1,14 +1,15 @@
 import { Database } from "bun:sqlite";
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { backupBeforeMigrations, migratePipeline } from "./pipeline/migrations";
 import { ensureBuiltinAnimationAssets, normalizeGeneratedAnimationAssetNames } from "./builtinAnimationAssets";
 import type { AttackEffectCell, AttackEffectCellRow, Frame, FrameRow, Material, MaterialRow } from "@framebaker/shared";
 import { resolveMaterialProjects } from './materialProjects';
+import { resolveWorkspace } from '../../cli/src/workspaces';
 
-// 仓库根目录（apps/server/src → 根）：storage 固定放在根级，与启动时的 cwd 无关
+// 默认工作区与 CLI/桌面入口共用选择规则；路径与启动 cwd 无关。
 export const REPO_ROOT = process.env.SFS_REPO_ROOT ? resolve(process.env.SFS_REPO_ROOT) : join(import.meta.dir, "..", "..", "..");
-export const STORAGE_ROOT = process.env.SFS_WORKSPACE ? resolve(process.env.SFS_WORKSPACE) : join(REPO_ROOT, "storage");
+export const STORAGE_ROOT = resolveWorkspace({repositoryRoot:REPO_ROOT,distributionRoot:existsSync(join(REPO_ROOT,'sfs-package.json'))?REPO_ROOT:null});
 
 // 确保运行时目录存在
 mkdirSync(join(STORAGE_ROOT, "projects"), { recursive: true });

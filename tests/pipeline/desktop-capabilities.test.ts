@@ -7,7 +7,7 @@ const desktopTest=process.env.SFS_DESKTOP_CAPABILITY_TEST==='1'?test:test.skip;
 desktopTest('two actual desktop hosts use private sessions and HttpOnly reviewer cookies in sandboxed hidden windows',async()=>{
  const repo=resolve(import.meta.dir,'../..'),workspace=join(repo,'fixtures/generated/human-ai',`task-02-desktop-${crypto.randomUUID()}`);mkdirSync(workspace,{recursive:true});
  const evidence=join(repo,'fixtures/generated/human-ai/sdd-2026-10-13-human-ai-animation-workflow');
- const runtime=JSON.parse(readFileSync(join(evidence,'desktop-runtime-provenance.json'),'utf8')).target;
+ const runtime=join(repo,'probes/desktop/node_modules/electron/dist');
  const backend=Bun.spawn([process.execPath,join(repo,'tests/fixtures/runtime-capability-service.ts')],{cwd:repo,env:{...process.env,SFS_WORKSPACE:workspace},windowsHide:true,stdout:'pipe',stderr:'pipe'});
  const stdout=new Response(backend.stdout).text(),stderr=new Response(backend.stderr).text();let info:any;
  try{

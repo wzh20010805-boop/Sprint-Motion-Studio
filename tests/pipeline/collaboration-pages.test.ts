@@ -7,7 +7,8 @@ test('300 real candidate frames survive complete HTTP and CLI pages; draft and i
  const {listFrames,listCandidateFrames,listReviewIssues,immutableCandidateFile}=await import('./apps/server/src/pipeline/collaboration/pages');
  const auth=await import('./apps/server/src/localSessions');auth.initializeLocalSessions('t10','a'.repeat(64));
  const {Elysia}=await import('./apps/server/node_modules/elysia');const {collaborationApi}=await import('./apps/server/src/pipeline/collaborationApi');const app=new Elysia().use(collaborationApi);
- const server=Bun.serve({hostname:'127.0.0.1',port:0,async fetch(req){const u=new URL(req.url);if(u.pathname==='/api/health')return Response.json({instance_id:'t10',pid:process.pid});auth.authenticateLocalRequest(req,u.host);if(u.pathname==='/api/config')return Response.json({sfs:{production_api_version:'1.2'}});return app.handle(req);}});
+ const {PRODUCTION_API_VERSION}=await import('./packages/shared/src/index');
+ const server=Bun.serve({hostname:'127.0.0.1',port:0,async fetch(req){const u=new URL(req.url);if(u.pathname==='/api/health')return Response.json({instance_id:'t10',pid:process.pid});auth.authenticateLocalRequest(req,u.host);if(u.pathname==='/api/config')return Response.json({sfs:{production_api_version:PRODUCTION_API_VERSION}});return app.handle(req);}});
  const headers={Authorization:'Bearer '+'a'.repeat(64)};
  const call=async(path,body)=>{const response=await fetch(server.url.origin+'/api/v1/collaboration'+path,{headers:{...headers,...(body?{'Content-Type':'application/json'}:{})},...(body?{method:'POST',body:JSON.stringify(body)}:{})});return {status:response.status,body:await response.json()};};
  try{

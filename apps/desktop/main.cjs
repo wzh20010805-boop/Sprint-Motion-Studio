@@ -11,19 +11,29 @@ const userRoot=path.join(process.env.LOCALAPPDATA||app.getPath('userData'),'Spri
 app.setPath('userData',path.join(userRoot,'desktop'));
 const configPath=path.join(app.getPath('userData'),'preferences.json');
 let preferences={};try{preferences=JSON.parse(fs.readFileSync(configPath,'utf8'));}catch{}
-let workspace=path.resolve(process.env.SFS_WORKSPACE||preferences.workspace||path.join(userRoot,'workspaces/default'));
+let workspace;
 let window,info,origin,closing=false;
 const report={phase:'P5',events:[],console:[],networkBlocked:[],preferences:null};
 const writeReport=()=>{if(process.env.SFS_SMOKE_EVIDENCE){fs.mkdirSync(process.env.SFS_SMOKE_EVIDENCE,{recursive:true});fs.writeFileSync(path.join(process.env.SFS_SMOKE_EVIDENCE,'desktop.json'),JSON.stringify(report,null,2));}};
 const service=(pathname,init={})=>fetch(origin+pathname,{...init,headers:{...init.headers,Authorization:`Bearer ${info.token}`}});
-async function startService(){
+async function runCli(args){
  const cli=path.join(root,'sfs.exe');
- const child=spawn(cli,['project','list','--workspace',workspace,'--json'],{windowsHide:true,cwd:root,stdio:['ignore','pipe','pipe'],env:{...process.env,SFS_REPO_ROOT:root}});
+ const child=spawn(cli,[...args,'--json'],{windowsHide:true,cwd:root,stdio:['ignore','pipe','pipe'],env:{...process.env,SFS_REPO_ROOT:root}});
  let output='',error='';child.stdout.on('data',v=>output+=v);child.stderr.on('data',v=>error+=v);
  const code=await new Promise((resolve,reject)=>{child.once('error',reject);child.once('exit',resolve);});
  if(code!==0)throw new Error(`本地服务启动失败 (${code})。${error}\n${JSON.parse(output||'{}').error?.message||''}`);
+ return JSON.parse(output);
+}
+async function startService(){
+ // 首次升级沿用旧桌面选择；之后 CLI 和桌面只维护同一登记文件。
+ let selection=await runCli(['workspace','current']);
+ const registry=selection.data.registry;
+ if(!process.env.SFS_WORKSPACE&&!fs.existsSync(registry)&&preferences.workspace&&fs.existsSync(preferences.workspace))await runCli(['workspace','use','--directory',preferences.workspace]);
+ workspace=(await runCli(['workspace','current'])).data.workspace;
+ await runCli(['project','list','--workspace',workspace]);
  info=JSON.parse(fs.readFileSync(path.join(workspace,'.sfs/service.json'),'utf8'));
- if(!/^http:\/\/127\.0\.0\.1:\d+$/.test(info.url)||!/^[a-f0-9]{64}$/.test(info.token)||path.resolve(info.workspace)!==workspace)throw new Error('服务连接描述无效');
+ const workspaceKey=value=>process.platform==='win32'?fs.realpathSync(value).toLowerCase():fs.realpathSync(value);
+ if(!/^http:\/\/127\.0\.0\.1:\d+$/.test(info.url)||!/^[a-f0-9]{64}$/.test(info.token)||workspaceKey(info.workspace)!==workspaceKey(workspace))throw new Error('服务连接描述无效');
  origin=info.url;const health=await(await service('/api/health')).json();if(health.pid!==info.pid||health.instance_id!==info.instance_id)throw new Error('服务启动标识不匹配');
  report.events.push('shared-service-ready');
 }
@@ -48,7 +58,8 @@ async function installModel(download){
 async function selectWorkspace(){
  const jobs=await(await service('/api/jobs')).json();if(jobs.jobs.some(j=>['queued','running'].includes(j.status))){await dialog.showMessageBox(window,{message:'当前工作区有任务，请完成或取消后再切换。'});return;}
  const selected=await dialog.showOpenDialog(window,{title:'选择素材工作区',properties:['openDirectory','createDirectory']});if(selected.canceled)return;
- preferences.workspace=selected.filePaths[0];fs.mkdirSync(path.dirname(configPath),{recursive:true});fs.writeFileSync(configPath,JSON.stringify(preferences));
+ await runCli(['workspace','use','--directory',selected.filePaths[0]]);
+ delete preferences.workspace;fs.mkdirSync(path.dirname(configPath),{recursive:true});fs.writeFileSync(configPath,JSON.stringify(preferences));
  process.env.SFS_WORKSPACE=selected.filePaths[0];
  app.relaunch({args:process.argv.slice(1),execPath:process.execPath});closing=true;app.exit(0);
 }
@@ -85,6 +96,6 @@ async function launch(){
 }
 if(!app.requestSingleInstanceLock()){app.quit();}else{
  app.on('second-instance',()=>{if(window){if(window.isMinimized())window.restore();window.show();window.focus();}});
- app.whenReady().then(launch).catch(error=>{report.error=error.message;writeReport();if(!smoke)dialog.showErrorBox('素材工坊启动失败',`${error.message}\n工作区日志：${path.join(workspace,'.sfs/service.log')}`);app.exit(1);});
+ app.whenReady().then(launch).catch(error=>{report.error=error.message;writeReport();if(!smoke)dialog.showErrorBox('素材工坊启动失败',`${error.message}\n${workspace?'工作区日志：'+path.join(workspace,'.sfs/service.log'):'请检查工作区登记或使用 workspace current 查看当前选择。'}`);app.exit(1);});
  app.on('window-all-closed',()=>app.quit());
 }

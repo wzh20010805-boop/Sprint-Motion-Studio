@@ -1,11 +1,12 @@
-import { beforeAll, expect, test } from "bun:test";
-import { mkdir, readFile } from "node:fs/promises";
+import { afterAll, beforeAll, expect, test } from "bun:test";
+import { mkdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
 
 const windowsTest = process.platform === "win32" ? test : test.skip;
 const powershell = join(process.env.SystemRoot ?? "C:/Windows", "System32/WindowsPowerShell/v1.0/powershell.exe");
 let worker: string;
+afterAll(async () => { if (worker) await rm(worker, { force: true }); });
 
 beforeAll(async () => {
   if (process.platform !== "win32") return;

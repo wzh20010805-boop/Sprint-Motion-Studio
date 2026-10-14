@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path';
 // 独立的合成页面：只验证真实组件，不连接工作区或正式后台。
 const root = resolve(import.meta.dir, '..');
 const evidence = process.argv.includes('--public-runtime')?join(root,'fixtures/generated/human-ai','t12-mask-'+crypto.randomUUID().replaceAll('-','').slice(0,8)):join(root, 'fixtures/generated/mask-navigation', new Date().toISOString().replaceAll(':', '-'));
-const electron=process.argv.includes('--public-runtime')?join(root,'fixtures/generated/human-ai/desktop-runtime/1b7dd865-7c23-48b7-a305-5ba4603021fc/electron.exe'):join(root,'probes/desktop/node_modules/electron/dist/electron.exe');
+const electron=join(root,'probes/desktop/node_modules/electron/dist/electron.exe');
 mkdirSync(evidence, { recursive: true });
 const build = await Bun.build({ entrypoints: [join(root, 'probes/desktop/mask-navigation-fixture.tsx')], target: 'browser', outdir: evidence });
 if (!build.success) throw new Error(build.logs.join('\n'));

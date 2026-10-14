@@ -4,6 +4,7 @@ import { join, resolve, dirname, basename } from "node:path";
 import { isProcessAlive, type ServiceInfo } from "../../server/src/runtime";
 import { distributionRoot,configureDistribution } from './distribution';
 import { PRODUCTION_API_VERSION } from '../../../packages/shared/src/pipeline/alignment';
+import { normalizeWorkspacePath, resolveWorkspace, sameWorkspacePath } from './workspaces';
 
 export class CliError extends Error {
   constructor(public code: string, message: string, public exitCode = 2, public result?: any) { super(message); }
@@ -17,12 +18,12 @@ export function repositoryRoot(): string {
   return resolve(root);
 }
 
-export function defaultWorkspace() { const packed=distributionRoot();return packed?join(process.env.LOCALAPPDATA??packed,'SpriteMotionStudio','workspaces','default'):join(repositoryRoot(), "workspaces", "default"); }
+export function defaultWorkspace(explicit?:string) { return resolveWorkspace({repositoryRoot:repositoryRoot(),distributionRoot:distributionRoot(),explicit}); }
 
 export function readService(workspace: string): ServiceInfo | null {
   try {
     const info = JSON.parse(readFileSync(join(workspace, ".sfs", "service.json"), "utf8")) as ServiceInfo;
-    if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(info.url) || !/^[a-f0-9]{64}$/.test(info.token) || resolve(info.workspace) !== resolve(workspace) || !isProcessAlive(info.pid)) return null;
+    if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(info.url) || !/^[a-f0-9]{64}$/.test(info.token) || !sameWorkspacePath(info.workspace,workspace) || !isProcessAlive(info.pid)) return null;
     return info;
   } catch { return null; }
 }
@@ -48,7 +49,7 @@ async function compatibleService(info:ServiceInfo) {
 
 /** CLI只调用HTTP，进程锁在后端加载DB前取得。并发启动的失败者等待赢家。 */
 export async function ensureService(workspaceInput: string): Promise<ServiceInfo> {
-  const workspace = resolve(workspaceInput);
+  const workspace = normalizeWorkspacePath(workspaceInput);
   const current = readService(workspace);
   if (current && await healthy(current)) return compatibleService(current);
   const root = repositoryRoot();

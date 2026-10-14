@@ -12,22 +12,24 @@ packages/
   shared/        @framebaker/shared — shared types/constants for front & back (no build, exports point directly to src/index.ts)
 docs/            architecture / API / roadmap / changelog documentation
 scripts/         environment setup + synchronized SemVer version management
-storage/         generated at runtime (gitignored), resolves to repo root regardless of startup cwd
+workspaces/default/ source default workspace (gitignored); existing storage/ is a historical workspace
+.sfs/workspaces.json source workspace registry (gitignored), managed through CLI workspace commands
 ```
 
 ## Common Commands
 
 ```bash
 bun install          # install all workspace dependencies (bun uses isolated layout, each package has its own node_modules)
-bun dev              # development (--hot), http://localhost:3000, PORT overridable
-bun start            # production
-bun run typecheck    # tsc -p apps/server && tsc -p apps/web, must pass after changes
+bun dev              # watched, locked service bootstrap; dynamic loopback port, PORT overridable
+bun start            # locked production bootstrap for the selected workspace
+bun run sfs -- workspace list # list registered workspaces without starting services
+bun run typecheck    # tsc -p apps/server && tsc -p apps/web && tsc -p apps/cli
 bun run version:check # verify all workspace versions and changelog baseline agree
 bun run version:plan -- bug|week|major # preview the next weekly version without writing
 bun run version:bump -- bug # release Unreleased notes and bump all workspace versions
 ```
 
-No test framework; verification = typecheck + curl smoke tests (see examples in docs/api.md).
+Verification uses Bun tests (`bun test tests`), TypeScript checks and Python image-worker tests. Isolate `SFS_WORKSPACE` before importing database modules.
 
 ## Conventions
 
@@ -46,17 +48,21 @@ No test framework; verification = typecheck + curl smoke tests (see examples in 
 - Do not use browser default dialogs (alert/confirm/prompt): errors/notifications go through `apps/web/src/notice.ts` `notify()`, confirmations through `await askConfirm()`, rendered by the App root `AppModals` singleton.
 - When modifying APIs, also update `docs/api.md` (EN) and `docs/api.zh-CN.md` (CN); when modifying architecture/directory structure, also update `docs/architecture.md` (EN), `docs/architecture.zh-CN.md` (CN), and this file.
 - MCP server is in `apps/server/src/mcp/` (using `@modelcontextprotocol/server` SDK v2, mounted at `/mcp`, Streamable HTTP transport, auto-compatible with 2025-era and 2026-07-28 protocols); tools registered via `McpServer.registerTool()` (Zod v4 inputSchema), directly operating `db` / internal modules (no HTTP self-calls), keeping logic consistent with corresponding `/api/*` handlers; when adding/modifying API features, update MCP tools in sync.
-- `storage/` and `node_modules/` are gitignored; clean up storage and /tmp temp files after smoke testing.
+- `storage/`, `workspaces/` and `node_modules/` are gitignored. Clean only reproducible temporary binaries after smoke testing; retain original assets, candidates, project history and test evidence.
 
 ## Environment Variables
 
-- `PORT` (default 3000)
+- `PORT` (default 0: dynamically allocated loopback port, discovered through the selected workspace's `.sfs/service.json`)
+- Workspace selection: explicit CLI `--workspace`, then `SFS_WORKSPACE`, then the persisted selection, then `workspaces/default` (source) or the user-local default (portable). CLI, bootstrap and DB share `apps/cli/src/workspaces.ts`; do not add another default-directory resolver. Registry paths and management commands are documented in [README_SFS.md](README_SFS.md).
 - `FRAMEBAKER_GEN_CLI`: CLI generation template with placeholders `{prompt}` `{output}` `{index}` `{reference}` `{model}` (reference image resolved server-side from referenceMaterialId/referenceFrameId; template/reference mismatch returns 400 at job creation). **Fallback only**: the settings page can configure multiple generation providers (CLI template / OpenAI-compatible API, stored in settings table `genProviders`, selected by id at generation time with model specified separately); this env only synthesizes an id=`env` CLI provider when the provider list is empty.
 - `FRAMEBAKER_MATTING_CLI`: custom matting template with placeholders `{input}` `{output}` (optional `{model}`); **fallback only** — settings page structured fields (matting.cliBin + parameter names) take priority.
 - `FRAMEBAKER_MATTING_MODEL`: rembg model name (default `u2net`); **fallback only** — settings page matting.model takes priority; model cache in `storage/models` (U2NET_HOME).
 - `FRAMEBAKER_QUEUE_CONCURRENCY`: job queue parallelism (default `2`, clamped 1–16); **fallback only** — settings page `queueConcurrency` (read in real-time on each `pump()`, so changes take effect immediately for new jobs) takes priority; current value exposed via `GET /api/config`.
 - Matting engine: without CLI configured, uses `.venv-matting` bundled rembg installed by `scripts/setup_matting.sh` (Windows: `scripts/setup_matting.ps1`) (POSIX: `bin/rembg`, Windows: `Scripts/rembg.exe`; gitignored), then PATH rembg, then passthrough copy as last resort; detection results visible via `GET /api/config` (resolved in real-time on each request).
 # Soldier Frame Studio continuation
+
+- Runtime management: startup takes the workspace lock before DB imports, then publishes one authenticated loopback listener for HTTP, WebSocket and maker MCP. `service status/stop/clean` never starts another listener or prints credentials. Idle stop uses authenticated `/api/v1/runtime/stop` and synchronous request/job/connection admission guards; never kill a historical PID. Cleanup removes only verified dead discovery records, never workspace data. Production API 1.3 retires unused flat review aliases; use scoped candidate/issue/task routes in `docs/api.md`.
+- Production handshake version has one source: `packages/shared/src/pipeline/productionVersion.json`. Shared TypeScript imports it; the desktop helper reads the same file and portable builds copy it unchanged into resources/app. Do not add literal versions to another client.
 
 - Human–AI workflow foundation: shared contracts/schemas live in `packages/shared/src/pipeline/collaboration{,Schemas}.ts`; persistence and idempotent operations live in `apps/server/src/pipeline/collaboration/{store,operations}.ts`. Schema 5 keeps `content_revision` independent of legacy `revision` and reviewer appendices, preserves immutable brief/candidate content and never upgrades legacy approvals. New DB tests use `tests/pipeline/collaborationFixtures.ts` to set isolated `SFS_WORKSPACE` before child imports and retain evidence under `fixtures/generated/human-ai`. Later tasks must compute actual draft-byte identity before candidate production; the initial `preparing` token binds only requirements plus content revision.
 

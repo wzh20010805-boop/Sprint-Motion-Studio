@@ -1,5 +1,6 @@
 import type { Frame } from '../types';
-export const PRODUCTION_API_VERSION='1.2';
+import productionVersion from './productionVersion.json';
+export const PRODUCTION_API_VERSION=productionVersion.version;
 
 /** 主编辑器的中心锚点变换；偏移使用源图像素，旋转为弧度。 */
 export type FrameRenderTransform = Pick<Frame,'offset_x'|'offset_y'|'scale'|'rotation'|'opacity'>;

@@ -18,6 +18,15 @@ probes/desktop/cache/
 docs/evidence/**/*.zip
 .venv-image/
 workspaces/
+.sfs/
+production/
+docs/evidence/**/profile/
+docs/evidence/**/gui-profile/
+docs/evidence/**/desktop-profile/
+docs/evidence/**/browser-profile/
+docs/evidence/**/*-bundle/
+docs/evidence/**/bundle/
+docs/evidence/**/layout-*.json
 docs/evidence/p1/service-fixtures/
 docs/evidence/p1/review-queue-all-*/
 docs/evidence/p1/desktop-pixi-csp-red-harness-error.log

@@ -42,7 +42,7 @@ let child=null,exit=null,completed=false;try{
   const response=await fetch(new URL(path,server.url),{headers:authenticated?{cookie:'sfs_reviewer='+cookie}:{}}),value=await response.json();assert.equal(response.status,expected,path);if(path.includes('/export/resolve'))assert.equal(value.data.mode,authenticated?'candidate':'legacy');smoke.push({path,status:response.status,value});
  }writeFileSync(join(STORAGE_ROOT,'service-smoke.json'),JSON.stringify(smoke,null,2));
  if(!SERVICE_ONLY){
-  child=Bun.spawn([join(process.cwd(),'fixtures/generated/human-ai/desktop-runtime/1b7dd865-7c23-48b7-a305-5ba4603021fc/electron.exe'),join(process.cwd(),'probes/desktop/collaboration-editor-compat-check.cjs')],{windowsHide:true,stdout:'pipe',stderr:'pipe',env:{...process.env,SFS_REVIEW_URL:server.url.toString(),SFS_REVIEW_OUTPUT:STORAGE_ROOT,SFS_REVIEW_COOKIE:cookie}});
+  child=Bun.spawn([join(process.cwd(),'probes/desktop/node_modules/electron/dist/electron.exe'),join(process.cwd(),'probes/desktop/collaboration-editor-compat-check.cjs')],{windowsHide:true,stdout:'pipe',stderr:'pipe',env:{...process.env,SFS_REVIEW_URL:server.url.toString(),SFS_REVIEW_OUTPUT:STORAGE_ROOT,SFS_REVIEW_COOKIE:cookie}});
   const [code,out,err]=await Promise.all([child.exited,new Response(child.stdout).text(),new Response(child.stderr).text()]);exit=code;writeFileSync(join(STORAGE_ROOT,'electron.stdout.log'),out);writeFileSync(join(STORAGE_ROOT,'electron.stderr.log'),err);assert.equal(code,0,err);assert.equal(JSON.parse(readFileSync(join(STORAGE_ROOT,'report.json'),'utf8')).passed,true);
  }completed=true;
 }finally{

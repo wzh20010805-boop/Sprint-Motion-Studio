@@ -2,6 +2,8 @@
 
 ## 总览
 
+当前源码生产API为 **1.3**。CLI、桌面和后端引导入口解析同一选定工作区；每个活动工作区只有一个经过鉴权的回环HTTP服务，GUI、API、WebSocket和制作MCP共用它。下图保留上游模块用于查阅代码，其中宽权限生成/provider/MCP功能属于历史参考，常规SFS入口禁用这些能力。当前归属见[统一工作区与服务生命周期](#统一工作区与服务生命周期)。
+
 ```
                         ┌──────────────────────────────────────────────┐
                         │                浏览器（React 19）             │
@@ -222,7 +224,7 @@ storage/
 - `api.ts`：类型化 fetch 封装与兼容门面；`api/mediaUrls.ts` 负责帧/素材 URL 构造，`api/ws.ts` 负责 WebSocket 客户端（断线 3s 重连）
 # 小兵工坊 P1 增量架构
 
-保留上游 React/Pixi → Bun/Elysia → SQLite。`apps/cli` 只调用同一 HTTP 服务，Electron 开发宿主通过本地 cookie 进入原 GUI。`runtimeBootstrap.ts` 在动态加载数据库前取得工作区实例锁；`runtime.ts` 负责 loopback 鉴权与锁所有权。CLI 和 GUI 都复用 `.sfs/service.json`，不各开第二个业务数据库写入者。
+保留上游 React/Pixi → Bun/Elysia → SQLite。`apps/cli` 只调用同一 HTTP 服务，Electron 开发宿主通过本地 cookie 进入原 GUI。`runtimeBootstrap.ts` 在动态加载数据库前取得工作区实例锁；`runtime.ts` 负责锁所有权，`localSessions.ts` 负责请求鉴权。CLI 和 GUI 都复用 `.sfs/service.json`，不各开第二个业务数据库写入者。
 
 `SFS_WORKSPACE` 显式选择运行数据；未设置时上游 `storage` 兼容。迁移前 VACUUM INTO 保留 WAL 的一致备份。schema 3 增加来源、精确源帧时序、clips 映射、project revision 和任务 payload/result；clips 复用 existing axes/main tracks。`queue → pipeline/service → probe/extractAll` 单向调用，不反向引用队列。
 
@@ -231,7 +233,7 @@ sources 的复制原视频/PNG/timing 与 projects 的可编辑副本隔离。�
 P1 只维护完整原帧和时序，没有场景抠图、地面参考、统一游戏画布或正式 Cocos 导出。VFR 主轨预览可量化并警告，timing.json 为源时序依据。重启遗留 queued/running 标记 interrupted，参数和中间文件保留；恢复命令属于后续阶段。Electron 严格 CSP 通过已安装 Pixi 的无动态代码生成兼容模块运行画布。
 # SFS 人机协作基础层（Task 1）
 
-人机协作基础契约位于 `packages/shared/src/pipeline/collaboration.ts`，离线 JSON schema 位于 `collaborationSchemas.ts`。增量 schema 5 备份已提交 WAL 数据，保留旧批准但不提升为候选批准。`pipeline/collaboration/store.ts` 维护不可变的每版任务要求及持久动作工作流模式；`operations.ts` 通过 SQLite 事务保存规范化请求身份与恢复检查点。候选固定内容与可更新的检查、人工审核附加记录分离。实际制作字段推进 `projects.content_revision`，审核、名称、标签及锁定状态不推进。当前生产握手为1.2；协作HTTP及CLI/MCP门面沿用这些基础契约。
+人机协作基础契约位于 `packages/shared/src/pipeline/collaboration.ts`，离线 JSON schema 位于 `collaborationSchemas.ts`。增量 schema 5 备份已提交 WAL 数据，保留旧批准但不提升为候选批准。`pipeline/collaboration/store.ts` 维护不可变的每版任务要求及持久动作工作流模式；`operations.ts` 通过 SQLite 事务保存规范化请求身份与恢复检查点。候选固定内容与可更新的检查、人工审核附加记录分离。实际制作字段推进 `projects.content_revision`，审核、名称、标签及锁定状态不推进。当前生产握手为1.3；协作HTTP及CLI/MCP门面沿用这些基础契约。
 
 # SFS P2 扩展
 
@@ -309,8 +311,20 @@ Task 8 fix01 在写入时直接对预期 UTF-8 文档字节建立摘要，包括
 Task 9 通过注入 operation 调度器保持 `queue → collaboration worker` 单向依赖。`collaboration/extraction.ts` 将显式稳定请求绑定到原 source hash、probe / base、raw / timing 清单、预定 GUI 帧 / 单元格 ID 和同事务原结果。候选与交付恢复消费已有 typed prepared checkpoint 和原操作身份，旧抽帧只有显式关联 operation 才采用严格恢复。`runtimeBootstrap.ts` 暂停队列并协调后才 import `index.ts`，协调期间没有监听 / 写入窗口。单个操作证据冲突要求补输入，不妨碍其他有效操作；DB / 锁全局错误停止启动。取消与业务发布使用同步事务，后来编辑或撤回不抹除原成功提交。实际进程退出测试保留证据，每个场景最多正常恢复两次。
 
 
-Task10门面：mcp/makerTools维护CLI HTTP共用的窄schema/分发白名单，直接调用已有类型服务。mcp/request把原鉴权Request和有界parsedBody交SDK2.0.0，兼容legacy。CLI byteLines按原始UTF8字节限额/丢弃；完整类型对象不摘要。collaboration/{brief,creation,pages,cancellation}校验不可变原话/来源字节、确定性默认、内容/审核分页、操作和Task不同取消。原操作恢复仍归Task9；协作matting明确不支持恢复。reviewer嵌套路由沿用已有审核/选择CAS。当前生产版本1.2，上文foundation-only/九工具为历史阶段描述。真实source-run停在awaiting_review，不构成人工或美术验收。
+Task10门面：mcp/makerTools维护CLI HTTP共用的窄schema/分发白名单，直接调用已有类型服务。mcp/request把原鉴权Request和有界parsedBody交SDK2.0.0，兼容legacy。CLI byteLines按原始UTF8字节限额/丢弃；完整类型对象不摘要。collaboration/{brief,creation,pages,cancellation}校验不可变原话/来源字节、确定性默认、内容/审核分页、操作和Task不同取消。原操作恢复仍归Task9；协作matting明确不支持恢复。reviewer嵌套路由沿用已有审核/选择CAS。当前生产版本1.3，上文foundation-only/九工具为历史阶段描述。真实source-run停在awaiting_review，不构成人工或美术验收。
 
 Task11 新增独立 `CandidateReviewWorkspace` 与 Canvas2D `CandidateReviewCanvas`。固定最终 PNG 不经过 FrameEditor 或实时编辑变换。每个画布独占一个已解码 ImageBitmap 和一个可取消加载请求，代次保护同时处理过期成功及错误，只释放自身资源。原生像素画布通过 CSS 平移、缩放和留边显示，最终像素边界逆映射适应 DPR。`candidatePlayback` 使用 BigInt 有理数半开区间；`candidateReviewGeometry` 验证冻结逆矩阵并映射问题全部四角，不可用、裁切或不匹配时保留最终问题。`candidateReviewApi` 使用 shared 类型、Cookie 身份与 CAS。工作台明确逐帧及播放验收，显示来源、父候选影响及问题，在审核修改、WS 活动、焦点/联网恢复及有限轮询时读取持久操作。现有编辑器入口由 Task12 接入。
 
 编辑器接入：`collaboration/editor.ts` 只读现有任务和制作时序存储，提供窄动作上下文查询。shared `ActionCollaborationState` / `DraftEditContext` 将常驻 `CollaborationPanel` 和局部 `CandidateReviewWorkspace` 模态框接入现有 Editor。只有工作台在返回谱系前执行返工；保留 FrameEditor、MaskWorkshop 和 AlignmentWorkshop 手工路径。持久状态面板独立于 JobPanel 通知过期，订阅 WS 连接失效通知并每5秒回退读取。正式动画出口继续通过 Task8 解析器读取固定文件。
+
+## 统一工作区与服务生命周期
+
+生产握手版本统一来自 `packages/shared/src/pipeline/productionVersion.json`：共享TypeScript与桌面读取同一文件，便携构建原样复制到resources/app。已有目录别名及Windows大小写差异按同一实际工作区比较。登记读改写受排他锁保护；竞争返回 `WORKSPACE_REGISTRY_LOCKED`，未知锁保留待核查。列表中提示项带 `registered:false`，名称不会覆盖真正登记的工作区。
+
+`apps/cli/src/workspaces.ts` 是CLI与 `runtimeBootstrap.ts` 共用的解析器；桌面通过CLI读取当前工作区，并用 `workspace use` 保存选择。优先级为显式 `--workspace`、`SFS_WORKSPACE`、登记表当前选择、默认目录。源码登记表为 `<repo>/.sfs/workspaces.json`，默认目录为 `<repo>/workspaces/default`；后续重建便携版登记表为 `%LOCALAPPDATA%/SpriteMotionStudio/workspaces.json`，默认目录为同处 `workspaces/default`。登记使用临时文件原子替换，校验名称/真实路径重复，登记及选择要求目录已存在。切换只改变发现与选择，不搬移数据库或改写固定文件来源。
+
+`workspace list/current/add/use` 与 `service status/stop/clean` 为本机管理命令；列表/状态查询不启动后端、不暴露令牌。源码start/dev统一进入先锁后DB的引导入口。默认 `PORT=0`，每个活动工作区仅有一个回环HTTP端口，GUI、API、`/ws`和`/mcp`共用；stdio MCP只转发，不另开端口。`localSessions.ts` 是唯一请求身份权威；桌面审核管道仍独立，因为它签发人工reviewer会话，公开发现描述只提供maker能力。
+
+经过鉴权的 `POST /api/v1/runtime/stop` 在同一步核查排队/运行任务、其他HTTP请求和WebSocket连接；忙时返回 `409 WORKSPACE_BUSY`。接受时返回202，退出守卫以 `503 SERVICE_STOPPING` 阻止新请求，25毫秒后协作关闭，原退出处理负责释放本实例。CLI核实健康身份、锁归属与任务后请求此接口，最多等待5秒，不按外部PID强杀。`service clean` 持有排他恢复锁，只移除所有者已退出且归属匹配的服务记录与 `before-human-desktop` 历史发现备份。活动、损坏或归属不明记录阻止清理；日志、数据库、原始素材、固定候选、审核历史及失败staging保留。
+
+生产API **1.3** 将7个无范围审核写入别名及重复候选审核读取入口收口到候选/问题/Task范围路径。GUI与制作适配器仍使用原权限及CAS契约；不兼容服务明确拒绝连接，不强制终止。已发布1.0.7/API1.1便携包未改变。详见[管理命令与接口迁移](api.zh-CN.md#工作区与服务管理api13)。

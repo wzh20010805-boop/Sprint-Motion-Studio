@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, openSync, closeSync, readFileSync, writeFileSync, unlinkSync } from "node:fs";
 import { resolve, join } from "node:path";
-import { randomUUID, timingSafeEqual } from "node:crypto";
+import { randomUUID } from "node:crypto";
 
 export interface ServiceInfo {
   schema_version: "1.0";
@@ -70,22 +70,4 @@ export function acquireServiceLock(workspace: string) {
   } finally {
     if (readJson(recoveryPath)?.instance_id === instance_id) unlinkSync(recoveryPath);
   }
-}
-
-function equalSecret(a: string, b: string) {
-  const left = Buffer.from(a), right = Buffer.from(b);
-  return left.length === right.length && timingSafeEqual(left, right);
-}
-
-/** 健康检查公开；其余API/WS以Bearer或HttpOnly本地Cookie鉴权。 */
-export function authorizeLocalRequest(request: Request, token: string, authority: string): 401 | 403 | null {
-  const url = new URL(request.url);
-  const host = request.headers.get("host") ?? url.host;
-  if (host !== authority || url.host !== authority) return 403;
-  const origin = request.headers.get("origin");
-  if (origin && origin !== `http://${authority}`) return 403;
-  if (url.pathname === "/api/health") return null;
-  const bearer = request.headers.get("authorization")?.replace(/^Bearer /, "") ?? "";
-  const cookie = (request.headers.get("cookie") ?? "").split(";").map(v => v.trim()).find(v => v.startsWith("sfs_token="))?.slice(10) ?? "";
-  return equalSecret(bearer, token) || equalSecret(cookie, token) ? null : 401;
 }

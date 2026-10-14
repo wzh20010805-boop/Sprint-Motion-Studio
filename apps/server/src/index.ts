@@ -9,14 +9,16 @@ import { PRODUCTION_API_VERSION } from '@framebaker/shared';
 import { retainExistingImports } from './materialRetention';
 import { backfillMaterialProjects } from './materialProjects';
 import {MULTIPART_BODY_BYTES} from './mcp/request';
+import { createIdleShutdownGuard } from './serviceLifecycle';
 
 // 升级时先独立保留旧项目资料，用户以后删除库素材不会被重复补登记。
 retainExistingImports();
 backfillMaterialProjects(db);
 
-const port = Number(process.env.PORT ?? 3000);
+const port = Number(process.env.PORT ?? 0);
 const token = process.env.SFS_SERVICE_TOKEN;
 let lastActivity = Date.now();
+const shutdown = createIdleShutdownGuard();
 
 export const server = serve({
   hostname: "127.0.0.1",
@@ -30,6 +32,7 @@ export const server = serve({
     "/settings": index, // 设置页同
   },
   async fetch(req, server) {
+    if (shutdown.isStopping()) return Response.json({ok:false,error:{code:'SERVICE_STOPPING',message:'本地服务正在退出，请稍后重新连接'}},{status:503});
     const url = new URL(req.url);
     lastActivity = Date.now();
     if (token) {
@@ -41,6 +44,11 @@ export const server = serve({
         return Response.json({ ok: false, error: { code: failure.code, message: "本地服务请求未授权" } }, { status: failure.status });
       }
       if (url.pathname === "/api/health") return Response.json({ ok: true, name: "Sprite Motion Studio", instance_id: process.env.SFS_INSTANCE_ID, pid: process.pid });
+      if (req.method === 'POST' && url.pathname === '/api/v1/runtime/stop') {
+        const active = db.query("SELECT COUNT(*) n FROM jobs WHERE status IN ('queued','running')").get() as {n:number};
+        const result = shutdown.requestStop({activeJobs:active.n,pendingRequests:server.pendingRequests,pendingWebSockets:server.pendingWebSockets,onStop:()=>{server.stop(false);process.exit(0);}});
+        return Response.json(result.ok?{ok:true,status:'stopping'}:{ok:false,error:{code:result.code,message:'工作区有任务、请求或已连接的窗口；请完成任务并关闭 GUI/MCP 后重试'}},{status:result.ok?202:409});
+      }
       if (url.pathname === "/api/config") return Response.json({
         sfs: { phase: "P5", production_api_version: PRODUCTION_API_VERSION, extraction_mode: "all", matting_ready: maskBackend().ready },
         matting: { engine: maskBackend().ready ? 'rembg-bundled' : 'none', model: 'u2netp', hint: maskBackend().ready ? null : '运行 scripts/setup_p2.ps1 准备本地模型；现有遮罩仍可修正', modelCached: maskBackend().ready },

@@ -1,6 +1,20 @@
 # FrameBaker API
 
-Base URL：`http://localhost:3000`，除标注外均为 `/api` 前缀。请求/响应类型定义见 `packages/shared/src/types.ts`。
+当前源码生产API为 **1.3**；已发布1.0.7便携包仍为API1.1。Base URL来自当前工作区 `.sfs/service.json` 的 `url`，格式为 `http://127.0.0.1:<动态端口>`。GUI、CLI、WebSocket和制作MCP共用该服务；不要复用历史端口或公开描述文件中的令牌。除 `/api/health` 外，请求需要当前Bearer令牌或桌面本地HttpOnly会话Cookie，Host与存在的Origin须匹配发现的服务地址。请求/响应类型见 `packages/shared/src/types.ts` 及pipeline共享契约。
+
+下方旧 `/api` 列表描述仍保留的上游模块。常规SFS入口禁用云生成、provider测试、提示词加强、图像分层及上游宽权限MCP；这些部分为兼容代码参考，不表示该入口开放这些功能。当前制作/审核契约见后面的本地API部分及[工作区与服务管理](#工作区与服务管理api13)。
+
+直接HTTP诊断前，先用 `sfs.cmd gui` 或业务CLI命令启动选定工作区；本机读取凭据，不把令牌复制进客户端配置：
+
+```powershell
+$ws = (.\sfs.cmd workspace current --json | ConvertFrom-Json).data.workspace
+$sfsService = Get-Content (Join-Path $ws '.sfs/service.json') -Raw | ConvertFrom-Json
+$sfsHeaders = @{ Authorization = "Bearer $($sfsService.token)" }
+Invoke-RestMethod -Uri ($sfsService.url + '/api/v1/projects') -Headers $sfsHeaders
+```
+
+下方Bash `curl` 示例中的 `SFS_URL` 与 `SFS_TOKEN` 须在本机从同一活动描述文件读取；不打印、记录或提交凭据。
+
 
 约定：
 
@@ -149,7 +163,7 @@ multipart/form-data：
 响应 `{ "jobId": "…" }`，随后轮询 `GET /api/jobs/:id` 或等 WS `job_done`。
 
 ```bash
-curl -F "file=@test.gif" -F "projectId=$PID" -F "type=gif" http://localhost:3000/api/import/upload
+curl -H "Authorization: Bearer $SFS_TOKEN" -F "file=@test.gif" -F "projectId=$PID" -F "type=gif" "$SFS_URL/api/import/upload"
 ```
 
 ### POST /api/import/generate
@@ -222,8 +236,7 @@ multipart/form-data：`file` + 可选 `processedFile`、`metadata`（JSON 对象
 PNG/JPG 等单图 → 直接生成 1 个素材，响应 `{ "materialId": "…" }；GIF/MP4 → 队列拆帧每帧一个素材，响应 `{ "jobId": "…" }`。
 
 ```bash
-curl -F "file=@slime.png" http://localhost:3000/api/materials/upload
-curl -F "file=@walk.gif" -F "autoMatting=true" http://localhost:3000/api/materials/upload
+curl -H "Authorization: Bearer $SFS_TOKEN" -F "file=@slime.png" "$SFS_URL/api/materials/upload"
 ```
 
 ### POST /api/materials/generate
@@ -438,7 +451,7 @@ multipart/form-data：`file`（PNG）+ `slot`（`"raw"` | `"processed"`）。剪
 
 ## MCP（Model Context Protocol）端点
 
-FrameBaker 内置 MCP 服务端，允许 AI 助手（Claude Desktop / Cursor / Windsurf 等）通过 MCP 协议操作项目、帧、素材、任务等全部功能。
+当前 `/mcp` 为鉴权制作白名单，实际能力见生产1.3门面；无令牌上游服务的宽工具列表只作历史代码参考。
 
 ### 传输
 
@@ -448,62 +461,30 @@ FrameBaker 内置 MCP 服务端，允许 AI 助手（Claude Desktop / Cursor / W
 - `GET /mcp`：SSE 通道（服务端→客户端通知）
 - `DELETE /mcp`：结束会话
 
-协议版本协商、会话管理均由 SDK 自动处理，全部工具为无状态直接 db 操作。
+SDK负责协议协商；当前制作适配器仍校验原始鉴权Request，并调用共用服务契约。
 
 ### 客户端配置
 
-**Claude Desktop**（macOS `~/Library/Application Support/Claude/claude_desktop_config.json`，Windows `%APPDATA%\Claude\claude_desktop_config.json`）：
+在仓库中使用源码CLI的stdio桥：
+
+```powershell
+.\sfs.cmd mcp --stdio --workspace "D:\素材工作区"
+```
+
+支持启动可执行程序的MCP客户端可使用以下配置；先将Bun、源码和工作区路径替换为本机实际绝对路径：
 
 ```json
 {
   "mcpServers": {
-    "framebaker": {
-      "url": "http://localhost:3000/mcp"
+    "sprite-motion-studio": {
+      "command": "C:\\path\\to\\bun.exe",
+      "args": ["D:\\projects\\Sprint-Motion-Studio\\apps\\cli\\src\\index.ts", "mcp", "--stdio", "--workspace", "D:\\assets\\workspace"]
     }
   }
 }
 ```
 
-**Claude Code**（CLI）：
-
-```bash
-claude mcp add framebaker --transport http http://localhost:3000/mcp
-```
-
-**Cursor**（项目根目录 `.cursor/mcp.json` 或全局设置）：
-
-```json
-{
-  "mcpServers": {
-    "framebaker": {
-      "url": "http://localhost:3000/mcp"
-    }
-  }
-}
-```
-
-**Windsurf**（`~/.codeium/windsurf/mcp_config.json`）：
-
-```json
-{
-  "mcpServers": {
-    "framebaker": {
-      "serverUrl": "http://localhost:3000/mcp"
-    }
-  }
-}
-```
-
-### 快速接入提示
-
-复制以下内容发给你的 AI 助手即可开始使用：
-
-```
-FrameBaker 正在 http://localhost:3000 运行，MCP 端点为 /mcp（Streamable HTTP）。
-请连接并调用 list_projects 开始。
-可用工具：list_projects、create_project、list_frames、generate_frames、list_materials、matting_material、list_jobs、get_config 等共 48 个。
-覆盖功能：像素动画项目、帧、素材、AI 生成、抠图、文件夹、任务与系统设置。
-```
+桥接器从工作区发现服务并鉴权，保持健康租约，只公开制作白名单。先调用 `inspect_capabilities` 读取实际工具列表和限额；stdio桥不另开TCP端口、不授予人工批准。直接HTTP `/mcp` 需要活动实例的发现地址与制作凭据，固定且未鉴权的URL不是当前有效配置。
 
 ### 握手（2025-era 客户端）
 
@@ -516,7 +497,7 @@ FrameBaker 正在 http://localhost:3000 运行，MCP 端点为 /mcp（Streamable
 
 握手后发送 `notifications/initialized` 通知（无需响应），随后可 `tools/list` 和 `tools/call`。2026-07-28 客户端无需握手，直接调用即可。
 
-### 工具列表
+### 上游宽工具列表（历史参考，常规入口禁用）
 
 | 工具 | 说明 |
 | --- | --- |
@@ -559,7 +540,7 @@ FrameBaker 正在 http://localhost:3000 运行，MCP 端点为 /mcp（Streamable
 | `update_setting` | 更新单个设置项 |
 | `enhance_prompt` | 提示词加强 |
 
-### 工具调用示例
+### 上游调用示例（历史参考）
 
 ```json
 // 列出项目
@@ -638,21 +619,21 @@ FrameBaker 正在 http://localhost:3000 运行，MCP 端点为 /mcp（Streamable
 
 正式导出必须与审核修订及原图/遮罩/前景/参数摘要一致。发布前再次核验，导出到新目录而非覆盖旧成功版本；原文件失效报INPUT_NOT_FOUND，修订冲突报REVISION_CONFLICT/STALE_JOB_RESULT。草稿明确标记；不去重、不逐帧裁边、不旋转，Alpha与有理数时长保持一致。
 
-鉴权模式 `/mcp` 公开下文生产1.2制作白名单，不提供人工批准工具。SDK HTTP与CLI stdio桥共用业务校验；原上游广工具仅在无令牌开发模式可用。import_source不读取服务器任意路径，接收有上限的明确提供字节。stdio客户端健康租约防止空闲停服。
+鉴权模式 `/mcp` 公开下文生产1.3制作白名单，不提供人工批准工具。SDK HTTP与CLI stdio桥共用业务校验；原上游广工具仅在无令牌开发模式可用。import_source不读取服务器任意路径，接收有上限的明确提供字节。stdio客户端健康租约防止空闲停服。
 
-1.0.1渲染修复：`/api/config.sfs.production_api_version` 为1.1，新客户端拒绝旧服务。manifest每帧新增transform（offset_x、offset_y、正负scale、弧度rotation、opacity），先围绕完整源图中心处理，再执行地面基准对齐；预览/越界/审核/导出共用。更改帧属性使旧审核与缓存失效。图集不自动旋转格子，用户设置的帧旋转会实际烘焙到像素。
+历史1.0.1渲染修复：当时 `/api/config.sfs.production_api_version` 升至1.1；当前源码握手使用1.3。manifest每帧新增transform（offset_x、offset_y、正负scale、弧度rotation、opacity），先围绕完整源图中心处理，再执行地面基准对齐；预览/越界/审核/导出共用。更改帧属性使旧审核与缓存失效。图集不自动旋转格子，用户设置的帧旋转会实际烘焙到像素。
 
 导入/人工修正PNG的Alpha可以全为半透明；遮罩详情和项目摘要统一纠正旧导入记录的LOW_CONFIDENCE提示，不改像素或审核状态。真正空RGBA与自动抠图低置信遮罩仍被阻止。JSON schema/envelope版本保留1.0，旧manifest读取方可以忽略新增的变换来源字段。
 
 首页装饰资源：固定同源 GET `/illustrations/creative-candy.png`，PNG响应，不接受动态文件名；工作区令牌模式沿用本地鉴权。开发版从web/public/art读取，便携版从runtime/assets/art读取。
 
-### 本机会话角色与生产 API 1.2
+### 本机会话角色与生产 API 1.3
 
-实例会话、桌面管道及受保护的 `.sfs/desktop-bootstrap.json` 全部就绪后才发布 `.sfs/service.json`。其中 token 仅有制作能力；旧 `sfs_token` Cookie 仍为制作身份。当前实例有效的 `sfs_reviewer` Cookie 优先，并同时允许 GUI 手工制作；失效 Cookie 不提升制作凭据。Cookie 使用 HttpOnly、Strict、host-only 与 `/`。Host、Origin、WebSocket 约束保持，health 只提供实例/PID身份。客户端精确匹配 API `1.2`，不强杀不兼容服务。
+实例会话、桌面管道及受保护的 `.sfs/desktop-bootstrap.json` 全部就绪后才发布 `.sfs/service.json`。其中 token 仅有制作能力；旧 `sfs_token` Cookie 仍为制作身份。当前实例有效的 `sfs_reviewer` Cookie 优先，并同时允许 GUI 手工制作；失效 Cookie 不提升制作凭据。Cookie 使用 HttpOnly、Strict、host-only 与 `/`。Host、Origin、WebSocket 约束保持，health 只提供实例/PID身份。客户端精确匹配 API `1.3`，不强杀不兼容服务。
 
 不提供制作凭据升级的 HTTP 端点。可信桌面主进程核对描述和活跃服务身份，通过本机管道交换绑定 PID、30秒有效、只能消费一次的 nonce，加载页面前设置审核 Cookie。后续协作审核 adapter 必须使用 `getRequestActor(request)` 及 `requireRole(actor,'reviewer')`；请求 body/header 中的 actor 声明不可信。本基础任务不替换现有手工审核/导出业务。
 
-### 协作制作草稿（API 1.2基础）
+### 协作制作草稿（API1.2历史基础，当前运行API1.3）
 
 `/api/v1/collaboration` 薄适配器使用服务绑定的本地制作/审核身份；请求体角色字段不能授权。`POST /tasks` 接收 `{brief,request_key}`。`GET /draft?project_id=...&axis_id=...` 返回实际字节内容身份、独立期望源选择及有理数输出时长；未配置对齐时明确返回 `alignment:null`，固定候选必须拒绝缺少对齐。`POST /timing` 接收 `{context,timing,base_content,request_key}`；timing 带字段来源，策略为 source_pts/confirmed_fps/explicit_durations，源PTS元数据保持原样。
 
@@ -702,9 +683,9 @@ CandidateSelfCheck 保存 id/candidate_id/content_hash/manifest_sha256/plan_hash
 
 ### 协作审核事务（Task 7）
 
-`GET /api/v1/collaboration/candidates/:id/reviews` 返回共同 `ReviewState`：完整最终帧集合、判定及有效性、原操作/审核者依据、显式继承链、与候选相关的问题及修复/例外依据、播放状态、类型化错误和当前有效接受代次（`number | null`）。Task 的 `acceptance_epoch` 仍是非空单调计数器。历史候选完成审核不会抢占当前选择。
+`GET /api/v1/collaboration/candidates/:id/review-state` 返回共同 `ReviewState`：完整最终帧集合、判定及有效性、原操作/审核者依据、显式继承链、与候选相关的问题及修复/例外依据、播放状态、类型化错误和当前有效接受代次（`number | null`）。Task 的 `acceptance_epoch` 仍是非空单调计数器。历史候选完成审核不会抢占当前选择。
 
-写入入口为 `POST /api/v1/collaboration/reviews/{frame,playback,issue,repair,source-exception}`，请求 `{context,patch}`。context 为 `{task_id,candidate_id,base_review_revision,request_key}`，patch 分别使用共享帧、播放、问题、修复关联、源缺陷例外类型。`/reviews/inheritance` 请求 `{context,parent_candidate_id}`，服务重算 Task 6 影响；`/reviews/selection` 使用 `CandidateSelectionRequest`（任务、目标候选、预期选中候选、预期任务代次及幂等键）。选择 CAS 独立于候选审核 CAS，不生成批准。广泛 CLI/MCP adapter 属于 Task 10，制作能力不开放人工批准。
+写入使用范围明确的候选 `/candidates/:id/reviews/{frame,playback}`、候选 `/candidates/:id/issues`、问题 `/issues/:id/{repair,accept-source-defect}`，请求 `{context,patch}`；context为 `{task_id,candidate_id,base_review_revision,request_key}`，patch使用对应共享类型。`/candidates/:id/reviews/inherit` 请求 `{context,parent_candidate_id}`，服务重算Task6影响；`/tasks/:id/selection` 使用 `CandidateSelectionRequest`（任务、候选、预期选中候选、预期任务代次及幂等键）。选择CAS独立于候选审核CAS，不生成批准。制作CLI/MCP不开放人工批准。旧flat别名在API1.3移除，见迁移表。
 
 只有当前服务签发的 reviewer 可写帧、播放、问题、源缺陷例外、显式继承和选择。Maker 可读、关联完整修复。请求体 actor、角色或旧幂等键不能提升权限；认证早于成功重放。同键同业务输入在 CAS 前返回原结果，允许换用新合法 reviewer 会话，原执行者仍持久保留。改输入报 `REQUEST_CONFLICT`，新键旧修订报 `REVIEW_REVISION_CONFLICT` 或 `TASK_SELECTION_CONFLICT`。`server:` 键保留给服务。
 
@@ -742,13 +723,13 @@ Task 7 阶段规则：新登记接受必须处于 `awaiting_review`。`startRewo
 
 
 
-## 生产1.2制作门面与固定候选HTTP接口
+## 生产1.3制作门面与固定候选HTTP接口
 
 Token模式MCP实际白名单由 `mcp/makerTools.ts` 定义，`inspect_capabilities` 返回全部实际名称、恢复能力与限制。支持项目/动作创建、来源导入与稳定提帧、PNG导入、制作阶段提交、job查询/取消、完整帧与产物读取、显式基础的遮罩编辑/撤回/对齐/时序、任务创建/读取/取消、候选创建/读取/全帧检查/抽样/观察/提交/比较、问题分页与修复关联、返工、原操作读取/恢复/取消，以及已接受固定候选交付。准确英文工具名见本文件末尾清单；无 `apply_review_patch` 或人工批准/继承/源缺陷接受工具。旧审核命令在token模式需要实际当前reviewer。
 
 新任务不可变brief必须保存 `goal:{value:用户原话,origin:"user"}` 和服务核对原件字节的 `source_identity`（原件SHA256及PNG原帧哈希）。客户端不可虚构来源；历史brief不补写原话。已知目标/来源改变或历史上下文不明均保守复审。create_task输入为brief和request_key；context/source必需。缺目标/对齐/PNG时序集中返回needs_input、原因、建议及原输入/幂等键。复用已有制作对齐/时序；默认全源帧、视频有理数PTS、loop=false、sampling_limit=12、max_texture=1024/gap=0/margin=0及PNG/图集/联系表/ZIP，字段标注inferred或preset。PNG不虚构PTS；无内部LLM或隐式模型下载。
 
-`/api/v1/collaboration`下新增白名单POST `/maker/:name`、任务/候选读写、完整帧与问题分页、review-state、原操作读取/恢复/取消、任务取消。GUI薄接口包括候选 `/reviews/frame`、`/reviews/playback`、`/reviews/inherit`、候选issues、issue `/accept-source-defect`、Task `/selection`，必须实际reviewer；issue `/repair`允许maker但不批准。审核body为共享context与patch，路径范围必须一致；继承使用parent_candidate_id，选择使用独立Task CAS。原flat `/reviews/*`别名保留。`/candidates/:id/file?path=…`仅供固定清单列出的已校验字节；`/deliveries/:id`及其file仅用已提交交付权威。`/action-export/resolve`明确多Task歧义；MCP/CLI export_assets可显式task_id，读取已接受交付或恢复原操作，不猜最新、不重渲染。已提交操作可以没有job，外部job_id为null。
+`/api/v1/collaboration`下新增白名单POST `/maker/:name`、任务/候选读写、完整帧与问题分页、review-state、原操作读取/恢复/取消、任务取消。GUI薄接口包括候选 `/reviews/frame`、`/reviews/playback`、`/reviews/inherit`、候选issues、issue `/accept-source-defect`、Task `/selection`，必须实际reviewer；issue `/repair`允许maker但不批准。审核body为共享context与patch，路径范围必须一致；继承使用parent_candidate_id，选择使用独立Task CAS。API1.3已移除旧flat `/reviews/*`别名及重复 `/candidates/:id/reviews`，使用范围路径与review-state；见迁移表。`/candidates/:id/file?path=…`仅供固定清单列出的已校验字节；`/deliveries/:id`及其file仅用已提交交付权威。`/action-export/resolve`明确多Task歧义；MCP/CLI export_assets可显式task_id，读取已接受交付或恢复原操作，不猜最新、不重渲染。已提交操作可以没有job，外部job_id为null。
 
 帧/问题分页默认32、上限300，完整输出items/total/next_cursor/complete/content_token；依next_cursor读取至complete。draft游标绑定内容与上下文，candidate绑定固定身份；ReviewIssuePage另含并绑定review_revision。变化返回PAGE_CONFLICT。CLI保留完整manifest/影响/问题/嵌套帧数组，每命令stdout一个JSON，日志stderr。新增action create、source extract、task create|inspect|cancel、candidate create|inspect|samples|observe|submit|compare|check、issue list|repair、rework start、operation inspect|resume|cancel、frames list。结构输入--file，明确--request-key/--base-content/--base-mask-version以及ID/游标/上限；`import images --project ID --axis ID --directory DIR --file options.json`使用协作multipart，options包含幂等键/基础/确认时序，省略axis保留旧导入。离线schema新增task_brief/candidate_manifest/review_issue_page/impact。
 
@@ -762,7 +743,7 @@ stdio逐行最多1,048,576 UTF-8字节，不含LF/CRLF。原始字节有界缓�
 
 Task11 最终区域契约：审核问题 `rect` 为有限连续像素边界 `[x,y,width,height]`，保留小数。位置非负、宽高为正，全部边界必须位于冻结最终画布内；负值、零宽高、非有限值及越界拒绝。审核身份、幂等键、审核 CAS 与接受失效规则不变。GUI 使用同源 HttpOnly Cookie 和固定候选文件路径，完整读取问题分页并在冲突后重新读取；浏览或播放不会写批准。
 
-### 编辑器协作上下文（生产协议1.2）
+### 编辑器协作上下文（生产协议1.3）
 
 `GET /api/v1/collaboration/action?project_id=…&axis_id=…` 与 maker 工具 `inspect_action_collaboration` 返回 shared `ActionCollaborationState`：`{mode, tasks: CollaborationTask[], timing: TaskBrief["timing"] | null}`。两者校验项目/动作归属，要求当前服务认证的制作能力（桌面审核会话同时具备制作能力）。完整列出任务，多任务必须明确选择；取消任务不清除协作模式。`timing` 是当前制作副本的权威策略。
 
@@ -771,3 +752,38 @@ Task11 最终区域契约：审核问题 `rect` 为有限连续像素边界 `[x,
 Editor 以已知任务ID打开局部验收模态框。工作台先完成 `start_rework`，再通过 `DraftEditContext` 将任务、父候选和返回内容令牌交给制作副本。显式时序切换复用 `/timing` CAS 操作。maker 的返工和时序适配器将 `{request_key}` 操作身份与负载字段分别传入；CLI、HTTP maker 与 MCP 仍使用相同的内容冲突检查和幂等重放规则。交付展示在挂载、审核变更、连接失效通知及5秒回退轮询时读取任务/审核/操作和已提交交付；短暂任务通知不是发布依据。撤回批准的历史文件保留可读并显示撤回状态。
 
 旧版无令牌服务的 `/collaboration/action` 仍返回401；面板如实显示不可用，不安装推测身份。Alignment正式出口与浏览器导出共用原 `/export/resolve`，因此无协作的旧动作仍能正常导出。解析器鉴权、冲突或其他错误直接中止，绝不作为旧导出的回退信号。输入复用已有严格 `context` schema，输出为上述 shared 类型；无新数据库结构或审核权限。
+
+## 工作区与服务管理（API1.3）
+
+源码CLI、桌面与 `bun run start` / `bun run dev` 共用解析规则：显式 `--workspace` > `SFS_WORKSPACE` > 登记表当前工作区 > 默认目录。源码登记表为 `<repo>/.sfs/workspaces.json`，默认 `<repo>/workspaces/default`；后续重建便携版为 `%LOCALAPPDATA%/SpriteMotionStudio/workspaces.json` 与同处 `workspaces/default`。已发布1.0.7二进制保留原选择方式。登记/选择只改变管理记录，不搬移或合并数据库；现有工作区与固定文件来源保留。
+
+| 命令 | 行为 |
+| --- | --- |
+| `sfs.cmd workspace list --json` | 列出登记/默认/当前路径、是否存在及服务状态；不启动服务、不显示令牌，健康PID/实例核实后才显示当前端口。 |
+| `sfs.cmd workspace current --json` | 返回实际选用目录与登记表位置。 |
+| `sfs.cmd workspace add --name NAME --directory DIR` | 登记已有目录，拒绝名称/路径冲突；不会自动切换。 |
+| `sfs.cmd workspace use --name NAME` | 选择已登记工作区；也可用 `workspace use --directory DIR` 选择已有目录。 |
+| `sfs.cmd service status [--workspace DIR] --json` | 核查服务/锁归属与健康状态，不启动后端、不暴露凭据。 |
+| `sfs.cmd service stop [--workspace DIR] --json` | 核实当前实例与任务，请求协作退出并等待，不按外部PID强杀；先保存并关闭GUI/MCP。 |
+| `sfs.cmd service clean [--workspace DIR] --json` | 持有排他恢复锁，只清理已证明退出且归属匹配的发现记录及 `before-human-desktop` 备份；活动、损坏或归属不明时拒绝。 |
+
+登记与选择要求目录已存在；业务命令显式指定的新目录可由启动创建。显式路径或 `SFS_WORKSPACE` 会覆盖登记的当前选择，切换时须清除旧环境变量覆盖。start/dev进入 `runtimeBootstrap.ts`：先取得工作区锁，再初始化审核管道与会话、加载DB并协调恢复，最后发布就绪。默认 `PORT=0`，每个活动工作区只有一个回环HTTP端口；`/api`、`/api/v1`、`/api/v1/collaboration`、`/ws`、`/mcp`共用，分别承载已有编辑器、流水线与协作职责。桌面named pipe保留独立人工权限边界，不是重复HTTP服务。
+
+经过鉴权的 `POST /api/v1/runtime/stop` 不需要body。没有排队/运行任务、其他正在处理的HTTP请求或WebSocket客户端时返回 `202 {ok:true,status:"stopping"}`；忙时返回409，`error.code="WORKSPACE_BUSY"`。接受后新请求返回 `503 SERVICE_STOPPING`，25毫秒后协作关闭，退出处理释放本实例记录。CLI将身份不明/忙的服务作为冲突报告（退出码6），不强制终止。clean保留日志、数据库、原始素材、失败staging、固定候选和审核历史；损坏或归属不明的恢复/私密记录需人工核查。
+
+### API1.2审核路由迁移
+
+API1.3移除以下无消费者别名。路径均相对 `/api/v1/collaboration`；旧入口返回404，不写入审核记录。body、服务绑定真实身份、审核/选择CAS及幂等仍使用既有共享契约，范围路径与body中的ID必须一致。
+
+| 旧入口（已移除） | 当前入口 |
+| --- | --- |
+| GET `/candidates/:id/reviews` | GET `/candidates/:id/review-state` |
+| POST `/reviews/frame` | POST `/candidates/:id/reviews/frame` |
+| POST `/reviews/playback` | POST `/candidates/:id/reviews/playback` |
+| POST `/reviews/issue` | POST `/candidates/:id/issues` |
+| POST `/reviews/repair` | POST `/issues/:id/repair` |
+| POST `/reviews/source-exception` | POST `/issues/:id/accept-source-defect` |
+| POST `/reviews/inheritance` | POST `/candidates/:id/reviews/inherit` |
+| POST `/reviews/selection` | POST `/tasks/:id/selection` |
+
+当前客户端与服务须精确匹配生产API **1.3**；API1.1便携包与API1.2历史服务不兼容，不自动强杀。先保存、完成任务并关闭原客户端，再用匹配源码重启。

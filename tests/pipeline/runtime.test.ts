@@ -1,6 +1,7 @@
 import { test, expect } from "bun:test";
 import { mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { authenticateLocalRequest, clearLocalSessions, initializeLocalSessions, LocalAuthError } from "../../apps/server/src/localSessions";
 const runtime = await import("../../apps/server/src/runtime").catch(() => ({})) as any;
 
 const root = join(import.meta.dir, "../../fixtures/generated/runtime-tests", crypto.randomUUID());
@@ -27,17 +28,22 @@ test("服务释放不能移除新实例的描述文件", () => {
   expect(existsSync(path)).toBeTrue();
 });
 
-test("鉴权拒绝未授权API、其他Origin、Host和WebSocket", () => {
-  expect(typeof runtime.authorizeLocalRequest).toBe("function");
-  const authorize = runtime.authorizeLocalRequest;
-  const url = "http://127.0.0.1:43219/api/v1/projects";
-  expect(authorize(new Request(url), "token", "127.0.0.1:43219")).toBe(401);
-  expect(authorize(new Request(url, { headers: { authorization: "Bearer token" } }), "token", "127.0.0.1:43219")).toBeNull();
-  expect(authorize(new Request(url, { headers: { cookie: "sfs_token=token", origin: "http://127.0.0.1:43219" } }), "token", "127.0.0.1:43219")).toBeNull();
-  expect(authorize(new Request(url, { headers: { authorization: "Bearer token", origin: "https://evil.example" } }), "token", "127.0.0.1:43219")).toBe(403);
-  expect(authorize(new Request(url, { headers: { authorization: "Bearer token", host: "evil.example" } }), "token", "127.0.0.1:43219")).toBe(403);
-  expect(authorize(new Request("http://127.0.0.1:43219/ws"), "token", "127.0.0.1:43219")).toBe(401);
-  expect(authorize(new Request(url, { headers: { cookie: "sfs_token=wrong" } }), "token", "127.0.0.1:43219")).toBe(401);
+test("实际会话鉴权拒绝未授权API、其他Origin、Host和WebSocket", () => {
+  const instance = crypto.randomUUID(), authority = "127.0.0.1:43219", url = `http://${authority}/api/v1/projects`;
+  initializeLocalSessions(instance, "token");
+  const authorize = (request: Request) => {
+    try { return authenticateLocalRequest(request, authority).role; }
+    catch (error) { if (error instanceof LocalAuthError) return error.status; throw error; }
+  };
+  try {
+    expect(authorize(new Request(url))).toBe(401);
+    expect(authorize(new Request(url, { headers: { authorization: "Bearer token" } }))).toBe("maker");
+    expect(authorize(new Request(url, { headers: { cookie: "sfs_token=token", origin: `http://${authority}` } }))).toBe("maker");
+    expect(authorize(new Request(url, { headers: { authorization: "Bearer token", origin: "https://evil.example" } }))).toBe(403);
+    expect(authorize(new Request(url, { headers: { authorization: "Bearer token", host: "evil.example" } }))).toBe(403);
+    expect(authorize(new Request(`http://${authority}/ws`))).toBe(401);
+    expect(authorize(new Request(url, { headers: { cookie: "sfs_token=wrong" } }))).toBe(401);
+  } finally { clearLocalSessions(instance); }
 });
 
 test("两个进程并发恢复失效锁时只有一个持有者", async () => {

@@ -15,7 +15,7 @@ const seed=reviewSetup+String.raw`
 `;
 const fixture=(String.raw`
 import assert from 'node:assert/strict';import {readFileSync,writeFileSync} from 'node:fs';import {join} from 'node:path';
-const repo=process.cwd(),workspace=process.env.SFS_WORKSPACE,runtime=join(repo,'fixtures/generated/human-ai/desktop-runtime/1b7dd865-7c23-48b7-a305-5ba4603021fc');
+const repo=process.cwd(),workspace=process.env.SFS_WORKSPACE,runtime=join(repo,'probes/desktop/node_modules/electron/dist');
 const makerRuns=[];
 async function maker(script,name){writeFileSync(join(workspace,name+'.ts'),script);const child=Bun.spawn([process.execPath,'-e',script],{cwd:repo,env:process.env,windowsHide:true,stdout:'pipe',stderr:'pipe'});const [exit,out,err]=await Promise.all([child.exited,new Response(child.stdout).text(),new Response(child.stderr).text()]);const record={name,pid:child.pid,exit,awaited:true,exited_at:Date.now()};makerRuns.push(record);writeFileSync(join(workspace,name+'.output.json'),JSON.stringify({record,out,err}));assert.equal(exit,0,err);return record;}
 await maker(SEED,'maker-seed');

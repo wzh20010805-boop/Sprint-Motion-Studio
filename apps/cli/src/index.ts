@@ -7,8 +7,11 @@ import { doctor } from "./doctor";
 import { productionCommands,runProduction,schemas,compactResult } from './production';
 import { distributionRoot,configureDistribution } from './distribution';
 import {collaborationCommands,runCollaboration} from './collaboration';
+import { listWorkspaces, registerWorkspace, selectWorkspace, workspaceRegistryPath, WorkspaceError } from './workspaces';
 
 const json = (body: unknown): RequestInit => ({ method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+const workspaceCommands=['workspace list','workspace current','workspace add','workspace use'];
+const serviceCommands=['service status','service stop','service clean'];
 
 export async function run(args: string[]) {
   const packed=distributionRoot();if(packed)configureDistribution(packed);
@@ -29,7 +32,13 @@ export async function run(args: string[]) {
       if (typeof value !== "string" || !value.trim()) throw new CliError("INVALID_ARGUMENT", `缺少--${key}`);
       return value;
     };
-    if (flags.help) return { body: { schema_version: "1.0", ok: true, status: "succeeded", data: { commands: [...collaborationCommands,"doctor", "project create|list|inspect", "import video|images", "clip create", "extract --mode all", "matte --project ID (--frames ID,ID | --clip ID) [--region x,y,w,h] --wait", "mask show|edit|undo|review --frame ID", "align --project ID --axis ID --config alignment.json", "review apply --project ID --axis ID --patch review.json --base-revision N", "preview --project ID --axis ID --frame ID --output preview.png", "export --project ID --axis ID [--draft] [--output DIRECTORY] --wait", "pipeline run --project ID --axis ID --recipe recipe.json", "schema --name recipe|alignment|manifest|task_brief|candidate_manifest|review_issue_page|impact", "job status|wait|cancel|resume", "mcp --stdio", "gui"] }, error: null }, exitCode: 0 };
+    if (flags.help) return { body: { schema_version: "1.0", ok: true, status: "succeeded", data: { commands: [...collaborationCommands,"workspace list|current", "workspace add --name NAME --directory DIR", "workspace use (--name NAME | --directory DIR)", ...serviceCommands,"doctor", "project create|list|inspect", "import video|images", "clip create", "extract --mode all", "matte --project ID (--frames ID,ID | --clip ID) [--region x,y,w,h] --wait", "mask show|edit|undo|review --frame ID", "align --project ID --axis ID --config alignment.json", "review apply --project ID --axis ID --patch review.json --base-revision N", "preview --project ID --axis ID --frame ID --output preview.png", "export --project ID --axis ID [--draft] [--output DIRECTORY] --wait", "pipeline run --project ID --axis ID --recipe recipe.json", "schema --name recipe|alignment|manifest|task_brief|candidate_manifest|review_issue_page|impact", "job status|wait|cancel|resume", "mcp --stdio", "gui"] }, error: null }, exitCode: 0 };
+    if(workspaceCommands.includes(command)){
+      const options={repositoryRoot:repositoryRoot(),distributionRoot:packed,explicit:flags.workspace};
+      const data=command==='workspace list'?await listWorkspaces(options):command==='workspace current'?{workspace:defaultWorkspace(flags.workspace),registry:workspaceRegistryPath(options)}:command==='workspace add'?{workspace:registerWorkspace(options,required('name'),required('directory'))}: {workspace:selectWorkspace(options,{name:flags.name,directory:flags.directory})};
+      return {body:{schema_version:'1.0',ok:true,status:'succeeded',data,error:null},exitCode:0};
+    }
+    if(serviceCommands.includes(command))return await (await import('./serviceManagement')).runServiceManagement(command,defaultWorkspace(flags.workspace));
     if (command === "doctor") { const body = await doctor(); return { body, exitCode: body.ok ? 0 : 3 }; }
     if (![...collaborationCommands,...productionCommands,"import images","mcp","project create", "project inspect", "import video", "clip create", "extract", "matte", "mask show", "mask edit", "mask undo", "mask review", "job status", "job wait", "job cancel", "gui"].includes(command)) throw new CliError("INVALID_ARGUMENT", `未知命令：${command}`);
     if (command === "extract" && (flags.mode ?? "all") !== "all") throw new CliError("INVALID_ARGUMENT", "P1 CLI只支持--mode all；旧采样仅保留为GUI显式选项");
@@ -49,7 +58,7 @@ export async function run(args: string[]) {
     if(command.startsWith('mask '))required('frame');
     let strokes:unknown;
     if(command==='mask edit'){const path=resolve(required('strokes'));if(!existsSync(path))throw new CliError('INVALID_INPUT','画笔JSON不存在');strokes=await Bun.file(path).json();if(!Array.isArray(strokes))throw new CliError('INVALID_INPUT','画笔JSON须为数组');}
-    const workspace = resolve(flags.workspace ?? defaultWorkspace());
+    const workspace = defaultWorkspace(flags.workspace);
     const service = await ensureService(workspace);
     if(collaborationCommands.includes(command))return await runCollaboration(command,flags,service,timeout);
     if(command==='mcp'){if(!flags.stdio)throw new CliError('INVALID_ARGUMENT','MCP需要--stdio');await (await import('./mcpBridge')).bridgeStdio(service);return {body:null,exitCode:0};}
@@ -102,7 +111,7 @@ export async function run(args: string[]) {
     // status查询的退出码表示查询成功，不把历史失败当查询失败。
     return { body, exitCode: 0 };
   } catch (error) {
-    const failure = error instanceof CliError ? error : new CliError("INVALID_ARGUMENT", (error as Error).message, 2);
+    const failure = error instanceof CliError ? error : new CliError(error instanceof WorkspaceError?error.code:"INVALID_ARGUMENT", (error as Error).message, error instanceof WorkspaceError&&error.code==='WORKSPACE_REGISTRY_LOCKED'?6:2);
     return { body: failure.result ?? { schema_version: "1.0", ok: false, status: "failed", requires_user_action: false, data: {}, artifacts: [], warnings: [], error: { code: failure.code, message: failure.message } }, exitCode: failure.exitCode };
   }
 }

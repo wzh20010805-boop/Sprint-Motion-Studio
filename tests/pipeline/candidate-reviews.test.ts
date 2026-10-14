@@ -74,14 +74,14 @@ test('HTTP maker body spoofing and private/cross-scope mistakes have no review s
  for(const call of protectedCalls)assert.throws(call,e=>e.code==='ROLE_FORBIDDEN');assert.equal(count(),old);
 
  for(const headers of [{authorization:'Bearer test-maker'},{cookie:'sfs_token=test-maker'}]){
- const response=await api.handle(new Request('http://localhost:3000/api/v1/collaboration/reviews/frame',{method:'POST',headers:{...headers,'content-type':'application/json'},body:JSON.stringify({context:rc(candidate.id),patch:{...patch,actor:{role:'reviewer',session_id:human.session_id}}})}));assert.notEqual(response.status,200);
+ const response=await api.handle(new Request('http://localhost:3000/api/v1/collaboration/candidates/'+candidate.id+'/reviews/frame',{method:'POST',headers:{...headers,'content-type':'application/json'},body:JSON.stringify({context:rc(candidate.id),patch:{...patch,actor:{role:'reviewer',session_id:human.session_id}}})}));assert.equal(response.status,403);
  }
  assert.equal(count(),old);assert.equal(c.readCandidate(candidate.id).review_revision,0);
  assert.throws(()=>r.applyPlaybackReview(rc(candidate.id),{playback_hash:'a'.repeat(64),confirmed:true},human),e=>e.code==='PLAYBACK_HASH_MISMATCH');
  assert.throws(()=>r.applyIssue(rc(candidate.id),{frame_ids:[patch.frame_id],rect:[95,95,2,2],coordinate_system:'final_canvas_pixels',text:'bad rectangle',severity:'blocking'},human),e=>e.code==='ISSUE_RECT_INVALID');
  assert.throws(()=>r.applyFrameReview({...rc(candidate.id),task_id:'unrelated'},patch,human),e=>e.code==='CANDIDATE_TASK_MISMATCH');assert.equal(count(),old);
  assert.throws(()=>r.applyFrameReview({...rc(candidate.id),request_key:'server:delivery:guess'},patch,human),e=>e.code==='RESERVED_REQUEST_KEY');
- const secret=auth.issueReviewerSession('synthetic-test-only');const response=await api.handle(new Request('http://localhost:3000/api/v1/collaboration/reviews/frame',{method:'POST',headers:{cookie:'sfs_reviewer='+secret,'content-type':'application/json'},body:JSON.stringify({context:rc(candidate.id),patch})}));assert.equal(response.status,200);
+ const secret=auth.issueReviewerSession('synthetic-test-only');const response=await api.handle(new Request('http://localhost:3000/api/v1/collaboration/candidates/'+candidate.id+'/reviews/frame',{method:'POST',headers:{cookie:'sfs_reviewer='+secret,'content-type':'application/json'},body:JSON.stringify({context:rc(candidate.id),patch})}));assert.equal(response.status,200);
  const ajv=new Ajv({strict:true}),state=r.readReviewState(candidate.id);assert.equal(ajv.compile(schemas.reviewStateSchema)(state),true);assert.equal(ajv.compile(schemas.actorContextSchema)(human),true);assert.equal(ajv.compile(schemas.workContextSchema)({project_id:'bad:entity',axis_id:'a'}),false);assert.equal(ajv.compile(schemas.deliveryRequestSchema)({task_id:candidate.task_id,candidate_id:candidate.id,acceptance_epoch:0,operation_id:'op'}),false);
 `),120000);
 

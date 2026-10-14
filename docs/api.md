@@ -1,6 +1,20 @@
 # FrameBaker API
 
-Base URL: `http://localhost:3000`; unless noted otherwise, all endpoints use the `/api` prefix. Request/response type definitions in `packages/shared/src/types.ts`.
+Current source production API is **1.3**; the released portable 1.0.7 package remains API1.1. The base URL is the current workspace service's `url` in `.sfs/service.json`, always `http://127.0.0.1:<assigned-port>`. GUI, CLI, WebSocket and maker MCP share that listener. Never reuse an old port or publish the descriptor's token. Except `/api/health`, requests require a current Bearer token or the desktop's local HttpOnly session cookie; Host and any Origin must match the discovered authority. Request/response definitions live in `packages/shared/src/types.ts` and the pipeline shared contracts.
+
+The legacy `/api` catalog below describes retained upstream modules. Normal SFS startup disables cloud generation, provider tests, prompt enhancement, image layers and broad upstream MCP tools; these sections are compatibility references, not instructions to enable those features. Current production/maker/reviewer behavior is specified in the later local API sections and [workspace/service management](#workspace-and-service-management-api13).
+
+For direct HTTP diagnostics, first start the selected workspace with `sfs.cmd gui` or a business CLI command. Load credentials locally rather than copying them into a client configuration:
+
+```powershell
+$ws = (.\sfs.cmd workspace current --json | ConvertFrom-Json).data.workspace
+$sfsService = Get-Content (Join-Path $ws '.sfs/service.json') -Raw | ConvertFrom-Json
+$sfsHeaders = @{ Authorization = "Bearer $($sfsService.token)" }
+Invoke-RestMethod -Uri ($sfsService.url + '/api/v1/projects') -Headers $sfsHeaders
+```
+
+The Bash `curl` examples use `SFS_URL` and `SFS_TOKEN` loaded locally from that same live descriptor; do not echo, log or commit either credential.
+
 
 Conventions:
 
@@ -149,7 +163,7 @@ multipart/form-data:
 Response `{ "jobId": "…" }`, then poll `GET /api/jobs/:id` or wait for WS `job_done`.
 
 ```bash
-curl -F "file=@test.gif" -F "projectId=$PID" -F "type=gif" http://localhost:3000/api/import/upload
+curl -H "Authorization: Bearer $SFS_TOKEN" -F "file=@test.gif" -F "projectId=$PID" -F "type=gif" "$SFS_URL/api/import/upload"
 ```
 
 ### POST /api/import/generate
@@ -222,8 +236,7 @@ Project associations also include materials referenced by skeletal project bindi
 PNG/JPG single image → directly creates 1 material, response `{ "materialId": "…" }`; GIF/MP4 → queued frame extraction, one material per frame, response `{ "jobId": "…" }`.
 
 ```bash
-curl -F "file=@slime.png" http://localhost:3000/api/materials/upload
-curl -F "file=@walk.gif" -F "autoMatting=true" http://localhost:3000/api/materials/upload
+curl -H "Authorization: Bearer $SFS_TOKEN" -F "file=@slime.png" "$SFS_URL/api/materials/upload"
 ```
 
 ### POST /api/materials/generate
@@ -438,7 +451,7 @@ Ranges: `layers` 1–4 (the current Gitee Qwen-Image-Layered endpoint rejects va
 
 ## MCP (Model Context Protocol) Endpoint
 
-FrameBaker includes a built-in MCP server that allows AI assistants (Claude Desktop / Claude Code / Cursor / Windsurf etc.) to operate on projects, frames, materials, jobs, and all other features via the MCP protocol.
+Current `/mcp` exposes the authenticated maker whitelist described by the production1.3 facade. The broad tool list of the tokenless upstream service is a historical code reference only.
 
 ### Transport
 
@@ -448,62 +461,30 @@ Based on `@modelcontextprotocol/server` SDK v2 Streamable HTTP transport, auto-c
 - `GET /mcp`: SSE channel (server → client notifications)
 - `DELETE /mcp`: end session
 
-Protocol version negotiation and session management are handled automatically by the SDK; all tools are stateless direct db operations.
+The SDK handles protocol negotiation; current maker adapters retain the original authenticated Request and use the shared service contracts.
 
 ### Client Setup
 
-**Claude Desktop** (macOS `~/Library/Application Support/Claude/claude_desktop_config.json`, Windows `%APPDATA%\Claude\claude_desktop_config.json`):
+Use the source CLI's stdio bridge from the repository:
+
+```powershell
+.\sfs.cmd mcp --stdio --workspace "D:\assets\workspace"
+```
+
+An MCP client that launches an executable can use the following configuration after replacing both executable/source paths and the workspace with real local paths:
 
 ```json
 {
   "mcpServers": {
-    "framebaker": {
-      "url": "http://localhost:3000/mcp"
+    "sprite-motion-studio": {
+      "command": "C:\\path\\to\\bun.exe",
+      "args": ["D:\\projects\\Sprint-Motion-Studio\\apps\\cli\\src\\index.ts", "mcp", "--stdio", "--workspace", "D:\\assets\\workspace"]
     }
   }
 }
 ```
 
-**Claude Code** (CLI):
-
-```bash
-claude mcp add framebaker --transport http http://localhost:3000/mcp
-```
-
-**Cursor** (`.cursor/mcp.json` in project root, or global settings):
-
-```json
-{
-  "mcpServers": {
-    "framebaker": {
-      "url": "http://localhost:3000/mcp"
-    }
-  }
-}
-```
-
-**Windsurf** (`~/.codeium/windsurf/mcp_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "framebaker": {
-      "serverUrl": "http://localhost:3000/mcp"
-    }
-  }
-}
-```
-
-### Quick Start for AI Agents
-
-Copy and paste the following to your AI agent to get started:
-
-```
-FrameBaker is running at http://localhost:3000 with an MCP server at /mcp (Streamable HTTP).
-Connect to it and use `list_projects` to get started.
-Available tools: list_projects, create_project, list_frames, generate_frames, list_materials, matting_material, list_jobs, get_config, and 40 more.
-All tools manage pixel-art animation projects — frames, materials, generation, matting, folders, jobs, and settings.
-```
+The bridge discovers and authenticates to the workspace service, keeps its lease alive and exposes the maker whitelist. Start with `inspect_capabilities` and use its actual tool list and limits. It does not open another TCP port or grant human approval. Direct `/mcp` HTTP requires the live discovered URL plus maker credentials; a fixed unauthenticated URL is not a valid current setup.
 
 ### Handshake (2025-era Clients)
 
@@ -516,7 +497,7 @@ All tools manage pixel-art animation projects — frames, materials, generation,
 
 After handshake, send `notifications/initialized` notification (no response needed), then `tools/list` and `tools/call` are available. 2026-07-28 clients can skip the handshake and call directly.
 
-### Tool List
+### Upstream broad tool list (historical reference, disabled in normal startup)
 
 | Tool | Description |
 | --- | --- |
@@ -559,7 +540,7 @@ After handshake, send `notifications/initialized` notification (no response need
 | `update_setting` | Update a single setting |
 | `enhance_prompt` | Enhance prompt |
 
-### Tool Call Examples
+### Upstream tool call examples (historical reference)
 
 ```json
 // List projects
@@ -639,23 +620,23 @@ Authenticated local shared service; all JSON responses use the existing v1 envel
 
 Formal export requires exact reviewed revision and hashes of raw, mask, foreground and parameters. Export writes a new staging directory and validates the snapshot again before immutable publication. Missing files return INPUT_NOT_FOUND; concurrent edits return REVISION_CONFLICT/STALE_JOB_RESULT. Draft output is visibly marked. PNG/grid output uses shared scale, untrimmed cells, straight RGBA, no rotation/deduplication and rational frame durations.
 
-Token-mode `/mcp` exposes the maker-only production1.2 whitelist documented below; it excludes all human approval tools. SDK Streamable HTTP and CLI stdio bridge share internal validated services. The broad upstream MCP remains for tokenless upstream development only. Source import accepts explicitly supplied bounded base64 bytes, never arbitrary server filesystem paths. CLI heartbeat prevents idle shutdown while an MCP client is connected.
+Token-mode `/mcp` exposes the maker-only production1.3 whitelist documented below; it excludes all human approval tools. SDK Streamable HTTP and CLI stdio bridge share internal validated services. The broad upstream MCP remains for tokenless upstream development only. Source import accepts explicitly supplied bounded base64 bytes, never arbitrary server filesystem paths. CLI heartbeat prevents idle shutdown while an MCP client is connected.
 
 CLI schemas are available offline through `schema --name alignment|recipe|manifest --json`. See [calling guide](p3-p5-guide.md). HTTP editing, GUI, CLI and MCP share one workspace service; packaged startup resolves sibling runtimes and writable user data.
 
-1.0.1 rendering correction: `/api/config.sfs.production_api_version` is `1.1`; clients reject older service instances. Manifest frames include `transform` (`offset_x`, `offset_y`, signed `scale`, radian `rotation`, `opacity`), applied around the full source-image center before ground alignment. Preview/bounds/review/export share these values; any transform edit invalidates old approval and cached pixels. Packing does not automatically rotate cells.
+Historical 1.0.1 rendering correction advanced `/api/config.sfs.production_api_version` to `1.1`; current source uses the 1.3 handshake. Manifest frames include `transform` (`offset_x`, `offset_y`, signed `scale`, radian `rotation`, `opacity`), applied around the full source-image center before ground alignment. Preview/bounds/review/export share these values; any transform edit invalidates old approval and cached pixels. Packing does not automatically rotate cells.
 
 Imported/manual nonempty PNG alpha may be entirely semi-transparent. `/masks/:id` and the project mask summary normalize legacy imported LOW_CONFIDENCE hints without changing persisted pixels or review state. Empty actual RGBA and automatic low-confidence masks remain rejected. JSON schema/envelope version stays 1.0; existing manifest consumers may ignore the added transform provenance field.
 
 Home decoration: fixed same-origin GET `/illustrations/creative-candy.png` returns PNG without accepting dynamic filenames. Token-mode service retains local authorization; development reads web/public/art and packaged builds read runtime/assets/art.
 
-### Local roles and production API 1.2
+### Local roles and production API 1.3
 
-The runtime publishes `.sfs/service.json` only after the instance session registry, local desktop broker and protected `.sfs/desktop-bootstrap.json` are ready. Its token is maker-only. `sfs_token` retains maker behavior; a valid current-instance `sfs_reviewer` HttpOnly, Strict, host-only cookie takes precedence and also permits manual production. Invalid reviewer cookies never elevate a maker. Host, Origin and WebSocket checks remain enforced; health exposes only live instance/PID identity. Production clients must explicitly match API `1.2`; incompatible services are left running.
+The runtime publishes `.sfs/service.json` only after the instance session registry, local desktop broker and protected `.sfs/desktop-bootstrap.json` are ready. Its token is maker-only. `sfs_token` retains maker behavior; a valid current-instance `sfs_reviewer` HttpOnly, Strict, host-only cookie takes precedence and also permits manual production. Invalid reviewer cookies never elevate a maker. Host, Origin and WebSocket checks remain enforced; health exposes only live instance/PID identity. Production clients must explicitly match API `1.3`; incompatible services are left running.
 
 There is no HTTP endpoint to upgrade a maker credential. Trusted desktop main processes verify descriptor and live service identity, exchange a PID-bound,30-second, single-use nonce over a local named pipe and install the reviewer cookie before loading a page. Future collaboration review adapters must use `getRequestActor(request)` plus `requireRole(actor, 'reviewer')`; body/header actor assertions are untrusted. Existing manual review/export behavior is not replaced by this foundation task.
 
-### Collaboration draft preparation (API 1.2 foundation)
+### Collaboration draft preparation (API1.2 historical foundation; current API1.3)
 
 All `/api/v1/collaboration` adapters use the server-bound local maker/reviewer actor; body actor fields cannot grant authority. `POST /tasks` takes `{brief,request_key}`. `GET /draft?project_id=...&axis_id=...` returns actual byte-bound content, the independent expected source selection, rational output durations, and `alignment:null` for an unconfigured draft. Candidate building must reject missing alignment. `POST /timing` takes `{context,timing,base_content,request_key}`; timing is a TaskField with source_pts, confirmed_fps, or explicit_durations. It preserves source PTS metadata.
 
@@ -667,7 +648,7 @@ Task creation rejects a public canvas/anchor/scale/resampling mismatch with the 
 
 ### Fixed private candidates (Task 4 service foundation)
 
-`collaboration/candidates.ts` exposes createPrivateCandidate(request, actor), buildPrivateCandidate(request, signal?, progress?), readCandidate/readCandidateManifest, candidateFilePath and submitCandidate(id, expectedHash, actor). The existing queue injects its narrow scheduler; import queue before scheduling. Requests retain request_key, task/context, original base_content and optional parent. A replay returns the same operation/job/private candidate, without rendering or reselecting history. Missing alignment, missing primary cells or ordered source mapping mismatches reject production. HTTP, MCP and CLI candidate adapters are documented in the production1.2 facade section below.
+`collaboration/candidates.ts` exposes createPrivateCandidate(request, actor), buildPrivateCandidate(request, signal?, progress?), readCandidate/readCandidateManifest, candidateFilePath and submitCandidate(id, expectedHash, actor). The existing queue injects its narrow scheduler; import queue before scheduling. Requests retain request_key, task/context, original base_content and optional parent. A replay returns the same operation/job/private candidate, without rendering or reselecting history. Missing alignment, missing primary cells or ordered source mapping mismatches reject production. HTTP, MCP and CLI candidate adapters are documented in the production1.3 facade section below.
 
 `checkCandidate(id)` reads every saved PNG and frozen input through the existing Pillow worker. Its appended report binds id, candidate_id, content_hash, manifest_sha256, checked_frame_count, blocking_errors and warnings. Missing/corrupt frames count as attempted but block submission. Candidate paths are root-relative; use candidateFilePath only for registered manifest files, and display the final PNG without applying editor transforms again. The manifest includes raw/mask/RGBA hashes and source dimensions, resolved forward/inverse Canvas matrices, expected step/source coverage, fixed sheet rectangles/pages, compositor source/Pillow identity and all auxiliary file hashes.
 
@@ -705,9 +686,9 @@ CandidateSelfCheck stores id/candidate_id/content_hash/manifest_sha256/plan_hash
 
 ### Collaboration review transactions (Task 7)
 
-`GET /api/v1/collaboration/candidates/:id/reviews` returns the shared `ReviewState`: the complete final-frame set, verdict and validity, original operation/actor provenance, explicit inheritance basis, candidate-relevant issues and repair/exception evidence, playback, typed errors, and the currently valid acceptance epoch (`number | null`). The Task's `acceptance_epoch` remains a monotonic nonnull counter. These are separate meanings; a historical candidate never selects itself by being reviewed.
+`GET /api/v1/collaboration/candidates/:id/review-state` returns the shared `ReviewState`: the complete final-frame set, verdict and validity, original operation/actor provenance, explicit inheritance basis, candidate-relevant issues and repair/exception evidence, playback, typed errors, and the currently valid acceptance epoch (`number | null`). The Task's `acceptance_epoch` remains a monotonic nonnull counter. These are separate meanings; a historical candidate never selects itself by being reviewed.
 
-Review writes use `POST /api/v1/collaboration/reviews/{frame,playback,issue,repair,source-exception}` with `{context,patch}`. `context` is `{task_id,candidate_id,base_review_revision,request_key}`; patches are the shared `FrameReviewPatch`, `PlaybackReviewPatch`, `IssuePatch`, `IssueRepairPatch`, and `SourceDefectPatch`. Inheritance uses `/reviews/inheritance` with `{context,parent_candidate_id}`; the server computes actual Task 6 impact. Selection uses `/reviews/selection` with `CandidateSelectionRequest` (`task_id,candidate_id,expected_selected_candidate_id,expected_acceptance_epoch,request_key`). Selection CAS is independent of candidate review CAS and creates no approval. The maker CLI/MCP adapters are documented below; maker capabilities do not expose human approval.
+Review writes use scoped `/candidates/:id/reviews/{frame,playback}`, `/candidates/:id/issues` and `/issues/:id/{repair,accept-source-defect}` with `{context,patch}`. `context` is `{task_id,candidate_id,base_review_revision,request_key}`; patches use the corresponding shared types. Inheritance uses `/candidates/:id/reviews/inherit` with `{context,parent_candidate_id}`; the server computes actual Task6 impact. Selection uses `/tasks/:id/selection` with `CandidateSelectionRequest` (`task_id,candidate_id,expected_selected_candidate_id,expected_acceptance_epoch,request_key`). Selection CAS remains independent of candidate review CAS and creates no approval. Maker capabilities do not expose human approval. API1.3 removes the old flat aliases; see the migration table.
 
 Only the current server-issued reviewer may write frames, playback, issues, source exceptions, inheritance or selection. Maker may read and associate a complete repair. Neither body actor fields nor a remembered request key upgrades authority. Authentication precedes replay. Same business key/input returns its original result before CAS, including after a fresh reviewer session; changed input conflicts (`REQUEST_CONFLICT`), while a new stale key returns `REVIEW_REVISION_CONFLICT` or `TASK_SELECTION_CONFLICT`. Original actor evidence remains in the operation checkpoint. `server:` request keys are reserved.
 
@@ -727,7 +708,7 @@ Human acceptance wakes `queueAcceptedDelivery(operationId)` after the review tra
 
 `GET /api/v1/export/resolve?project_id=…&axis_id=…&format=sequence|png_sequence|spritesheet` returns `data.mode=legacy`, `candidate` with immutable `files[{file,url}]`, or typed `ambiguous` with all `task_ids`. Multiple tasks are never resolved by creation time. A missing frozen format returns `NEW_CANDIDATE_REQUIRED`; acceptance without a committed operation returns `DELIVERY_NOT_COMMITTED`. Sequence downloads the existing full package; spritesheet downloads each exact fixed page. Resolver errors never authorize browser Canvas fallback.
 
-`GET /api/v1/deliveries/:id` reads the original succeeded operation result. `GET /api/v1/deliveries/:id/file?path=…` serves only committed inventoried files after hash verification and returns `X-Approval-Status: approved|withdrawn`. A moved directory without the succeeded operation is not a delivery. Withdrawal retains the succeeded operation, result identity, all package files and history. CLI/MCP discovery uses the production1.2 facade below; current maker export/recipe calls converge through the guarded core and cannot write acceptance.
+`GET /api/v1/deliveries/:id` reads the original succeeded operation result. `GET /api/v1/deliveries/:id/file?path=…` serves only committed inventoried files after hash verification and returns `X-Approval-Status: approved|withdrawn`. A moved directory without the succeeded operation is not a delivery. Withdrawal retains the succeeded operation, result identity, all package files and history. CLI/MCP discovery uses the production1.3 facade below; current maker export/recipe calls converge through the guarded core and cannot write acceptance.
 
 All old formal collaboration export creation, preparation, execution and publication return `IMMUTABLE_DELIVERY_REQUIRED`, even after acceptance. Explicit drafts retain `DRAFT_NOT_APPROVED` and never create a collaboration publication. Materials, masks, skeletal documents and historical legacy export reads keep their prior role.
 
@@ -745,7 +726,7 @@ Cancellation is persisted before best-effort abort. A prior domain commit wins l
 
 
 
-## Production 1.2 maker facade and fixed candidate HTTP adapters
+## Production 1.3 maker facade and fixed candidate HTTP adapters
 
 The token-mode MCP whitelist is implemented in `mcp/makerTools.ts`, registered by `mcp/sfs.ts`. `inspect_capabilities` returns its actual names and limits. Implemented tools: `inspect_capabilities`, `create_project`, `create_action`, `inspect_project`, `import_source`, `extract_source`, `import_images`, `submit_pipeline`, `get_job`, `cancel_job`, `list_frames`, `get_frame_artifacts`, `get_review_artifacts`, `edit_mask`, `undo_mask`, `save_alignment`, `set_output_timing`, `create_task`, `inspect_task`, `inspect_action_collaboration`, `create_candidate`, `inspect_candidate`, `check_candidate`, `get_candidate_samples`, `record_sample_observations`, `submit_candidate`, `list_review_issues`, `record_issue_repair`, `compare_candidates`, `start_rework`, `inspect_operation`, `resume_operation`, `cancel_operation`, `cancel_task`, `export_assets`. No maker approval, inheritance, source-exception or `apply_review_patch` tool exists. Legacy review commands require a current reviewer in token mode.
 
@@ -753,7 +734,7 @@ New Task creation freezes `goal:{value:<literal user words>,origin:"user"}` and 
 
 Under `/api/v1/collaboration`, maker routes include `POST /maker/:name` (only the whitelist), `POST /tasks`, `GET /tasks/:id`, `POST /tasks/:id/candidates`, `GET /candidates/:id`, `/frames`, `/candidates/:id/frames`, `/candidates/:id/samples`, `/candidates/:id/issues`, `/candidates/:id/review-state`, `POST /candidates/:id/observations`, `/candidates/:id/submit`, `/tasks/:id/rework`, `/operations/:id/resume`, `/operations/:id/cancel`, `/tasks/:id/cancel`, and `GET /operations/:id`. `GET /candidates/:id/file?path=…` uses the immutable manifest whitelist plus byte verification, never arbitrary directory files. `GET /deliveries/:id` and `/deliveries/:id/file?path=…` use committed delivery authority. `POST /action-export/resolve` accepts project_id, axis_id, format and returns explicit task ambiguity. `export_assets` accepts an explicit task_id when needed; it returns an existing committed delivery or its original pending operation, never guesses latest Task or renders current draft. An already committed operation may truthfully return job_id=null.
 
-GUI writes use reviewer-only `POST /candidates/:id/reviews/frame`, `/reviews/playback`, `/reviews/inherit`, `/candidates/:id/issues`, `/issues/:id/accept-source-defect`, `/tasks/:id/selection`. `POST /issues/:id/repair` permits a maker but does not approve. Review bodies carry `{context:{task_id,candidate_id,base_review_revision,request_key},patch}`; inheritance replaces patch with parent_candidate_id; selection uses the separate shared CandidateSelectionRequest CAS. Paths and body scope must agree. Existing flat `/reviews/*` aliases remain. Content and review revisions remain separate.
+GUI writes use reviewer-only `POST /candidates/:id/reviews/frame`, `/candidates/:id/reviews/playback`, `/candidates/:id/reviews/inherit`, `/candidates/:id/issues`, `/issues/:id/accept-source-defect`, `/tasks/:id/selection`. `POST /issues/:id/repair` permits a maker but does not approve. Review bodies carry `{context:{task_id,candidate_id,base_review_revision,request_key},patch}`; inheritance replaces patch with parent_candidate_id; selection uses the separate shared CandidateSelectionRequest CAS. Paths and body scope must agree. API1.3 removes the old flat `/reviews/*` aliases and duplicate `/candidates/:id/reviews`; use scoped paths and review-state as listed in the migration table. Content and review revisions remain separate.
 
 Frame/issue pages default to32, max300, and return all `items,total,next_cursor,complete,content_token`. Follow next_cursor until complete. Draft cursors bind current content/context; candidate cursors bind immutable candidate content; `ReviewIssuePage` also contains/binds review_revision. Changes return PAGE_CONFLICT. Full manifests, reports, issue arrays and nested frame IDs remain complete on CLI stdout.
 
@@ -765,7 +746,7 @@ New public task creation atomically binds the canonical supplied input to its or
 
 Task11 final-region contract: reviewer issue `rect` is a finite continuous pixel-edge `[x,y,width,height]`, including fractions. Position must be nonnegative, extents positive, and all edges within the frozen final canvas. The service preserves fractions; invalid/NaN/infinite/out-of-bounds values reject. Authenticated reviewer, request-key replay, review CAS and acceptance invalidation are unchanged. The GUI uses same-origin HttpOnly Cookies and immutable candidate file URLs, with complete issue pagination and conflict refetch; browsing/playback never creates approval.
 
-### Editor collaboration context (production 1.2)
+### Editor collaboration context (production 1.3)
 
 `GET /api/v1/collaboration/action?project_id=…&axis_id=…` and maker tool `inspect_action_collaboration` return the shared `ActionCollaborationState`: `{mode, tasks: CollaborationTask[], timing: TaskBrief["timing"] | null}`. Both validate project/axis ownership and require the current authenticated maker capability (the desktop reviewer includes maker capability). The list is complete; multiple tasks require explicit selection. Cancellation does not remove the action mode. `timing` is the current draft policy, not a guessed candidate policy.
 
@@ -774,3 +755,38 @@ Task11 final-region contract: reviewer issue `rect` is a finite continuous pixel
 The Editor opens the existing review modal by known Task ID. `start_rework` completes before `DraftEditContext` navigates to the editable copy, preserving task ID, parent candidate ID and returned content token. Manual output policy changes use the existing `/timing` CAS operation. Maker adapters for rework and timing pass `{request_key}` as request identity separately from operation payload fields; CLI, HTTP maker and MCP retain the same content conflict and replay checks. Durable delivery display reads task/review/operation and committed delivery records on mount, review mutations, connection invalidation and a five-second poll; transient job notifications do not establish publication. Historical withdrawn bytes stay readable and carry their withdrawn status.
 
 The historical token-free service still returns401 for `/collaboration/action`; the panel reports this unavailable state without installing an inferred actor. Alignment formal export and browser export share the existing `/export/resolve`, preserving unrelated legacy exports. Resolver authentication, conflict or other errors abort; none is a legacy fallback signal. Inputs reuse the existing strict context schema and outputs use the shared type above; there is no new database schema or review authority.
+
+## Workspace and service management (API1.3)
+
+Source CLI, desktop and `bun run start` / `bun run dev` share one resolver: explicit `--workspace` > `SFS_WORKSPACE` > the registry's current workspace > default directory. Source registry: `<repo>/.sfs/workspaces.json`; source default: `<repo>/workspaces/default`. Rebuilt distributions use `%LOCALAPPDATA%/SpriteMotionStudio/workspaces.json` and `%LOCALAPPDATA%/SpriteMotionStudio/workspaces/default`. The already released 1.0.7 binary retains its old selection behavior. Registering/selecting only changes management records, not data locations; existing databases and immutable lineage remain separate.
+
+| Command | Behavior |
+| --- | --- |
+| `sfs.cmd workspace list --json` | List registered, default and current paths with existence/service state; does not start services or print tokens. A port appears only after health PID and instance identity match. |
+| `sfs.cmd workspace current --json` | Return the effective workspace and registry path. |
+| `sfs.cmd workspace add --name NAME --directory DIR` | Register an existing directory; reject name/path conflicts; does not select it. |
+| `sfs.cmd workspace use --name NAME` | Select a registered workspace; alternatively `workspace use --directory DIR` selects an existing directory. |
+| `sfs.cmd service status [--workspace DIR] --json` | Probe service/lock ownership and health without starting a backend or exposing credentials. |
+| `sfs.cmd service stop [--workspace DIR] --json` | Verify the current instance and jobs, request cooperative shutdown and wait; never kill an external PID. Save and close GUI/MCP first. |
+| `sfs.cmd service clean [--workspace DIR] --json` | Under the recovery exclusion lock, remove only known dead, matching discovery records and matching `before-human-desktop` backups. Active, corrupt or ambiguous owners block cleanup. |
+
+A selected directory must exist; an explicit business-command workspace may be newly created by startup. An explicit path or `SFS_WORKSPACE` overrides the stored selection, so remove an old environment override when switching via the registry. Source `start` and `dev` enter `runtimeBootstrap.ts`: workspace lock before DB, reviewer broker/session initialization and recovery reconciliation before readiness. Default `PORT=0` allocates one loopback HTTP listener per active workspace. `/api`, `/api/v1`, `/api/v1/collaboration`, `/ws` and `/mcp` share it; their separate paths serve existing editor, pipeline and collaboration responsibilities. The desktop named pipe remains a separate human-authority boundary rather than a duplicate HTTP service.
+
+Authenticated `POST /api/v1/runtime/stop` accepts no body. It returns `202 {ok:true,status:"stopping"}` only when no queued/running jobs, no other in-flight HTTP requests and no WebSocket clients remain; otherwise `409` with `error.code="WORKSPACE_BUSY"`. After acceptance, new requests receive `503 SERVICE_STOPPING`; the service closes cooperatively after 25 ms and releases its own descriptors on exit. CLI stop reports an unconfirmed/busy instance as a conflict (exit6), without forced termination. Clean preserves logs, databases, raw sources, failed staging, candidates and review history; damaged or ownerless recovery/private records require investigation.
+
+### Review route migration from API1.2
+
+API1.3 retires the unused aliases below. All paths are relative to `/api/v1/collaboration`; old paths return404 and perform no review writes. Bodies, server-authenticated actors, review/selection CAS and idempotency remain governed by the existing shared contracts; scoped path and body IDs must agree.
+
+| Retired path | Current path |
+| --- | --- |
+| GET `/candidates/:id/reviews` | GET `/candidates/:id/review-state` |
+| POST `/reviews/frame` | POST `/candidates/:id/reviews/frame` |
+| POST `/reviews/playback` | POST `/candidates/:id/reviews/playback` |
+| POST `/reviews/issue` | POST `/candidates/:id/issues` |
+| POST `/reviews/repair` | POST `/issues/:id/repair` |
+| POST `/reviews/source-exception` | POST `/issues/:id/accept-source-defect` |
+| POST `/reviews/inheritance` | POST `/candidates/:id/reviews/inherit` |
+| POST `/reviews/selection` | POST `/tasks/:id/selection` |
+
+Client/server production API versions must match **1.3** exactly. API1.1 portable and API1.2 historical services are incompatible and are not automatically killed; save/finish work and close those clients before restarting with matching source.

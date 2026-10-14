@@ -3,7 +3,7 @@ import { join, resolve } from 'node:path';
 
 const root = resolve(import.meta.dir, '..');
 const evidence = process.argv.includes('--public-runtime')?join(root,'fixtures/generated/human-ai','t12-editor-'+crypto.randomUUID().replaceAll('-','').slice(0,8)):join(root, 'fixtures/generated/editor-navigation-ui', new Date().toISOString().replaceAll(':', '-'));
-const electron=process.argv.includes('--public-runtime')?join(root,'fixtures/generated/human-ai/desktop-runtime/1b7dd865-7c23-48b7-a305-5ba4603021fc/electron.exe'):join(root,'probes/desktop/node_modules/electron/dist/electron.exe');
+const electron=join(root,'probes/desktop/node_modules/electron/dist/electron.exe');
 mkdirSync(evidence, { recursive: true });
 const build = await Bun.build({ entrypoints: [join(root, 'probes/desktop/editor-navigation-fixture.tsx')], target: 'browser', outdir: evidence });
 if (!build.success) throw new Error(build.logs.join('\n'));

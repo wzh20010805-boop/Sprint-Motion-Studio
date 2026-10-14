@@ -13,6 +13,7 @@ const runtime=join(destination,'runtime');mkdirSync(runtime,{recursive:true});
 copy(join(root,'probes/desktop/node_modules/electron/dist'),destination);
 renameSync(join(destination,'electron.exe'),join(destination,'SpriteMotionStudio.exe'));
 copy(join(root,'apps/desktop'),join(destination,'resources/app'));
+copy(join(root,'packages/shared/src/pipeline/productionVersion.json'),join(destination,'resources/app/productionVersion.json'));
  copy(join(root,'skills/soldier-frame-studio'),join(destination,'skills/soldier-frame-studio'));
  copy(join(root,'docs/p3-p5-guide.md'),join(destination,'CLI与Codex接入.md'));
  const projectReadme=readFileSync(join(root,'README.md'),'utf8').replace(/(?<!!)\[([^\]]+)\]\((?!https?:)([^)]+)\)/g,(_all,label,url)=>url.startsWith('docs/media/')?`[${label}](${url})`:`[${label}](https://github.com/wzh20010805-boop/Sprint-Motion-Studio/blob/main/${url})`);

@@ -2,9 +2,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 const net = require('node:net');
 const { createHash } = require('node:crypto');
+// 源码与便携包均使用 shared 同一版本文件，构建脚本只复制，不另写版本值。
+const productionVersion = require(fs.existsSync(path.join(__dirname,'productionVersion.json'))?'./productionVersion.json':'../../packages/shared/src/pipeline/productionVersion.json').version;
 
 // 按工作区保留界面偏好；每次打开都重做当前实例握手，旧 Cookie 不提供能力。
-const desktopPartition = workspace => 'persist:sfs-' + createHash('sha256').update(process.platform === 'win32' ? path.resolve(workspace).toLowerCase() : path.resolve(workspace)).digest('hex');
+const canonicalPath = value => fs.existsSync(value) ? fs.realpathSync(value) : path.resolve(value);
+const workspacePathKey = value => process.platform === 'win32' ? canonicalPath(value).toLowerCase() : canonicalPath(value);
+const desktopPartition = workspace => 'persist:sfs-' + createHash('sha256').update(process.platform === 'win32' ? canonicalPath(workspace).toLowerCase() : canonicalPath(workspace)).digest('hex');
 const failure = code => new Error(code);
 function pipeRequest(pipe, body) {
   return new Promise((resolve, reject) => {
@@ -29,7 +33,7 @@ function pipeRequest(pipe, body) {
 }
 async function verifyLive(info, workspace) {
   if (!info || !/^http:\/\/127\.0\.0\.1:\d+$/.test(info.url) || !/^[a-f0-9]{64}$/.test(info.token) ||
-      !Number.isSafeInteger(info.pid) || path.resolve(info.workspace) !== path.resolve(workspace)) throw failure('DESKTOP_SERVICE_IDENTITY');
+      !Number.isSafeInteger(info.pid) || typeof info.workspace !== 'string' || workspacePathKey(info.workspace) !== workspacePathKey(workspace)) throw failure('DESKTOP_SERVICE_IDENTITY');
   const response = await fetch(info.url + '/api/health', { signal: AbortSignal.timeout(2000) });
   const health = await response.json();
   if (!response.ok || health.pid !== info.pid || health.instance_id !== info.instance_id) throw failure('DESKTOP_SERVICE_IDENTITY');
@@ -39,10 +43,11 @@ async function obtainDesktopReviewSession(workspace, expectedInfo) {
   if (expectedInfo && ['instance_id', 'pid', 'url', 'token'].some(key => expectedInfo[key] !== undefined && info[key] !== expectedInfo[key])) throw failure('DESKTOP_SERVICE_IDENTITY');
   await verifyLive(info, workspace);
   const configResponse = await fetch(info.url + '/api/config', { headers: { Authorization: `Bearer ${info.token}` }, signal: AbortSignal.timeout(2000) });
-  if (!configResponse.ok || (await configResponse.json()).sfs?.production_api_version !== '1.2') throw failure('BACKEND_VERSION_CONFLICT');
+  if (!configResponse.ok || (await configResponse.json()).sfs?.production_api_version !== productionVersion) throw failure('BACKEND_VERSION_CONFLICT');
   const descriptor = JSON.parse(fs.readFileSync(path.join(workspace, '.sfs/desktop-bootstrap.json'), 'utf8'));
   const expectedPipe = process.platform === 'win32' ? `\\\\.\\pipe\\sfs-review-${info.instance_id}` : path.join(workspace, '.sfs', `review-${info.instance_id}.sock`);
-  if (descriptor.instance_id !== info.instance_id || descriptor.pid !== info.pid || descriptor.pipe_name !== expectedPipe ||
+  const samePipe = process.platform === 'win32' ? descriptor.pipe_name === expectedPipe : typeof descriptor.pipe_name === 'string' && canonicalPath(descriptor.pipe_name) === canonicalPath(expectedPipe);
+  if (descriptor.instance_id !== info.instance_id || descriptor.pid !== info.pid || !samePipe ||
       !/^[a-f0-9]{64}$/.test(descriptor.bootstrap_secret) || !Number.isFinite(Date.parse(descriptor.created_at)) ||
       Date.parse(descriptor.created_at) > Date.now() + 5000) throw failure('DESKTOP_BOOTSTRAP_IDENTITY');
   const common = { instance_id: info.instance_id, desktop_pid: process.pid };
