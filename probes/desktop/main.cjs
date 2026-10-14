@@ -22,6 +22,7 @@ fs.mkdirSync(profile, { recursive: true });
 app.setPath("userData", profile);
 app.commandLine.appendSwitch("disable-background-timer-throttling");
 
+let desktopSession;
 let child, window, origin, quitting = false, childExited = false;
 const report = { startedAt: new Date().toISOString(), command: process.argv, cwd: process.cwd(), packageRoot, packed, runtime, backendRoot, profile, pagePath, serviceManagement: externalService ? "attach-existing" : "owned-p0-child", versions: process.versions, events: [], console: [], blockedRequests: [] };
 const event = (kind, details = {}) => report.events.push({ kind, at: new Date().toISOString(), ...details });
@@ -185,14 +186,15 @@ async function run() {
     if (address.protocol !== "http:" || address.hostname !== "127.0.0.1" || !address.port || address.username || address.password || address.search || address.hash || address.pathname !== "/") throw new Error("SFS_SERVICE_URL 必须是明确的 127.0.0.1 HTTP 服务根地址");
     origin = address.origin;
     report.backend = { url: `${origin}/`, owned: false };
-    if (externalToken) {
-      await session.defaultSession.cookies.set({ url: `${origin}/`, name: "sfs_token", value: externalToken, httpOnly: true, sameSite: "strict", path: "/" });
-      report.authCookieConfigured = true;
-      const cookie = (await session.defaultSession.cookies.get({ url: `${origin}/`, name: "sfs_token" }))[0];
-      report.authCookieAttributes = { name: cookie.name, httpOnly: cookie.httpOnly, sameSite: cookie.sameSite, path: cookie.path };
-    }
+    if (!process.env.SFS_WORKSPACE || !externalToken) throw new Error("DESKTOP_SERVICE_IDENTITY");
+    const { initializeDesktopSession } = require("../../apps/desktop/review-bootstrap.cjs");
+    const attached = await initializeDesktopSession(session, process.env.SFS_WORKSPACE, { url: origin, token: externalToken });
+    if (attached.info.url !== origin || attached.info.token !== externalToken) throw new Error("DESKTOP_SERVICE_IDENTITY");
+    desktopSession = attached.session;
+    report.authCookieConfigured = true;
+    report.reviewerSessionConfigured = true;
     event("external-service-attached", { url: `${origin}/`, cookieConfigured: !!externalToken });
-  } else await startBackend();
+  } else { await startBackend(); desktopSession = session.defaultSession; }
   const health = await serviceFetch(`${origin}/api/health`);
   report.health = { status: health.status, body: await health.json() };
   const html = await (await serviceFetch(`${origin}${pagePath}`)).text();
@@ -202,14 +204,14 @@ async function run() {
     .map(script => `'sha256-${createHash("sha256").update(script).digest("base64")}'`);
   const csp = `default-src 'self'; script-src 'self' ${hashes.join(" ")}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' data: blob: ${origin.replace("http:", "ws:")}; worker-src 'self' blob:; media-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-src 'none'; form-action 'self'`;
   report.csp = csp;
-  session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
+  desktopSession.webRequest.onBeforeRequest((details, callback) => {
     const allowed = details.url.startsWith(`${origin}/`) || details.url.startsWith(`${origin.replace("http:", "ws:")}/`) || details.url.startsWith("data:") || details.url.startsWith("blob:");
     if (!allowed) report.blockedRequests.push({ url: details.url, resourceType: details.resourceType });
     callback({ cancel: !allowed });
   });
-  session.defaultSession.webRequest.onHeadersReceived((details, callback) => callback({ responseHeaders: { ...details.responseHeaders, "Content-Security-Policy": [csp] } }));
-  session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
-  window = new BrowserWindow({ width: 1360, height: 900, show: !smoke, autoHideMenuBar: true, title: "小兵素材工坊 · Sprite Motion Studio", webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, nodeIntegrationInWorker: false, webSecurity: true, backgroundThrottling: false, offscreen: smoke && ["p1-editor", "playback-range", "p2-masks", "onion-preview", "material-retention"].includes(process.env.SFS_PROBE_SCENARIO) } });
+  desktopSession.webRequest.onHeadersReceived((details, callback) => callback({ responseHeaders: { ...details.responseHeaders, "Content-Security-Policy": [csp] } }));
+  desktopSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
+  window = new BrowserWindow({ width: 1360, height: 900, show: !smoke, autoHideMenuBar: true, title: "小兵素材工坊 · Sprite Motion Studio", webPreferences: { session: desktopSession, contextIsolation: true, sandbox: true, nodeIntegration: false, nodeIntegrationInWorker: false, webSecurity: true, backgroundThrottling: false, offscreen: smoke && ["p1-editor", "playback-range", "p2-masks", "onion-preview", "material-retention"].includes(process.env.SFS_PROBE_SCENARIO) } });
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   window.webContents.on("will-navigate", (event, target) => { if (new URL(target).origin !== origin) event.preventDefault(); });
   window.webContents.on("console-message", (consoleEvent) => report.console.push({ level: consoleEvent.level, message: consoleEvent.message }));

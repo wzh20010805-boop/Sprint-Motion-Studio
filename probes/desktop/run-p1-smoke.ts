@@ -105,7 +105,7 @@ try {
   report.unauthenticatedApiStatus = (await fetch(`${descriptor.url}/api/v1/projects`)).status;
   report.unauthenticatedWsStatus = (await fetch(`${descriptor.url}/ws`, { headers: { Connection: "Upgrade", Upgrade: "websocket", "Sec-WebSocket-Version": "13", "Sec-WebSocket-Key": Buffer.from("p1-smoke-ws-probe").toString("base64"), Origin: descriptor.url } })).status;
   const host = Bun.spawn([electron, import.meta.dir, "--smoke"], {
-    cwd: repo, env: { ...process.env, SFS_SERVICE_URL: descriptor.url, SFS_SERVICE_TOKEN: descriptor.token, SFS_PROBE_PATH: `/project/${projectId}`, SFS_PROBE_SCENARIO: "p1-editor", SFS_PROBE_VIDEO_FILE: video, SFS_PROBE_REQUIRE_FULL_FRAMES: "1", P0_EVIDENCE_DIR: evidence, P0_PROFILE_DIR: join(workspace, ".sfs/desktop-profile") }, stdout: "pipe", stderr: "pipe",
+    cwd: repo, env: { ...process.env, SFS_WORKSPACE: workspace, SFS_SERVICE_URL: descriptor.url, SFS_SERVICE_TOKEN: descriptor.token, SFS_PROBE_PATH: `/project/${projectId}`, SFS_PROBE_SCENARIO: "p1-editor", SFS_PROBE_VIDEO_FILE: video, SFS_PROBE_REQUIRE_FULL_FRAMES: "1", P0_EVIDENCE_DIR: evidence, P0_PROFILE_DIR: join(workspace, ".sfs/desktop-profile") }, stdout: "pipe", stderr: "pipe",
   });
   const [hostExit, stdout, stderr] = await Promise.all([host.exited, new Response(host.stdout).text(), new Response(host.stderr).text()]);
   report.hostExit = hostExit;

@@ -29,7 +29,7 @@ try {
   await request(`/api/steps/${timeline.steps[1].id}`, { duration: 3 });
   const child = Bun.spawn([join(import.meta.dir, "node_modules/electron/dist/electron.exe"), import.meta.dir, "--smoke"], {
     cwd: repo, windowsHide: true, stdout: "pipe", stderr: "pipe",
-    env: { ...process.env, SFS_SERVICE_URL: service.url, SFS_SERVICE_TOKEN: service.token, SFS_PROBE_PATH: `/project/${projectId}`, SFS_PROBE_SCENARIO: "playback-range", P0_EVIDENCE_DIR: evidence, P0_PROFILE_DIR: join(workspace, ".sfs/desktop-profile") },
+    env: { ...process.env, SFS_WORKSPACE: workspace, SFS_SERVICE_URL: service.url, SFS_SERVICE_TOKEN: service.token, SFS_PROBE_PATH: `/project/${projectId}`, SFS_PROBE_SCENARIO: "playback-range", P0_EVIDENCE_DIR: evidence, P0_PROFILE_DIR: join(workspace, ".sfs/desktop-profile") },
   });
   const [exit, stdout, stderr] = await Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()]);
   writeFileSync(join(evidence, "host.stdout.log"), stdout);
