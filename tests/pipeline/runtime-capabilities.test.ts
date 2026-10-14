@@ -1,6 +1,7 @@
 import { test, expect } from 'bun:test';
-import { mkdirSync, readFileSync, existsSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { ensureService } from '../../apps/cli/src/client';
 
 test('published service is ready for independent desktop bootstrap and maker cannot acquire it by HTTP', async () => {
@@ -23,6 +24,11 @@ test('server authenticated role boundary has an independent reviewer session imp
 });
 
 test('real HTTP and pipe enforce reviewer authority, framing, PID, replay, expiry and restart',async()=>{
+ // 独立工作区不依赖其它测试的环境；短路径也容纳 Unix socket 地址。
+ const workspace=mkdtempSync(join(tmpdir(),'sfs-broker-'));
+ const previousWorkspace=process.env.SFS_WORKSPACE;
+ process.env.SFS_WORKSPACE=workspace;
+ try {
  const s:any=await import('../../apps/server/src/localSessions').catch(()=>({}));
  const b:any=await import('../../apps/server/src/desktopReviewBroker').catch(()=>({}));
  expect(typeof b.startDesktopReviewBroker).toBe('function');
@@ -31,7 +37,7 @@ test('real HTTP and pipe enforce reviewer authority, framing, PID, replay, expir
  const instance=crypto.randomUUID(),token='b'.repeat(64);
  s.initializeLocalSessions(instance,token);
  const broker=await b.startDesktopReviewBroker(instance);
- const descriptor=JSON.parse(readFileSync(join(process.env.SFS_WORKSPACE!,'.sfs/desktop-bootstrap.json'),'utf8'));
+ const descriptor=JSON.parse(readFileSync(join(workspace,'.sfs/desktop-bootstrap.json'),'utf8'));
  const rpc=(message:any,fragment=false)=>new Promise<any>((resolve,reject)=>{const socket=connect(broker.pipe_name);let data='';socket.setTimeout(4500,()=>{socket.destroy();reject(Error('timeout'));});socket.on('error',reject);socket.on('data',chunk=>{data+=chunk;if(data.includes('\n')){socket.destroy();resolve(JSON.parse(data));}});socket.on('connect',()=>{const text=typeof message==='string'?message:JSON.stringify({instance_id:instance,...message})+'\n';if(fragment){socket.write(text.slice(0,7));setTimeout(()=>socket.write(text.slice(7)),10);}else socket.write(text);});});
  const issue=()=>rpc({method:'issue',bootstrap_secret:descriptor.bootstrap_secret,desktop_pid:process.pid},true);
  const consume=(nonce:string,pid=process.pid)=>rpc({method:'consume',nonce,desktop_pid:pid});
@@ -63,6 +69,9 @@ test('real HTTP and pipe enforce reviewer authority, framing, PID, replay, expir
   const expires=await issue();setSystemTime(new Date(Date.now()+31000));expect((await consume(expires.nonce)).code).toBe('BOOTSTRAP_EXPIRED');setSystemTime();
   s.initializeLocalSessions(crypto.randomUUID(),token);expect((await call(cookie)).status).toBe(401);
  } finally{setSystemTime();server.stop(true);broker.close();}
+ } finally {
+  if(previousWorkspace===undefined)delete process.env.SFS_WORKSPACE;else process.env.SFS_WORKSPACE=previousWorkspace;
+ }
 },15000);
 
 test('desktop helper verifies live identity before consuming bootstrap and supports production transport',async()=>{

@@ -35,11 +35,38 @@ export async function consumeDesktopLaunchNonce(nonce: string, desktopPid: numbe
 /** 文件尚无秘密时收紧 DACL；验明后才写秘密，不依赖 Windows 的 POSIX mode。 */
 function protectDescriptor(path: string) {
   if (process.platform !== 'win32') return;
-  const script = `$ErrorActionPreference='Stop'; $p=$env:SFS_DESCRIPTOR_PATH; $sid=[System.Security.Principal.WindowsIdentity]::GetCurrent().User; $acl=New-Object System.Security.AccessControl.FileSecurity; $acl.SetAccessRuleProtection($true,$false); foreach($id in @($sid.Value,'S-1-5-18')) { $identity=New-Object System.Security.Principal.SecurityIdentifier($id); $rule=New-Object System.Security.AccessControl.FileSystemAccessRule($identity,'FullControl','Allow'); $acl.AddAccessRule($rule) }; [System.IO.File]::SetAccessControl($p,$acl); $actual=[System.IO.File]::GetAccessControl($p); if($actual.GetOwner([System.Security.Principal.SecurityIdentifier]).Value -ne $sid.Value){throw 'DACL_OWNER'}; if(!$actual.AreAccessRulesProtected){throw 'DACL_NOT_PROTECTED'}; foreach($ace in $actual.Access){$id=$ace.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value; if($id -notin @($sid.Value,'S-1-5-18') -or $ace.AccessControlType -ne 'Allow'){throw 'DACL_UNEXPECTED_ACE'}}; if(@($actual.Access).Count -lt 1){throw 'DACL_EMPTY'};`;
+  const script = `$ErrorActionPreference='Stop'; $reason='DACL_SETUP'; try {
+    $p=$env:SFS_DESCRIPTOR_PATH; $sid=[System.Security.Principal.WindowsIdentity]::GetCurrent().User;
+    $reason='DACL_READ_OWNER'; $owner=[System.IO.File]::GetAccessControl($p).GetOwner([System.Security.Principal.SecurityIdentifier]).Value;
+    $reason='DACL_SETUP'; $acl=New-Object System.Security.AccessControl.FileSecurity;
+    $acl.SetAccessRuleProtection($true,$false);
+    foreach($id in @($sid.Value,'S-1-5-18')) {
+      $identity=New-Object System.Security.Principal.SecurityIdentifier($id);
+      $rule=New-Object System.Security.AccessControl.FileSystemAccessRule($identity,'FullControl','Allow');
+      $acl.AddAccessRule($rule);
+    };
+    $reason='DACL_APPLY'; if($owner -ne $sid.Value){$acl.SetOwner($sid)};
+    [System.IO.File]::SetAccessControl($p,$acl);
+    $reason='DACL_READ'; $actual=[System.IO.File]::GetAccessControl($p);
+    $reason='DACL_OWNER'; if($actual.GetOwner([System.Security.Principal.SecurityIdentifier]).Value -ne $sid.Value){throw $reason};
+    $reason='DACL_NOT_PROTECTED'; if(!$actual.AreAccessRulesProtected){throw $reason};
+    $reason='DACL_UNEXPECTED_ACE'; foreach($ace in $actual.Access){
+      $id=$ace.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value;
+      if($id -notin @($sid.Value,'S-1-5-18') -or $ace.AccessControlType -ne 'Allow'){throw $reason};
+    };
+    $reason='DACL_EMPTY'; if(@($actual.Access).Count -lt 1){throw $reason};
+  } catch { [Console]::Error.WriteLine($reason); exit 1 };`;
   const result = spawnSync(join(process.env.SystemRoot ?? 'C:\\Windows', 'System32/WindowsPowerShell/v1.0/powershell.exe'), ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')], {
     windowsHide: true, timeout: 10000, env: { ...process.env, SFS_DESCRIPTOR_PATH: path }, encoding: 'utf8',
   });
-  if (result.status !== 0) throw new Error(`BOOTSTRAP_DESCRIPTOR_PERMISSIONS: ${result.error?.message ?? 'DACL verification failed'}`);
+  if (result.status !== 0) {
+    // 只返回固定阶段或系统错误码，避免原始 PowerShell 错误包含路径及敏感内容。
+    const stage = result.stderr?.match(/(?:^|\r?\n)(DACL_(?:SETUP|APPLY|READ_OWNER|READ|OWNER|NOT_PROTECTED|UNEXPECTED_ACE|EMPTY))(?=\r?\n|$)/)?.[1];
+    const systemCode = result.error && 'code' in result.error && typeof result.error.code === 'string' ? result.error.code : '';
+    const reason = systemCode.match(/^[A-Z][A-Z0-9_]{1,40}$/)?.[0] ??
+      stage ?? 'DACL_VERIFICATION_FAILED';
+    throw new Error(`BOOTSTRAP_DESCRIPTOR_PERMISSIONS: ${reason}`);
+  }
 }
 
 export async function startDesktopReviewBroker(instanceId: string): Promise<{ pipe_name: string; close(): void }> {

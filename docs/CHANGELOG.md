@@ -4,6 +4,8 @@ This document records features, changes, and bug fixes by release. Main releases
 
 ## [Unreleased]
 
+- Fix cross-platform CI startup: explicitly assign the private desktop bootstrap descriptor to the current Windows user before verifying its protected allowlist; keep permission failures closed and report only bounded diagnostic codes. Isolate the real pipe test workspace and make the CLI forwarding fixture use a valid token, verifying reuse of its own service.
+
 - Add explicit whole-action approval after a human has checked all final frames and playback. Record per-frame approvals and playback atomically with candidate hashes, CAS, reviewer provenance, replay, revocation and existing delivery gates; unresolved issues and repair verdicts still block. Collaboration alignment confirmation now opens candidate review.
 
 - Keep the alignment dialog stable during playback by reserving the loading status line and the full frame-counter width, preventing status visibility and digit changes from moving the centered dialog or controls.
