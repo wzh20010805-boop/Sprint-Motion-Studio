@@ -42,7 +42,7 @@ README 另外列 Misaki、MisekiBitmap、BoutiqueBitmap7x7、BoutiqueBitmap9x9�
 
 ## JavaScript / TypeScript 依赖
 
-精确版本来自固定 commit 的 `bun.lock`；许可和原文文件来自本机安装包的 package.json 与 LICENSE/COPYING 文件。下列依赖及传递依赖是该安装快照，不表示未来打包全部都会进入产物。本文附录保留可找到的原许可全文、copyright 与 NOTICE；存在原文缺项的三包单列为待补项。
+精确版本来自固定 commit 的 `bun.lock`；许可和原文文件来自本机安装包的 package.json 与 LICENSE/COPYING 文件。下列依赖及传递依赖是该安装快照，不表示未来打包全部都会进入产物。本文附录保留可找到的原许可全文、copyright 与 NOTICE；类型包的原文缺项单列为待补项，实际运行依赖 `@pixi/colord` 已按精确版本来源补齐。
 
 直接依赖：
 
@@ -85,7 +85,7 @@ SAM 2、MatAnyone、Spine 等不是当前默认分发组件；此文不把它们
 | `@borewit/text-codec` | 0.2.2 | MIT | LICENSE.txt |
 | `@modelcontextprotocol/core` | 2.0.0 | MIT | LICENSE |
 | `@modelcontextprotocol/server` | 2.0.0 | MIT | LICENSE |
-| `@pixi/colord` | 2.9.6 | MIT | 未含独立 license 文件；发布前补原文 |
+| `@pixi/colord` | 2.9.6 | MIT | 原始 LICENSE.md 已补齐，见 docs/licenses/Pixi-Colord-2.9.6-MIT.txt |
 | `@sinclair/typebox` | 0.34.52 | MIT | license |
 | `@tokenizer/inflate` | 0.4.1 | MIT | LICENSE |
 | `@tokenizer/token` | 0.3.0 | MIT | 未含独立 license 文件；发布前补原文 |
@@ -139,7 +139,9 @@ SAM 2、MatAnyone、Spine 等不是当前默认分发组件；此文不把它们
 
 ### 原文缺项
 
-`@pixi/colord@2.9.6`、`@tokenizer/token@0.3.0`、`bun-types@1.3.14` 的已安装包没有顶层 LICENSE/COPYING/NOTICE；当前许可仅由 package.json 声明 MIT。须从精确来源版本补齐版权/许可，不能将 metadata 当已包含原文。以上不构成本地 P1 开发阻塞，最终分发不得漏掉实际进入 bundle 的组件声明。
+`@tokenizer/token@0.3.0`、`bun-types@1.3.14` 的已安装包没有顶层 LICENSE/COPYING/NOTICE；当前许可仅由 package.json 声明 MIT。这两个类型包不进入本版运行时 bundle；如果后续分发它们的源码或类型声明，仍须从精确来源版本补齐版权/许可，不能将 metadata 当已包含原文。
+
+`@pixi/colord@2.9.6` 是 PixiJS 的运行依赖。其 npm 包未附 LICENSE，但 [npm 精确版本 metadata](https://registry.npmjs.org/@pixi%2Fcolord/2.9.6) 的 `gitHead` 为 `5344fbf77b736f81cd33c21050021bc09bc9dd1d`；本版从[该固定提交的原始 LICENSE.md](https://github.com/omgovich/colord/blob/5344fbf77b736f81cd33c21050021bc09bc9dd1d/LICENSE.md) 补齐 MIT 全文，保留 `Copyright (c) 2020 Vlad Shilov omgovich@ya.ru`。原始字节在 `docs/licenses/Pixi-Colord-2.9.6-MIT.txt`，便携包复制到 `licenses/Pixi-Colord-2.9.6-MIT.txt`；SHA-256 为 `7613d4594ee8b6163926af3435dae61c9e3d5a27cd137bd76a543ba40002d8fc`。已核对本地包版本为 `2.9.6`，并校验 npm 原始 tarball 的 SHA-512 integrity。
 
 ### License text 1
 

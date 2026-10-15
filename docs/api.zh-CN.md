@@ -1,6 +1,6 @@
 # FrameBaker API
 
-当前源码生产API为 **1.3**；已发布1.0.7便携包仍为API1.1。Base URL来自当前工作区 `.sfs/service.json` 的 `url`，格式为 `http://127.0.0.1:<动态端口>`。GUI、CLI、WebSocket和制作MCP共用该服务；不要复用历史端口或公开描述文件中的令牌。除 `/api/health` 外，请求需要当前Bearer令牌或桌面本地HttpOnly会话Cookie，Host与存在的Origin须匹配发现的服务地址。请求/响应类型见 `packages/shared/src/types.ts` 及pipeline共享契约。
+当前源码与1.0.8 Windows便携包的生产API为 **1.3**；旧版1.0.7便携包使用API1.1。Base URL来自当前工作区 `.sfs/service.json` 的 `url`，格式为 `http://127.0.0.1:<动态端口>`。GUI、CLI、WebSocket和制作MCP共用该服务；不要复用历史端口或公开描述文件中的令牌。除 `/api/health` 外，请求需要当前Bearer令牌或桌面本地HttpOnly会话Cookie，Host与存在的Origin须匹配发现的服务地址。请求/响应类型见 `packages/shared/src/types.ts` 及pipeline共享契约。
 
 下方旧 `/api` 列表描述仍保留的上游模块。常规SFS入口禁用云生成、provider测试、提示词加强、图像分层及上游宽权限MCP；这些部分为兼容代码参考，不表示该入口开放这些功能。当前制作/审核契约见后面的本地API部分及[工作区与服务管理](#工作区与服务管理api13)。
 
@@ -492,7 +492,7 @@ SDK负责协议协商；当前制作适配器仍校验原始鉴权Request，并�
 // 请求
 { "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": { "name": "my-client", "version": "1.0" } } }
 // 响应
-{ "jsonrpc": "2.0", "id": 1, "result": { "protocolVersion": "2025-06-18", "capabilities": { "tools": {} }, "serverInfo": { "name": "framebaker", "version": "1.0.7" } } }
+{ "jsonrpc": "2.0", "id": 1, "result": { "protocolVersion": "2025-06-18", "capabilities": { "tools": {} }, "serverInfo": { "name": "framebaker", "version": "1.0.8" } } }
 ```
 
 握手后发送 `notifications/initialized` 通知（无需响应），随后可 `tools/list` 和 `tools/call`。2026-07-28 客户端无需握手，直接调用即可。
@@ -755,7 +755,7 @@ Editor 以已知任务ID打开局部验收模态框。工作台先完成 `start_
 
 ## 工作区与服务管理（API1.3）
 
-源码CLI、桌面与 `bun run start` / `bun run dev` 共用解析规则：显式 `--workspace` > `SFS_WORKSPACE` > 登记表当前工作区 > 默认目录。源码登记表为 `<repo>/.sfs/workspaces.json`，默认 `<repo>/workspaces/default`；后续重建便携版为 `%LOCALAPPDATA%/SpriteMotionStudio/workspaces.json` 与同处 `workspaces/default`。已发布1.0.7二进制保留原选择方式。登记/选择只改变管理记录，不搬移或合并数据库；现有工作区与固定文件来源保留。
+源码CLI、桌面与 `bun run start` / `bun run dev` 共用解析规则：显式 `--workspace` > `SFS_WORKSPACE` > 登记表当前工作区 > 默认目录。源码登记表为 `<repo>/.sfs/workspaces.json`，默认 `<repo>/workspaces/default`；1.0.8便携版为 `%LOCALAPPDATA%/SpriteMotionStudio/workspaces.json` 与同处 `workspaces/default`。旧版1.0.7二进制保留原选择方式。登记/选择只改变管理记录，不搬移或合并数据库；现有工作区与固定文件来源保留。
 
 | 命令 | 行为 |
 | --- | --- |

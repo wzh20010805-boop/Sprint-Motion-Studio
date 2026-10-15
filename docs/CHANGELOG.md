@@ -4,8 +4,12 @@ This document records features, changes, and bug fixes by release. Main releases
 
 ## [Unreleased]
 
+## [1.0.8] - 2026-10-15
+
+- Refresh the Windows portable distribution from the current source, including production API 1.3, workspace/service management and collaboration review. Keep older releases available for rollback. Synchronize CLI and desktop package versions through the release version tool.
+
 - Unify source CLI, desktop and backend workspace selection with a named registry and explicit/env/current/default precedence. Add workspace listing/selection and service status, cooperative stop and stale discovery cleanup; all normal launchers use the locked bootstrap and a dynamically assigned loopback port.
-- Advance the source production API to 1.3: remove eight unused review route aliases and the unused authentication helper, retain scoped review/CAS and maker/reviewer authority, and reject incompatible running services. The released 1.0.7 portable package remains API 1.1.
+- Advance the production API to 1.3: remove eight unused review route aliases and the unused authentication helper, retain scoped review/CAS and maker/reviewer authority, and reject incompatible running services. The older 1.0.7 portable package uses API 1.1.
 - Retire the merged CI checkout, duplicate dependencies/caches, extracted old portable tree and unused compiled probes; preserve unique CI records in a verified archive, the release ZIP and all source assets, candidates and review history.
 
 - Fix cross-platform CI startup: explicitly assign the private desktop bootstrap descriptor to the current Windows user before verifying its protected allowlist; keep permission failures closed and report only bounded diagnostic codes. Isolate the real pipe test workspace and make the CLI forwarding fixture use a valid token, verifying reuse of its own service.

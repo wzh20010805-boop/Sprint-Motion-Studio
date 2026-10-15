@@ -4,6 +4,8 @@ import { renameSync, rmSync } from "node:fs";
 const ROOT = join(import.meta.dir, "..");
 const PACKAGE_FILES = [
   "package.json",
+  "apps/cli/package.json",
+  "apps/desktop/package.json",
   "apps/server/package.json",
   "apps/web/package.json",
   "packages/shared/package.json",
@@ -11,7 +13,7 @@ const PACKAGE_FILES = [
 const CHANGELOG_FILES = ["docs/CHANGELOG.md", "docs/CHANGELOG.zh-CN.md"] as const;
 const README_FILES = ["README.md", "README.zh-CN.md"] as const;
 const API_DOC_FILES = ["docs/api.md", "docs/api.zh-CN.md"] as const;
-const WORKSPACE_NAMES = ["@framebaker/server", "@framebaker/web", "@framebaker/shared"] as const;
+const WORKSPACE_NAMES = ["@framebaker/cli", "sprite-motion-studio-desktop", "@framebaker/server", "@framebaker/web", "@framebaker/shared"] as const;
 const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 const LATEST_CHANGELOG_START = "<!-- latest-changelog:start -->";
 const LATEST_CHANGELOG_END = "<!-- latest-changelog:end -->";

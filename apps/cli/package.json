@@ -1,6 +1,6 @@
 {
   "name": "@framebaker/cli",
-  "version": "1.0.4",
+  "version": "1.0.8",
   "private": true,
   "type": "module",
   "scripts": {

@@ -1,6 +1,6 @@
 # Windows 便携版：依赖源码与重建
 
-发行版：Sprite Motion Studio 1.0.0；本地1.0.1至1.0.3修复包使用相同版本的依赖与对应源码归档（仍可从v1.0.0 Release取得）。应用源码与安装包在 [本仓库](https://github.com/wzh20010805-boop/Sprint-Motion-Studio) 和 [Release](https://github.com/wzh20010805-boop/Sprint-Motion-Studio/releases/tag/v1.0.0) 提供；源代码 MIT，依赖按各自许可，用户示例媒体不授予 MIT 再分发许可。
+发行版：Sprite Motion Studio 1.0.8。应用源码与安装包在 [本仓库](https://github.com/wzh20010805-boop/Sprint-Motion-Studio) 和 [1.0.8 Release](https://github.com/wzh20010805-boop/Sprint-Motion-Studio/releases/tag/v1.0.8) 提供；源代码 MIT，依赖按各自许可，用户示例媒体不授予 MIT 再分发许可。本版沿用相同的 Electron、Bun、Python 与 FFmpeg 运行时；下文所述依赖源码与构建配方归档仍可从 [v1.0.0 依赖源码附件](https://github.com/wzh20010805-boop/Sprint-Motion-Studio/releases/download/v1.0.0/SpriteMotionStudio-1.0.0-dependency-sources.zip) 取得。
 
 ## FFmpeg / ffprobe
 

@@ -321,10 +321,10 @@ Task11 新增独立 `CandidateReviewWorkspace` 与 Canvas2D `CandidateReviewCanv
 
 生产握手版本统一来自 `packages/shared/src/pipeline/productionVersion.json`：共享TypeScript与桌面读取同一文件，便携构建原样复制到resources/app。已有目录别名及Windows大小写差异按同一实际工作区比较。登记读改写受排他锁保护；竞争返回 `WORKSPACE_REGISTRY_LOCKED`，未知锁保留待核查。列表中提示项带 `registered:false`，名称不会覆盖真正登记的工作区。
 
-`apps/cli/src/workspaces.ts` 是CLI与 `runtimeBootstrap.ts` 共用的解析器；桌面通过CLI读取当前工作区，并用 `workspace use` 保存选择。优先级为显式 `--workspace`、`SFS_WORKSPACE`、登记表当前选择、默认目录。源码登记表为 `<repo>/.sfs/workspaces.json`，默认目录为 `<repo>/workspaces/default`；后续重建便携版登记表为 `%LOCALAPPDATA%/SpriteMotionStudio/workspaces.json`，默认目录为同处 `workspaces/default`。登记使用临时文件原子替换，校验名称/真实路径重复，登记及选择要求目录已存在。切换只改变发现与选择，不搬移数据库或改写固定文件来源。
+`apps/cli/src/workspaces.ts` 是CLI与 `runtimeBootstrap.ts` 共用的解析器；桌面通过CLI读取当前工作区，并用 `workspace use` 保存选择。优先级为显式 `--workspace`、`SFS_WORKSPACE`、登记表当前选择、默认目录。源码登记表为 `<repo>/.sfs/workspaces.json`，默认目录为 `<repo>/workspaces/default`；1.0.8便携版登记表为 `%LOCALAPPDATA%/SpriteMotionStudio/workspaces.json`，默认目录为同处 `workspaces/default`。登记使用临时文件原子替换，校验名称/真实路径重复，登记及选择要求目录已存在。切换只改变发现与选择，不搬移数据库或改写固定文件来源。
 
 `workspace list/current/add/use` 与 `service status/stop/clean` 为本机管理命令；列表/状态查询不启动后端、不暴露令牌。源码start/dev统一进入先锁后DB的引导入口。默认 `PORT=0`，每个活动工作区仅有一个回环HTTP端口，GUI、API、`/ws`和`/mcp`共用；stdio MCP只转发，不另开端口。`localSessions.ts` 是唯一请求身份权威；桌面审核管道仍独立，因为它签发人工reviewer会话，公开发现描述只提供maker能力。
 
 经过鉴权的 `POST /api/v1/runtime/stop` 在同一步核查排队/运行任务、其他HTTP请求和WebSocket连接；忙时返回 `409 WORKSPACE_BUSY`。接受时返回202，退出守卫以 `503 SERVICE_STOPPING` 阻止新请求，25毫秒后协作关闭，原退出处理负责释放本实例。CLI核实健康身份、锁归属与任务后请求此接口，最多等待5秒，不按外部PID强杀。`service clean` 持有排他恢复锁，只移除所有者已退出且归属匹配的服务记录与 `before-human-desktop` 历史发现备份。活动、损坏或归属不明记录阻止清理；日志、数据库、原始素材、固定候选、审核历史及失败staging保留。
 
-生产API **1.3** 将7个无范围审核写入别名及重复候选审核读取入口收口到候选/问题/Task范围路径。GUI与制作适配器仍使用原权限及CAS契约；不兼容服务明确拒绝连接，不强制终止。已发布1.0.7/API1.1便携包未改变。详见[管理命令与接口迁移](api.zh-CN.md#工作区与服务管理api13)。
+生产API **1.3** 将7个无范围审核写入别名及重复候选审核读取入口收口到候选/问题/Task范围路径。GUI与制作适配器仍使用原权限及CAS契约；不兼容服务明确拒绝连接，不强制终止。1.0.8便携包包含以上更新；旧版1.0.7/API1.1下载保留。详见[管理命令与接口迁移](api.zh-CN.md#工作区与服务管理api13)。

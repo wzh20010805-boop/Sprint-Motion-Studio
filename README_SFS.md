@@ -1,14 +1,14 @@
 # 素材创意工坊：源码协作流程 / Windows 便携版
 
-**已发布 Windows 便携版为 1.0.7 / 生产 API 1.1，当前源码为生产 API 1.3。** 从 [最新 Release](https://github.com/wzh20010805-boop/Sprint-Motion-Studio/releases/latest) 下载并完整解压，双击 `SpriteMotionStudio.exe` 或 `START.cmd`，无需启动 bun dev。该便携版包含 P2遮罩修正、P3地面轨迹/公共比例/画布、P4透明序列/图集/ZIP与任务恢复/CLI/MCP、P5独立本地运行时；下文源码新增的协作 Task、固定候选及独立验收尚未包含在下载包中，新协作便携包的集成与验证尚未完成。
+**本次 Windows 便携版为 1.0.8 / 生产 API 1.3，与当前源码功能一致。** 从 [最新 Release](https://github.com/wzh20010805-boop/Sprint-Motion-Studio/releases/latest) 下载并完整解压，双击 `SpriteMotionStudio.exe` 或 `START.cmd`，无需启动 bun dev。便携版包含遮罩修正、地面轨迹/公共比例/画布、透明序列/图集/ZIP、任务恢复、CLI/MCP，以及协作 Task、固定候选、独立人工验收和统一工作区管理。旧 1.0.7 / API 1.1 仍保留在历史 Release。
 
-便携版说明见 [使用与Codex接入](docs/p3-p5-guide.md)；[实施验证报告](docs/evidence/p2-p5/report.md)保留最初 P2–P5 阶段的验证记录。当前源码说明见 [API 1.3](docs/api.zh-CN.md#生产13制作门面与固定候选http接口) 与 [Unreleased 变更日志](docs/CHANGELOG.zh-CN.md#unreleased)。真实动作人工质量确认、干净 Windows 虚拟机验收仍待完成；P6不在本次范围。
+便携版说明见 [使用与Codex接入](docs/p3-p5-guide.md)；[实施验证报告](docs/evidence/p2-p5/report.md)保留最初 P2–P5 阶段的历史验证记录，不能直接替代 1.0.8 发行包验证。当前接口见 [API 1.3](docs/api.zh-CN.md#生产13制作门面与固定候选http接口)，本版变更见 [1.0.8 变更日志](docs/CHANGELOG.zh-CN.md#108---2026-10-15)；包的验证结果以本次 Release 说明为准。真实动作人工质量确认、干净 Windows 虚拟机验收仍待完成；P6不在本次范围。
 
 基于 FrameBaker 原有 React / Pixi、Bun / Elysia / SQLite 开发，保留完整上游 Git 历史。当前可以创建项目、导入视频、完整抽帧和场景抠图修正；GUI 与 CLI 共用一个后端和数据库。
 
-**原始素材独立保留；工作台另行生成透明 RGBA。** 当前便携包未内置CPU模型。在没有模型的电脑上，首次自动抠图需通过「素材工坊」菜单离线导入或明确下载 u2netp；模型保存在 `%LOCALAPPDATA%\SpriteMotionStudio\models`，以后会继续复用，准备好后自动抠图可断网运行，无需CUDA。本机已安装的模型不会自动打入发行ZIP。便携版正式输出要求当前遮罩与地面轨迹审核；源码协作动作要求最终候选逐帧与整体播放的人工验收，内容变化后按影响重新确认。没有修改现有游戏或个人知识库。
+**原始素材独立保留；工作台另行生成透明 RGBA。** 当前便携包未内置CPU模型。在没有模型的电脑上，首次自动抠图需通过「素材工坊」菜单离线导入或明确下载 u2netp；模型保存在 `%LOCALAPPDATA%\SpriteMotionStudio\models`，以后会继续复用，准备好后自动抠图可断网运行，无需CUDA。本机已安装的模型不会自动打入发行ZIP。既有非协作动作正式输出要求当前遮罩与地面轨迹审核；协作动作要求最终候选逐帧与整体播放的人工验收，内容变化后按影响重新确认。没有修改现有游戏或个人知识库。
 
-## 当前源码：制作 → 候选 → 人工验收 → 固定交付
+## 制作 → 候选 → 人工验收 → 固定交付
 
 - 协作 Task 固定用户原话、服务核验的来源身份和制作要求；草稿可继续修改，不可变候选保存最终 PNG、图集、有理数时长及来源记录。
 - 制作侧执行全帧技术检查和有界抽样观察，保留未观察帧及不确定性；自动检查和 maker 自检均不授予人工批准。
@@ -27,7 +27,7 @@ CLI / MCP 的 maker 工具仅负责制作、检查、提交与读取交付；人
 
 ## 本机运行
 
-在 Windows 资源管理器打开本仓库目录，双击 `Start-SFS.cmd`。窗口标题为“素材创意工坊 · Sprite Motion Studio”。源码版采用下文的统一登记与选择规则，未指定时默认使用本仓库的 `workspaces/default`。已发布1.0.7便携版默认使用当前用户的 `LocalAppData/SpriteMotionStudio/workspaces/default`，可通过“切换工作区”选择已有项目目录。
+在 Windows 资源管理器打开本仓库目录，双击 `Start-SFS.cmd`。窗口标题为“素材创意工坊 · Sprite Motion Studio”。源码版采用下文的统一登记与选择规则，未指定时默认使用本仓库的 `workspaces/default`。1.0.8 便携版采用相同选择规则，默认使用当前用户的 `LocalAppData/SpriteMotionStudio/workspaces/default`，可通过“切换工作区”或 CLI 选择已有项目目录。
 
 在本仓库打开 PowerShell：
 
@@ -56,9 +56,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup_sfs.ps1 -Inc
 
 该脚本仅使用本工作区的 `.runtime`、仓库依赖和 `.venv-image`；固定 Bun 1.4.2，按锁文件安装 JS 依赖，Python 验证依赖仅 Pillow / pytest。FFmpeg 和 ffprobe 使用现有 PATH，不自动安装 GPU 栈或模型。Electron 是开发宿主，首次获取需要网络。
 
-## 工作区与端口管理（当前源码）
+## 工作区与端口管理
 
-源码 GUI、CLI、MCP 和 `bun run start` / `bun run dev` 使用同一工作区解析规则：显式 `--workspace` > `SFS_WORKSPACE` > 登记表的当前工作区 > 默认目录。源码登记表为仓库 `.sfs/workspaces.json`，默认目录为 `workspaces/default`；后续重建的便携版登记表位于 `%LOCALAPPDATA%\SpriteMotionStudio\workspaces.json`，默认目录位于同处 `workspaces/default`。已发布1.0.7包仍采用原来的工作区选择方式。
+1.0.8 便携版与源码 GUI、CLI、MCP 使用同一工作区解析规则：显式 `--workspace` > `SFS_WORKSPACE` > 登记表的当前工作区 > 默认目录。源码登记表为仓库 `.sfs/workspaces.json`，默认目录为 `workspaces/default`；便携版登记表位于 `%LOCALAPPDATA%\SpriteMotionStudio\workspaces.json`，默认目录位于同处 `workspaces/default`。`bun run start` / `bun run dev` 也遵循同一规则；以下源码命令在便携目录中将 `sfs.cmd` 换为 `sfs.exe`。
 
 ```powershell
 .\sfs.cmd workspace list --json
@@ -120,14 +120,14 @@ workspaces/<name>/
 
 目前只接受可可靠处理的 SDR、逐行、方形像素、无旋转视频。HDR、交错、显示矩阵异常、缺失/非单调 PTS、损坏或无视频流明确失败。末帧没有可信时长时会估算并输出警告；唯一帧没有可信时长则失败。
 
-## 验证与限制
+## 历史验证与当前限制
 
 - [环境与版本](docs/environment.md)、[上游审计](docs/upstream-audit.md)、[第三方许可](THIRD_PARTY_NOTICES.md)。
 - [P0 桌面探针](docs/desktop-probe.md)：已验证固定 Bun + Electron 路径；完整 Bun 单 EXE 失败，失败证据保留。探针包有依赖开发目录的 junction，尚不能作为干净机器发行包。
 - [P1 全帧报告](docs/evidence/p1/extraction-report.md)、[真实 PNG 检查](docs/evidence/p1/quality-report.md)、[开发进度与交接](docs/progress.md)。
 - [P1 桌面验证](docs/p1-desktop.md)记录真实 GUI、同一项目 CLI 读回和截图。
 
-测试样例是本机 FFmpeg 生成的合成视频。真实 PNG 已逐个解码并打开 contact sheet，但无法替代带场景小兵视频的武器、头发和装备抠图验收。P0 已实证上游无引擎时复制原图却标记 matted，P1 隔离入口明确阻止这类自动抠图请求。`bun run start` 和 `bun run dev` 已统一进入 `runtimeBootstrap.ts`，取得工作区锁、初始化鉴权与审核管道、恢复协调后才监听；默认 `PORT=0`。桌面使用 `sfs.cmd gui` / `Start-SFS.cmd`，MCP使用stdio桥。
+上述 P0/P1 报告使用本机 FFmpeg 生成的合成视频。真实 PNG 已逐个解码并打开 contact sheet，但无法替代带场景小兵视频的武器、头发和装备抠图验收。历史 P0 已实证上游无引擎时复制原图却标记 matted，P1 隔离入口明确阻止这类自动抠图请求。当前 `bun run start` 和 `bun run dev` 已统一进入 `runtimeBootstrap.ts`，取得工作区锁、初始化鉴权与审核管道、恢复协调后才监听；默认 `PORT=0`。桌面使用 `sfs.cmd gui` / `Start-SFS.cmd`，MCP使用stdio桥。
 
 项目导入与素材库上传都会独立保留图片、视频/GIF原件及完整抽帧图片，可跨项目重复使用；升级首次启动会补登记旧项目资料。素材库视频改为完整抽帧，不提供旧FPS/定点采样。抠图请导入项目后使用「场景抠图与修正」。云生成、提示词加强、外部 provider 测试和宽权限上游 MCP 在该入口禁用。设置页沿用上游页面，但不代表这些能力已开放。
 
@@ -141,4 +141,4 @@ bun run build:cli
 .\dist\sfs.exe doctor --json
 ```
 
-运行 `build:cli` 后生成的 `dist/sfs.exe` 仍需要邻接仓库源码和固定 Bun（也可设置 `SFS_REPO_ROOT`），不是 P5 独立发行包。本次清理移除了旧编译产物，使用当前源码时按需重建；新协作便携包尚未完成集成与验证。FFmpeg GPL 构建的再分发责任、模型权重许可和正式离线资源完整性见包装研究。
+运行 `build:cli` 后生成的 `dist/sfs.exe` 仍需要邻接仓库源码和固定 Bun（也可设置 `SFS_REPO_ROOT`），不同于 Release 中附带完整运行时的独立便携包。源码按需重建 CLI；完整便携构建使用 `scripts/build_portable.ts` 并在新目录验证，禁止覆盖既有发行目录。FFmpeg GPL 构建的再分发责任、模型权重许可和正式离线资源完整性见 [分发源码与重建说明](docs/licenses/distribution-sources.md)。

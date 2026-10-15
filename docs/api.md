@@ -1,6 +1,6 @@
 # FrameBaker API
 
-Current source production API is **1.3**; the released portable 1.0.7 package remains API1.1. The base URL is the current workspace service's `url` in `.sfs/service.json`, always `http://127.0.0.1:<assigned-port>`. GUI, CLI, WebSocket and maker MCP share that listener. Never reuse an old port or publish the descriptor's token. Except `/api/health`, requests require a current Bearer token or the desktop's local HttpOnly session cookie; Host and any Origin must match the discovered authority. Request/response definitions live in `packages/shared/src/types.ts` and the pipeline shared contracts.
+Current source and the 1.0.8 Windows portable package use production API **1.3**; the older 1.0.7 package uses API1.1. The base URL is the current workspace service's `url` in `.sfs/service.json`, always `http://127.0.0.1:<assigned-port>`. GUI, CLI, WebSocket and maker MCP share that listener. Never reuse an old port or publish the descriptor's token. Except `/api/health`, requests require a current Bearer token or the desktop's local HttpOnly session cookie; Host and any Origin must match the discovered authority. Request/response definitions live in `packages/shared/src/types.ts` and the pipeline shared contracts.
 
 The legacy `/api` catalog below describes retained upstream modules. Normal SFS startup disables cloud generation, provider tests, prompt enhancement, image layers and broad upstream MCP tools; these sections are compatibility references, not instructions to enable those features. Current production/maker/reviewer behavior is specified in the later local API sections and [workspace/service management](#workspace-and-service-management-api13).
 
@@ -492,7 +492,7 @@ The bridge discovers and authenticates to the workspace service, keeps its lease
 // Request
 { "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": { "name": "my-client", "version": "1.0" } } }
 // Response
-{ "jsonrpc": "2.0", "id": 1, "result": { "protocolVersion": "2025-06-18", "capabilities": { "tools": {} }, "serverInfo": { "name": "framebaker", "version": "1.0.7" } } }
+{ "jsonrpc": "2.0", "id": 1, "result": { "protocolVersion": "2025-06-18", "capabilities": { "tools": {} }, "serverInfo": { "name": "framebaker", "version": "1.0.8" } } }
 ```
 
 After handshake, send `notifications/initialized` notification (no response needed), then `tools/list` and `tools/call` are available. 2026-07-28 clients can skip the handshake and call directly.
@@ -758,7 +758,7 @@ The historical token-free service still returns401 for `/collaboration/action`; 
 
 ## Workspace and service management (API1.3)
 
-Source CLI, desktop and `bun run start` / `bun run dev` share one resolver: explicit `--workspace` > `SFS_WORKSPACE` > the registry's current workspace > default directory. Source registry: `<repo>/.sfs/workspaces.json`; source default: `<repo>/workspaces/default`. Rebuilt distributions use `%LOCALAPPDATA%/SpriteMotionStudio/workspaces.json` and `%LOCALAPPDATA%/SpriteMotionStudio/workspaces/default`. The already released 1.0.7 binary retains its old selection behavior. Registering/selecting only changes management records, not data locations; existing databases and immutable lineage remain separate.
+Source CLI, desktop and `bun run start` / `bun run dev` share one resolver: explicit `--workspace` > `SFS_WORKSPACE` > the registry's current workspace > default directory. Source registry: `<repo>/.sfs/workspaces.json`; source default: `<repo>/workspaces/default`. The 1.0.8 portable distribution uses `%LOCALAPPDATA%/SpriteMotionStudio/workspaces.json` and `%LOCALAPPDATA%/SpriteMotionStudio/workspaces/default`. The older 1.0.7 binary retains its old selection behavior. Registering/selecting only changes management records, not data locations; existing databases and immutable lineage remain separate.
 
 | Command | Behavior |
 | --- | --- |
