@@ -1,6 +1,6 @@
 # 素材创意工坊：源码协作流程 / Windows 便携版
 
-**本次 Windows 便携版为 1.0.8 / 生产 API 1.3，与当前源码功能一致。** 从 [最新 Release](https://github.com/wzh20010805-boop/Sprint-Motion-Studio/releases/latest) 下载并完整解压，双击 `SpriteMotionStudio.exe` 或 `START.cmd`，无需启动 bun dev。便携版包含遮罩修正、地面轨迹/公共比例/画布、透明序列/图集/ZIP、任务恢复、CLI/MCP，以及协作 Task、固定候选、独立人工验收和统一工作区管理。旧 1.0.7 / API 1.1 仍保留在历史 Release。
+**已发布 Windows 便携版为 1.0.8 / 生产 API 1.3。当前源码另包含下文的工作区切换菜单改进，尚未重新打包到该 ZIP。** 从 [最新 Release](https://github.com/wzh20010805-boop/Sprint-Motion-Studio/releases/latest) 下载并完整解压，双击 `SpriteMotionStudio.exe` 或 `START.cmd`，无需启动 bun dev。便携版包含遮罩修正、地面轨迹/公共比例/画布、透明序列/图集/ZIP、任务恢复、CLI/MCP，以及协作 Task、固定候选、独立人工验收和统一工作区管理。旧 1.0.7 / API 1.1 仍保留在历史 Release。
 
 便携版说明见 [使用与Codex接入](docs/p3-p5-guide.md)；[实施验证报告](docs/evidence/p2-p5/report.md)保留最初 P2–P5 阶段的历史验证记录，不能直接替代 1.0.8 发行包验证。当前接口见 [API 1.3](docs/api.zh-CN.md#生产13制作门面与固定候选http接口)，本版变更见 [1.0.8 变更日志](docs/CHANGELOG.zh-CN.md#108---2026-10-15)；包的验证结果以本次 Release 说明为准。真实动作人工质量确认、干净 Windows 虚拟机验收仍待完成；P6不在本次范围。
 
@@ -27,7 +27,7 @@ CLI / MCP 的 maker 工具仅负责制作、检查、提交与读取交付；人
 
 ## 本机运行
 
-在 Windows 资源管理器打开本仓库目录，双击 `Start-SFS.cmd`。窗口标题为“素材创意工坊 · Sprite Motion Studio”。源码版采用下文的统一登记与选择规则，未指定时默认使用本仓库的 `workspaces/default`。1.0.8 便携版采用相同选择规则，默认使用当前用户的 `LocalAppData/SpriteMotionStudio/workspaces/default`，可通过“切换工作区”或 CLI 选择已有项目目录。
+在 Windows 资源管理器打开本仓库目录，双击 `Start-SFS.cmd`。源码窗口标题为“素材创意工坊 · Sprite Motion Studio”，后附当前工作区名称。源码版采用下文的统一登记与选择规则，未指定时默认使用本仓库的 `workspaces/default`。1.0.8 便携版采用相同选择规则，默认使用当前用户的 `LocalAppData/SpriteMotionStudio/workspaces/default`，可通过“切换工作区”或 CLI 选择已有项目目录。
 
 在本仓库打开 PowerShell：
 
@@ -57,6 +57,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup_sfs.ps1 -Inc
 该脚本仅使用本工作区的 `.runtime`、仓库依赖和 `.venv-image`；固定 Bun 1.4.2，按锁文件安装 JS 依赖，Python 验证依赖仅 Pillow / pytest。FFmpeg 和 ffprobe 使用现有 PATH，不自动安装 GPU 栈或模型。Electron 是开发宿主，首次获取需要网络。
 
 ## 工作区与端口管理
+
+源码版双击 `Start-SFS.cmd` 后，顶部常显 **素材工坊 → 切换工作区**。菜单显示当前窗口所属工作区的名称和路径，可直接选择已登记工作区，或通过“选择其他工作区文件夹…”打开已有目录。目标工作区会在新窗口打开并保存为默认启动选择；原窗口和后台任务保留，保存编辑后可自行关闭。窗口标题显示所属工作区，避免混淆。
 
 1.0.8 便携版与源码 GUI、CLI、MCP 使用同一工作区解析规则：显式 `--workspace` > `SFS_WORKSPACE` > 登记表的当前工作区 > 默认目录。源码登记表为仓库 `.sfs/workspaces.json`，默认目录为 `workspaces/default`；便携版登记表位于 `%LOCALAPPDATA%\SpriteMotionStudio\workspaces.json`，默认目录位于同处 `workspaces/default`。`bun run start` / `bun run dev` 也遵循同一规则；以下源码命令在便携目录中将 `sfs.cmd` 换为 `sfs.exe`。
 

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, session } = require("electron");
+const { app, BrowserWindow, session, Menu, dialog } = require("electron");
 const { spawn } = require("node:child_process");
 const { createHash } = require("node:crypto");
 const fs = require("node:fs");
@@ -211,7 +211,22 @@ async function run() {
   });
   desktopSession.webRequest.onHeadersReceived((details, callback) => callback({ responseHeaders: { ...details.responseHeaders, "Content-Security-Policy": [csp] } }));
   desktopSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
-  window = new BrowserWindow({ width: 1360, height: 900, show: !smoke, autoHideMenuBar: true, title: "小兵素材工坊 · Sprite Motion Studio", webPreferences: { session: desktopSession, contextIsolation: true, sandbox: true, nodeIntegration: false, nodeIntegrationInWorker: false, webSecurity: true, backgroundThrottling: false, offscreen: smoke && ["p1-editor", "playback-range", "p2-masks", "onion-preview", "material-retention"].includes(process.env.SFS_PROBE_SCENARIO) } });
+  window = new BrowserWindow({ width: 1360, height: 900, show: !smoke, autoHideMenuBar: false, title: "素材创意工坊 · Sprite Motion Studio", webPreferences: { session: desktopSession, contextIsolation: true, sandbox: true, nodeIntegration: false, nodeIntegrationInWorker: false, webSecurity: true, backgroundThrottling: false, offscreen: smoke && ["p1-editor", "playback-range", "p2-masks", "onion-preview", "material-retention"].includes(process.env.SFS_PROBE_SCENARIO) } });
+  if (externalService) {
+    const { createWorkspaceCli } = require("./workspace-cli.cjs");
+    const { installWorkspaceMenu } = require("./workspace-menu.cjs");
+    const runCli = createWorkspaceCli({ runtime, repositoryRoot: process.env.SFS_REPO_ROOT || path.resolve(probeRoot, "../..") });
+    const menu = await installWorkspaceMenu({
+      Menu, dialog, window, workspace: process.env.SFS_WORKSPACE, runCli,
+      onSwitched: target => event("workspace-opened", { workspace: target }),
+      onError: error => dialog.showErrorBox("工作区切换失败", error.message || String(error)),
+    });
+    window.setMenuBarVisibility(true);
+    report.workspaceMenu = { pid: process.pid, visible: window.isMenuBarVisible(), switchLabel: Menu.getApplicationMenu()?.getMenuItemById("switch-workspace")?.label, workspace: process.env.SFS_WORKSPACE, currentName: menu.currentName, pagePath };
+    const title = `素材创意工坊 · Sprite Motion Studio — ${menu.currentName}`;
+    window.on("page-title-updated", event => { event.preventDefault(); window.setTitle(title); });
+    window.setTitle(title);
+  }
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   window.webContents.on("will-navigate", (event, target) => { if (new URL(target).origin !== origin) event.preventDefault(); });
   window.webContents.on("console-message", (consoleEvent) => report.console.push({ level: consoleEvent.level, message: consoleEvent.message }));
@@ -219,11 +234,17 @@ async function run() {
   report.preferences = window.webContents.getLastWebPreferences();
   await window.loadURL(`${origin}${pagePath}`);
   event("page-loaded", { url: window.webContents.getURL() });
+  if (report.workspaceMenu) fs.writeFileSync(path.join(evidenceRoot, "workspace-menu.json"), JSON.stringify(report.workspaceMenu, null, 2));
   if (process.env.SFS_TEST_VISIBLE_START === "1") {
     report.visibleStart = { visible: window.isVisible(), minimized: window.isMinimized(), bounds: window.getBounds() };
     event("visible-start", report.visibleStart);
     window.destroy();
     await finish(report.visibleStart.visible ? 0 : 1);
+    return;
+  }
+  // 日常窗口不执行开发烟测；远程桌面或暂不可截图时仍应保留用户的编辑窗口。
+  if (!smoke && !process.env.SFS_PROBE_SCENARIO) {
+    window.on("closed", () => finish(0));
     return;
   }
   await delay(1500);

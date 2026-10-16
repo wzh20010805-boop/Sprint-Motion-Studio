@@ -4,6 +4,9 @@ This document records features, changes, and bug fixes by release. Main releases
 
 ## [Unreleased]
 
+- Add a visible source-desktop workspace menu with the active name/path, registered choices and an existing-folder picker. Reuse CLI service handshakes to open the target in a new window and persist its selection while retaining the original window, unsaved edits and background jobs.
+- Keep ordinary source windows out of screenshot smoke checks so unavailable display capture cannot close the editor. Explicit smoke runs and probe scenarios retain their checks.
+
 ## [1.0.8] - 2026-10-15
 
 - Refresh the Windows portable distribution from the current source, including production API 1.3, workspace/service management and collaboration review. Keep older releases available for rollback. Synchronize CLI and desktop package versions through the release version tool.

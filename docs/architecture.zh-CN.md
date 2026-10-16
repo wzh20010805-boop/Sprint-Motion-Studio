@@ -319,6 +319,8 @@ Task11 新增独立 `CandidateReviewWorkspace` 与 Canvas2D `CandidateReviewCanv
 
 ## 统一工作区与服务生命周期
 
+源码桌面 `probes/desktop/workspace-menu.cjs` 安装常显工作区菜单；`workspace-cli.cjs` 清除旧窗口的服务身份、项目路由及 profile/evidence 环境，通过已有 CLI 显式打开目标工作区并保存选择。目标使用独立审核会话，在新窗口进入项目列表；旧窗口仍标记其实际工作区并保留编辑和后台任务，不停止共享服务。工作区解析继续由 `apps/cli/src/workspaces.ts` 唯一负责。
+
 生产握手版本统一来自 `packages/shared/src/pipeline/productionVersion.json`：共享TypeScript与桌面读取同一文件，便携构建原样复制到resources/app。已有目录别名及Windows大小写差异按同一实际工作区比较。登记读改写受排他锁保护；竞争返回 `WORKSPACE_REGISTRY_LOCKED`，未知锁保留待核查。列表中提示项带 `registered:false`，名称不会覆盖真正登记的工作区。
 
 `apps/cli/src/workspaces.ts` 是CLI与 `runtimeBootstrap.ts` 共用的解析器；桌面通过CLI读取当前工作区，并用 `workspace use` 保存选择。优先级为显式 `--workspace`、`SFS_WORKSPACE`、登记表当前选择、默认目录。源码登记表为 `<repo>/.sfs/workspaces.json`，默认目录为 `<repo>/workspaces/default`；1.0.8便携版登记表为 `%LOCALAPPDATA%/SpriteMotionStudio/workspaces.json`，默认目录为同处 `workspaces/default`。登记使用临时文件原子替换，校验名称/真实路径重复，登记及选择要求目录已存在。切换只改变发现与选择，不搬移数据库或改写固定文件来源。
