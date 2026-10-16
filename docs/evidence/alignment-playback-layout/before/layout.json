@@ -1,0 +1,113 @@
+{
+  "initial": {
+    "width": 256,
+    "height": 320,
+    "zoom": 0.5,
+    "characterHeight": 240,
+    "fullyVisible": true,
+    "viewHeight": 445.5625
+  },
+  "options": [
+    "0.25",
+    "0.5",
+    "1",
+    "2"
+  ],
+  "enlarged": {
+    "width": 1024,
+    "height": 1280,
+    "zoom": 2,
+    "characterHeight": 960,
+    "fullyVisible": false,
+    "viewHeight": 483.5
+  },
+  "restored": {
+    "width": 256,
+    "height": 320,
+    "zoom": 0.5,
+    "characterHeight": 240,
+    "fullyVisible": true,
+    "viewHeight": 445.5625
+  },
+  "inputs": [
+    "512",
+    "640",
+    "0.7395993836671803",
+    "256",
+    "592",
+    "485",
+    "691",
+    "0",
+    "0"
+  ],
+  "playback": {
+    "visited": [
+      "1 / 121",
+      "2 / 121",
+      "3 / 121",
+      "4 / 121",
+      "5 / 121",
+      "6 / 121",
+      "7 / 121",
+      "8 / 121",
+      "9 / 121",
+      "10 / 121",
+      "11 / 121",
+      "12 / 121",
+      "13 / 121",
+      "14 / 121",
+      "15 / 121"
+    ],
+    "decoded": [
+      "http://127.0.0.1:55321/api/v1/preview/preview-fixture-1?axis_id=preview-axis&v=1",
+      "http://127.0.0.1:55321/api/v1/preview/preview-fixture-2?axis_id=preview-axis&v=1",
+      "http://127.0.0.1:55321/api/v1/preview/preview-fixture-3?axis_id=preview-axis&v=1",
+      "http://127.0.0.1:55321/api/v1/preview/preview-fixture-4?axis_id=preview-axis&v=1",
+      "http://127.0.0.1:55321/api/v1/preview/preview-fixture-5?axis_id=preview-axis&v=1",
+      "http://127.0.0.1:55321/api/v1/preview/preview-fixture-6?axis_id=preview-axis&v=1",
+      "http://127.0.0.1:55321/api/v1/preview/preview-fixture-7?axis_id=preview-axis&v=1",
+      "http://127.0.0.1:55321/api/v1/preview/preview-fixture-8?axis_id=preview-axis&v=1",
+      "http://127.0.0.1:55321/api/v1/preview/preview-fixture-9?axis_id=preview-axis&v=1",
+      "http://127.0.0.1:55321/api/v1/preview/preview-fixture-10?axis_id=preview-axis&v=1",
+      "http://127.0.0.1:55321/api/v1/preview/preview-fixture-11?axis_id=preview-axis&v=1",
+      "http://127.0.0.1:55321/api/v1/preview/preview-fixture-12?axis_id=preview-axis&v=1",
+      "http://127.0.0.1:55321/api/v1/preview/preview-fixture-13?axis_id=preview-axis&v=1"
+    ]
+  },
+  "layout": {
+    "samples": 132,
+    "ranges": {
+      "top": {
+        "min": 45.21875,
+        "max": 55.71875,
+        "delta": 10.5
+      },
+      "height": {
+        "min": 855.5625,
+        "max": 876.5625,
+        "delta": 21
+      },
+      "canvasTop": {
+        "min": 268.78125,
+        "max": 279.28125,
+        "delta": 10.5
+      },
+      "controlsTop": {
+        "min": 709.28125,
+        "max": 719.78125,
+        "delta": 10.5
+      },
+      "counterWidth": {
+        "min": 43.3125,
+        "max": 50.859375,
+        "delta": 7.546875
+      },
+      "statusHeight": {
+        "min": 0,
+        "max": 21,
+        "delta": 21
+      }
+    }
+  },
+  "passed": false
+}

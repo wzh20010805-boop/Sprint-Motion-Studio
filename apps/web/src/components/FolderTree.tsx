@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence } from "motion/react";
 import { ChevronDown, ChevronRight, FolderPlus, Pencil, Trash2 } from "lucide-react";
 import type { Folder, FolderKind } from "../api";
@@ -6,6 +6,8 @@ import { useT } from "../i18n";
 import { askConfirm, notify } from "../notice";
 import ContextMenu, { type CtxMenuItem } from "./ContextMenu";
 import IconBtn from "./IconBtn";
+import { useEditingCommands } from "../editingCommands";
+import { discardPersistence } from "../persistence";
 
 export type FolderSelection = "all" | "ungrouped" | string;
 
@@ -79,6 +81,8 @@ export default function FolderTree({
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const editInputRef = useRef<HTMLInputElement>(null);
+  const renameBusy = useRef(false);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; target: CtxTarget } | null>(null);
 
   // 新建文件夹时默认展开祖先
@@ -113,16 +117,24 @@ export default function FolderTree({
   };
 
   const commitRename = async () => {
-    if (!editingId) return;
+    if (!editingId || renameBusy.current) return false;
     const name = editName.trim();
-    setEditingId(null);
-    if (!name) return;
+    if (!name) return false;
+    renameBusy.current = true;
     try {
       await onRename(editingId, name);
+      setEditingId(null);
+      return true;
     } catch (e) {
       notify(t("msg.operation_failed_msg", { msg: (e as Error).message }));
-    }
+      return false;
+    } finally { renameBusy.current = false; }
   };
+
+  useEditingCommands({ label: t("msg.rename"), priority: 30, scope: editInputRef, enabled: !!editingId,
+    save: commitRename, undo: () => setEditName(folders.find(folder => folder.id === editingId)?.name ?? editName),
+    canSave: !!editName.trim(), canUndo: editName !== folders.find(folder => folder.id === editingId)?.name,
+    dirty: editName !== folders.find(folder => folder.id === editingId)?.name });
 
   const handleCreate = async (parentId: string | null) => {
     const name = t("msg.untitled_folder");
@@ -243,6 +255,7 @@ export default function FolderTree({
           </button>
           {editingId === n.id ? (
             <input
+              ref={editInputRef}
               className="px-input folder-rename"
               autoFocus
               value={editName}
@@ -251,7 +264,7 @@ export default function FolderTree({
               onBlur={() => void commitRename()}
               onKeyDown={(e) => {
                 if (e.key === "Enter") void commitRename();
-                if (e.key === "Escape") setEditingId(null);
+                if (e.key === "Escape") { discardPersistence(key => key === `PATCH:/api/folders/${editingId}`); setEditingId(null); }
               }}
             />
           ) : (

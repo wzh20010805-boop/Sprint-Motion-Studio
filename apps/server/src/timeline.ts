@@ -1,5 +1,5 @@
 import { materializeStepDuration } from './pipeline/collaboration/timing';
-import type { AnimationAxis, AnimationTrack, AttackEffectCellRow, Frame, TimelineResponse, TimelineStep } from "@framebaker/shared";
+import type { AnimationAxis, AnimationTrack, AttackEffectCellRow, Frame, FrameRow, ReorderTrackCellsResponse, TimelineResponse, TimelineStep } from "@framebaker/shared";
 import { db, getFrame, nextFrameIdx, serializeAttackEffect, serializeFrame, uid } from "./db";
 
 type Defaults = { axis: AnimationAxis; track: AnimationTrack };
@@ -135,19 +135,38 @@ export function deleteFrameCell(frameId: string) {
   return frame;
 }
 
-/** 清空时间轴单元格：资产退回左侧资产池，实例只删记录；保留步骤且不删除共享图片文件。 */
-export function clearFramePlacement(frameId: string) {
+/** 显式清理当前动画轴的全空列；图片或独立特效仍占用的列必须保留。 */
+export function pruneEmptySteps(axisId: string): string[] {
+  return db.transaction(() => {
+    const empty = db.query(`SELECT id FROM animation_steps WHERE axis_id=?
+      AND NOT EXISTS (SELECT 1 FROM frames WHERE step_id=animation_steps.id)
+      AND NOT EXISTS (SELECT 1 FROM attack_effects WHERE step_id=animation_steps.id)
+      ORDER BY idx,id`).all(axisId) as Array<{ id: string }>;
+    for (const step of empty) db.query("DELETE FROM animation_steps WHERE id=?").run(step.id);
+    if (empty.length) syncAxis(axisId);
+    return empty.map(step => step.id);
+  })();
+}
+
+/** 清空图片格且保留共享文件；显式收紧时仅删除刚变成全空的列，不清理其他旧空列。 */
+export function clearFramePlacement(frameId: string, removeEmptyStep = false) {
   const frame = getFrame(frameId);
   if (!frame || !frame.track_id || !frame.step_id) return null;
-  const track = db.query("SELECT axis_id FROM animation_tracks WHERE id=?").get(frame.track_id) as { axis_id: string } | null;
+  const track = db.query("SELECT axis_id,locked FROM animation_tracks WHERE id=?").get(frame.track_id) as { axis_id: string; locked: number } | null;
+  if (removeEmptyStep && track?.locked) throw new Error("轨道已锁定");
   db.transaction(() => {
     if (frame.is_asset) {
       db.query("UPDATE frames SET track_id=NULL,step_id=NULL WHERE id=?").run(frameId);
     } else {
       db.query("DELETE FROM frames WHERE id=?").run(frameId);
     }
+    if (removeEmptyStep) {
+      db.query(`DELETE FROM animation_steps WHERE id=?
+        AND NOT EXISTS (SELECT 1 FROM frames WHERE step_id=animation_steps.id)
+        AND NOT EXISTS (SELECT 1 FROM attack_effects WHERE step_id=animation_steps.id)`).run(frame.step_id);
+    }
+    if (track) syncAxis(track.axis_id);
   })();
-  if (track) syncAxis(track.axis_id);
   return frame;
 }
 
@@ -157,6 +176,56 @@ export function reorderSteps(axisId: string, ids: string[]) {
   if (ids.length !== set.size || new Set(ids).size !== ids.length || !ids.every(id=>set.has(id))) throw new Error("stepIds 必须恰好且不重复地包含动画轴的全部步骤");
   db.transaction(() => { ids.forEach((id,i)=>db.query("UPDATE animation_steps SET idx=? WHERE id=?").run(-i-1,id)); ids.forEach((id,i)=>db.query("UPDATE animation_steps SET idx=? WHERE id=?").run(i,id)); })();
   syncAxis(axisId);
+}
+
+/** 同轨插入完整格：图片和独立特效一起让位，空格参与排列，共享列及其时长不动。 */
+export function reorderTrackCells(trackId: string, frameId: string, beforeStepId?: string): ReorderTrackCellsResponse {
+  return db.transaction((): ReorderTrackCellsResponse => {
+    const track = db.query(`SELECT t.*,a.project_id FROM animation_tracks t
+      JOIN animation_axes a ON a.id=t.axis_id WHERE t.id=?`).get(trackId) as (AnimationTrack & { project_id: string }) | null;
+    if (!track) throw new Error("轨道不存在");
+    if (track.locked) throw new Error("轨道已锁定");
+    const frame = getFrame(frameId);
+    if (!frame) throw new Error("帧不存在");
+    if (frame.track_id !== trackId || frame.project_id !== track.project_id || !frame.step_id) throw new Error("只能在帧当前所属轨道内插入移动");
+    const steps = db.query("SELECT * FROM animation_steps WHERE axis_id=? ORDER BY idx,id").all(track.axis_id) as TimelineStep[];
+    const source = steps.findIndex(step => step.id === frame.step_id);
+    if (source < 0) throw new Error("帧所在步骤不属于当前动画轴");
+    const boundary = beforeStepId === undefined ? steps.length : steps.findIndex(step => step.id === beforeStepId);
+    if (boundary < 0) throw new Error("插入位置不属于当前动画轴");
+    const destination = boundary > source ? boundary - 1 : boundary;
+    if (destination === source) return { ok: true, frame: serializeFrame(frame), affectedStepIds: [] };
+    const affectedStepIds = steps.slice(Math.min(source, destination), Math.max(source, destination) + 1).map(step => step.id);
+    const affected = new Set(affectedStepIds);
+    const images = db.query("SELECT id,project_id,step_id FROM frames WHERE track_id=? AND step_id IS NOT NULL").all(trackId) as Array<Pick<FrameRow, "id" | "project_id" | "step_id">>;
+    const effects = db.query("SELECT * FROM attack_effects WHERE track_id=?").all(trackId) as AttackEffectCellRow[];
+    if ([...images, ...effects].some(cell => cell.step_id && affected.has(cell.step_id) && cell.project_id !== track.project_id)) throw new Error("轨道单元格不属于当前项目");
+    const imageAt = new Map(images.map(image => [image.step_id, image]));
+    const effectAt = new Map(effects.map(effect => [effect.step_id, effect]));
+    const sourceEffect = effectAt.get(frame.step_id);
+
+    // 先腾出源格，再沿空位逐格推进；避免唯一坐标冲突，不删除图片帧身份或共享文件。
+    db.query("UPDATE frames SET track_id=NULL,step_id=NULL WHERE id=?").run(frameId);
+    if (sourceEffect) db.query("DELETE FROM attack_effects WHERE id=?").run(sourceEffect.id);
+    const moveCell = (from: number, to: number) => {
+      const original = steps[from]!;
+      const target = steps[to]!;
+      const image = imageAt.get(original.id);
+      if (image) db.query("UPDATE frames SET step_id=?,idx=?,duration=? WHERE id=?").run(target.id, target.idx, target.duration, image.id);
+      const effect = effectAt.get(original.id);
+      if (effect) db.query("UPDATE attack_effects SET step_id=? WHERE id=?").run(target.id, effect.id);
+    };
+    if (destination > source) {
+      for (let index = source; index < destination; index++) moveCell(index + 1, index);
+    } else {
+      for (let index = source; index > destination; index--) moveCell(index - 1, index);
+    }
+    const target = steps[destination]!;
+    db.query("UPDATE frames SET track_id=?,step_id=?,idx=?,duration=? WHERE id=?").run(trackId, target.id, target.idx, target.duration, frameId);
+    if (sourceEffect) db.query("INSERT INTO attack_effects(id,project_id,track_id,step_id,effect,created_at) VALUES(?,?,?,?,?,?)")
+      .run(sourceEffect.id, sourceEffect.project_id, trackId, target.id, sourceEffect.effect, sourceEffect.created_at);
+    return { ok: true, frame: serializeFrame(getFrame(frameId)!), affectedStepIds };
+  }).immediate();
 }
 
 export function placeFrame(frameId: string, trackId: string, stepId: string, swap = false, copy = false): Frame {

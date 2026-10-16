@@ -18,6 +18,17 @@ app.whenReady().then(async () => {
   await window.loadURL(process.env.EDITOR_CHECK_URL);
   for (let n = 0; n < 80; n++) { if (await js("document.querySelectorAll('.tl-cell').length===8 && !!document.querySelector('.pixi-wrap canvas')")) break; await delay(50); }
   await delay(600);
+  await check('Mounted hidden collaboration dialog does not block arrows; visible dialog blocks until closed', async () => {
+    const dialogState = () => js("(()=>{const dialog=document.querySelector('.collaboration-dialog');return{mounted:!!dialog,visible:!!dialog?.getClientRects().length}})()");
+    assert.deepEqual(await dialogState(), { mounted: true, visible: false });
+    await cell(0); await key('Right'); assert.equal(await step(), 1);
+    await js("document.querySelector('[data-collaboration=manage]').click()"); await delay(50);
+    assert.deepEqual(await dialogState(), { mounted: true, visible: true });
+    await key('Right'); assert.equal(await step(), 1);
+    await js("document.querySelector('.collaboration-dialog header button').click()"); await delay(50);
+    assert.deepEqual(await dialogState(), { mounted: true, visible: false });
+    await key('Right'); assert.equal(await step(), 2);
+  });
   await check('Arrow keys follow timeline steps, including empty cells, and stay inside first / last frame', async () => {
     await cell(); await key('Left'); assert.equal(await step(), 0);
     await key('Right'); assert.equal(await step(), 1);

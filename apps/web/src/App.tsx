@@ -7,6 +7,8 @@ import SkeletalProjectEditor from "./components/SkeletalProjectEditor";
 import TopNav from "./components/TopNav";
 import AppModals from "./components/AppModals";
 import JobPanel from "./components/JobPanel";
+import EditCommandBar from "./components/EditCommandBar";
+import { useEditingCommands } from "./editingCommands";
 import { MaterialEditorProvider } from "./components/MaterialEditor";
 import { api, wsClient, type Project } from "./api";
 import { hasPixi, loadPixi } from "./pixiLoader";
@@ -104,6 +106,8 @@ function MotionsRoute({ onOpenProjects }: { onOpenProjects: () => void }) {
 
 export default function App() {
   const [view, setView] = useState<View>(viewFromLocation);
+  const t = useT();
+  useEditingCommands({ label: t("editing.application"), priority: -100 });
 
   useEffect(() => {
     wsClient.start();
@@ -156,6 +160,7 @@ export default function App() {
         <JobPanel syncOnEnter={view.page === "materials"} />
         {/* 全局通知条 + 确认弹窗（notice.ts） */}
         <AppModals />
+        <EditCommandBar modalOnly />
       </MaterialEditorProvider>
 
     </MotionConfig>

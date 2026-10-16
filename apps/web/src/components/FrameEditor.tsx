@@ -12,6 +12,8 @@ const { Application, Assets, Container, Graphics, Sprite, Texture } = (
   window as typeof window & { PIXI: typeof Pixi }
 ).PIXI;
 
+const usableTexture = (texture: Pixi.Texture) => texture !== Texture.EMPTY && !texture.destroyed && !!texture.source && !texture.source.destroyed;
+
 interface Props {
   frame: Frame | null;
   composite: Frame[];
@@ -60,17 +62,52 @@ export default function FrameEditor({ frame, composite, effect, effects, editabl
   const wrapRef = useRef<HTMLDivElement>(null);
   const pixi = useRef<PixiCtx | null>(null);
   const textureCache=useRef(new Map<string,{texture:Pixi.Texture;used:number}>());
+  const unloadingTextures = useRef(new Map<string, Promise<void>>());
   const textureClock=useRef(0);
   const desiredTextures=useRef(new Set<string>());
   desiredTextures.current=new Set([frame,prev,next,...composite].filter((f):f is Frame=>!!f).map(f=>frameImageUrl(f.id,v)));
+  const unloadTexture = (url: string, texture?: Pixi.Texture) => {
+    const p = pixi.current;
+    // 隐藏的洋葱皮也必须解绑，不能在恢复相邻帧时重新显示已销毁贴图。
+    if (p && texture) for (const sprite of [p.main, p.prevS, p.nextS, ...p.compositeLayer.children]) {
+      if (sprite instanceof Sprite && sprite.texture === texture) {
+        sprite.visible = false;
+        sprite.texture = Texture.EMPTY;
+        p.spriteFrames.delete(sprite);
+      }
+    }
+    const pending = unloadingTextures.current.get(url);
+    if (pending) return pending;
+    const request = Promise.resolve().then(() => Assets.unload(url)).catch(() => {}).finally(() => {
+      if (unloadingTextures.current.get(url) === request) unloadingTextures.current.delete(url);
+    });
+    unloadingTextures.current.set(url, request);
+    return request;
+  };
   const trimTextures=()=>{
     const p=pixi.current,active=new Set(desiredTextures.current);
     const visible=p?[p.main,p.prevS,p.nextS,...p.compositeLayer.children].filter(s=>s instanceof Sprite&&s.visible) as Pixi.Sprite[]:[];
     for(const [url,value] of textureCache.current)if(visible.some(sprite=>sprite.texture===value.texture))active.add(url);
     const ages=new Map([...textureCache.current].map(([url,value])=>[url,value.used]));
-    for(const url of textureEvictions(ages,active,8)){textureCache.current.delete(url);void Assets.unload(url).catch(()=>{});}
+    for(const url of textureEvictions(ages,active,8)){const texture=textureCache.current.get(url)?.texture;textureCache.current.delete(url);void unloadTexture(url,texture);}
   };
-  const loadTexture=async(f:Frame)=>{const url=frameImageUrl(f.id,v);const texture:Pixi.Texture=await Assets.load(url);if(!pixi.current){void Assets.unload(url).catch(()=>{});throw new Error('编辑器已关闭');}textureCache.current.set(url,{texture,used:++textureClock.current});return texture;};
+  const loadTexture = async (f: Frame) => {
+    const url = frameImageUrl(f.id, v), owner = pixi.current;
+    // 快速撤销或切回同帧时，等待该 URL 的旧卸载结束再重新加载。
+    await unloadingTextures.current.get(url);
+    let texture: Pixi.Texture = await Assets.load(url);
+    if (!usableTexture(texture)) {
+      await unloadTexture(url, texture);
+      texture = await Assets.load(url);
+    }
+    if (!pixi.current || pixi.current !== owner) {
+      if (!pixi.current) void unloadTexture(url, texture);
+      throw new Error('编辑器已关闭');
+    }
+    if (!usableTexture(texture)) throw new Error('帧贴图不可用');
+    textureCache.current.set(url, { texture, used: ++textureClock.current });
+    return texture;
+  };
   const [ready, setReady] = useState(false);
   const [spaceHeld, setSpaceHeld] = useState(false);
   const [panning, setPanning] = useState(false);
@@ -308,7 +345,7 @@ export default function FrameEditor({ frame, composite, effect, effects, editabl
         pixi.current.app.destroy(true, { children: true });
         pixi.current = null;
       }
-      for(const url of textureCache.current.keys())void Assets.unload(url).catch(()=>{});
+      for(const [url,value] of textureCache.current)void unloadTexture(url,value.texture);
       textureCache.current.clear();
       setReady(false);
     };
@@ -348,8 +385,11 @@ export default function FrameEditor({ frame, composite, effect, effects, editabl
       if (!f) {
         // 切入播放时，等新合成准备好再移除编辑中的主图，避免加载间隙。
         const keepMain=isMain&&playingRef.current&&composite.length>0;
-        if (!keepMain) sprite.visible = false;
-        if (isMain&&!keepMain) p.spriteFrames.delete(sprite);
+        if (!keepMain) {
+          sprite.visible = false;
+          sprite.texture = Texture.EMPTY;
+          p.spriteFrames.delete(sprite);
+        }
         return;
       }
       try {
@@ -359,12 +399,15 @@ export default function FrameEditor({ frame, composite, effect, effects, editabl
         tex.source.scaleMode = "nearest"; // 像素风：最近邻缩放
         sprite.texture = tex;
         applyTransform(sprite, f, isMain);
-        if (isMain) p.spriteFrames.set(sprite, f);
+        p.spriteFrames.set(sprite, f);
         // 异步纹理可能晚于“切到播放”的隐藏 effect 完成，必须读取当前播放状态。
         sprite.visible = isMain ? true : onionRef.current && !playingRef.current;
         trimTextures();
       } catch {
+        if (dead || pixi.current !== p) return;
         sprite.visible = false;
+        sprite.texture = Texture.EMPTY;
+        p.spriteFrames.delete(sprite);
       }
     };
 
@@ -458,8 +501,8 @@ export default function FrameEditor({ frame, composite, effect, effects, editabl
     const p = pixi.current;
     if (!p) return;
     const show = onion && !playing;
-    p.prevS.visible = show && prev != null && p.prevS.texture !== Texture.EMPTY;
-    p.nextS.visible = show && next != null && p.nextS.texture !== Texture.EMPTY;
+    p.prevS.visible = show && prev != null && p.spriteFrames.get(p.prevS)?.id === prev.id && usableTexture(p.prevS.texture);
+    p.nextS.visible = show && next != null && p.spriteFrames.get(p.nextS)?.id === next.id && usableTexture(p.nextS.texture);
   }, [onion, playing, prev, next, ready]);
 
   // ---- 缩放（受控 prop）× 适配缩放（fit）：viewport 整体缩放 = zoom * fitScale ----

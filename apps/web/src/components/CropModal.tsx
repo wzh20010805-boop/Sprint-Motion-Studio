@@ -7,6 +7,8 @@ import { notify } from "../notice";
 import type { CropRect } from "../imageops/ops";
 import { useTheme } from "../theme";
 import { useModalEscClose } from "../hooks/useModalEscClose";
+import { useEditingCommands } from "../editingCommands";
+import { discardPersistence, flushPersistence } from "../persistence";
 import IconBtn from "./IconBtn";
 
 interface Props {
@@ -14,7 +16,7 @@ interface Props {
   /** 标题与副标题（如「作用于：抠图后」） */
   title?: string;
   subtitle?: string;
-  onConfirm: (blob: Blob) => void | Promise<void>;
+  onConfirm: (blob: Blob) => unknown | Promise<unknown>;
   /** 逐张剪裁时提供「跳过本张」 */
   onSkip?: () => void;
   /** 队列批量：把当前剪裁框应用到剩余图片（remaining > 0 时才显示按钮） */
@@ -90,6 +92,24 @@ export default function CropModal({ image, title, subtitle, onConfirm, onSkip, o
   const theme = useTheme();
   const colors = useMemo(readColors, [theme]);
   const [ratio, setRatio] = useState<number | null>(null);
+  const scopeRef = useRef<HTMLDivElement>(null), rectRef = useRef<CropRect | null>(null), operationBusyRef = useRef(false);
+  type Selection = { rect: CropRect | null; ratio: number | null };
+  const [history, setHistory] = useState<Selection[]>([]);
+  const historyRef = useRef<Selection[]>([]);
+  const gestureSelectionRef = useRef<Selection | undefined>(undefined), initialSelectionRef = useRef<Selection | undefined>(undefined);
+  rectRef.current = rect;
+  const selection = (): Selection => ({ rect: rectRef.current ? { ...rectRef.current } : null, ratio });
+  const setCurrentRect = (next: CropRect | null) => { rectRef.current = next; setRect(next); };
+  const rememberSelection = (previous: Selection) => {
+    if (JSON.stringify(previous) !== JSON.stringify(selection())) { historyRef.current = [...historyRef.current.slice(-49), previous]; setHistory(historyRef.current); }
+  };
+  const changeSelection = (next: CropRect | null, nextRatio = ratio) => {
+    if (busy || operationBusyRef.current) return;
+    const previous = selection();
+    if (JSON.stringify(previous) === JSON.stringify({ rect: next, ratio: nextRatio })) return;
+    historyRef.current = [...historyRef.current.slice(-49), previous]; setHistory(historyRef.current); setCurrentRect(next); setRatio(nextRatio);
+  };
+  useEffect(() => () => discardPersistence(key => /^POST:\/api\/(frames\/[^/]+\/replace|materials\/[^/]+\/replace-image)$/.test(key)), [image]);
 
   // 透明底棋盘格瓦片（8px 格，随主题重建）
   const checkerTile = useMemo(() => {
@@ -128,7 +148,7 @@ export default function CropModal({ image, title, subtitle, onConfirm, onSkip, o
     let alive = true;
     let bmp: ImageBitmap | null = null;
     setBitmap(null);
-    setRect(null);
+    setCurrentRect(null); historyRef.current = []; setHistory([]); initialSelectionRef.current = undefined; gestureSelectionRef.current = undefined;
     (async () => {
       try {
         const b = await createImageBitmap(image);
@@ -146,7 +166,10 @@ export default function CropModal({ image, title, subtitle, onConfirm, onSkip, o
         } catch {
           // 扫描失败仍可按整图剪裁
         }
-        if (alive) setRect(bounds ?? { x: 0, y: 0, w: b.width, h: b.height });
+        if (alive) {
+          const initial = bounds ?? { x: 0, y: 0, w: b.width, h: b.height };
+          setCurrentRect(initial); initialSelectionRef.current = { rect: initial, ratio };
+        }
       } catch (e) {
         if (alive) notify(t("msg.image_decode_failed_msg", { msg: (e as Error).message }));
       }
@@ -354,6 +377,7 @@ export default function CropModal({ image, title, subtitle, onConfirm, onSkip, o
   };
 
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (busy || operationBusyRef.current) return;
     const box = e.currentTarget.getBoundingClientRect();
     const sx = e.clientX - box.left;
     const sy = e.clientY - box.top;
@@ -363,6 +387,7 @@ export default function CropModal({ image, title, subtitle, onConfirm, onSkip, o
       return;
     }
     if (e.button !== 0 || !bitmap) return;
+    gestureSelectionRef.current = selection();
     const handle = hitHandle(sx, sy);
     if (handle) {
       dragRef.current = { kind: "resize", handle };
@@ -375,7 +400,7 @@ export default function CropModal({ image, title, subtitle, onConfirm, onSkip, o
     }
     const p = toImage(sx, sy);
     dragRef.current = { kind: "new", ax: p.x, ay: p.y };
-    setRect(clampRect({ x: p.x, y: p.y, w: 1, h: 1 }, imgW, imgH));
+    setCurrentRect(clampRect({ x: p.x, y: p.y, w: 1, h: 1 }, imgW, imgH));
   };
 
   const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -406,12 +431,12 @@ export default function CropModal({ image, title, subtitle, onConfirm, onSkip, o
           h = dh;
           w = h * ratio;
         }
-        setRect(ratioRect(ax, ay, p.x >= ax ? 1 : -1, p.y >= ay ? 1 : -1, w, h, ratio));
+        setCurrentRect(ratioRect(ax, ay, p.x >= ax ? 1 : -1, p.y >= ay ? 1 : -1, w, h, ratio));
         return;
       }
       const x = Math.min(mode.ax, p.x);
       const y = Math.min(mode.ay, p.y);
-      setRect(
+      setCurrentRect(
         clampRect(
           { x: Math.round(x), y: Math.round(y), w: Math.round(Math.abs(p.x - mode.ax)) + 1, h: Math.round(Math.abs(p.y - mode.ay)) + 1 },
           imgW,
@@ -419,40 +444,41 @@ export default function CropModal({ image, title, subtitle, onConfirm, onSkip, o
         )
       );
     } else if (mode.kind === "move" && rect) {
-      setRect(clampRect({ ...rect, x: Math.round(p.x - mode.dx), y: Math.round(p.y - mode.dy) }, imgW, imgH));
+      setCurrentRect(clampRect({ ...rect, x: Math.round(p.x - mode.dx), y: Math.round(p.y - mode.dy) }, imgW, imgH));
     } else if (mode.kind === "resize") {
       const r = resizeRect(mode.handle, p.x, p.y);
-      if (r) setRect(r);
+      if (r) setCurrentRect(r);
     }
   };
 
   const onPointerUp = () => {
+    if (gestureSelectionRef.current) rememberSelection(gestureSelectionRef.current);
+    gestureSelectionRef.current = undefined;
     dragRef.current = { kind: "none" };
   };
 
   // ---- 工具行 ----
   const patchRect = (patch: Partial<CropRect>) => {
     if (!rect) return;
-    setRect(clampRect({ ...rect, ...patch }, imgW, imgH));
+    changeSelection(clampRect({ ...rect, ...patch }, imgW, imgH));
   };
 
   const resetBounds = async () => {
     try {
       const bounds = await findOpaqueBounds(image);
-      if (bitmap) setRect(bounds ?? { x: 0, y: 0, w: bitmap.width, h: bitmap.height });
+      if (bitmap) changeSelection(bounds ?? { x: 0, y: 0, w: bitmap.width, h: bitmap.height });
     } catch (e) {
       notify(t("msg.auto_select_failed_msg", { msg: (e as Error).message }));
     }
   };
 
   const fullImage = () => {
-    if (bitmap) setRect({ x: 0, y: 0, w: bitmap.width, h: bitmap.height });
+    if (bitmap) changeSelection({ x: 0, y: 0, w: bitmap.width, h: bitmap.height });
   };
 
   /** 切换宽高比锁定：已有框时保持中心、以宽为基准调高（clamp 到图内） */
   const changeRatio = (r: number | null) => {
-    setRatio(r);
-    if (!r || !rect) return;
+    if (!r || !rect) { changeSelection(rect, r); return; }
     const cx = rect.x + rect.w / 2;
     const cy = rect.y + rect.h / 2;
     let w = rect.w;
@@ -461,7 +487,7 @@ export default function CropModal({ image, title, subtitle, onConfirm, onSkip, o
       h = imgH;
       w = Math.max(1, Math.min(Math.round(h * r), imgW));
     }
-    setRect(clampRect({ x: Math.round(cx - w / 2), y: Math.round(cy - h / 2), w, h }, imgW, imgH));
+    changeSelection(clampRect({ x: Math.round(cx - w / 2), y: Math.round(cy - h / 2), w, h }, imgW, imgH), r);
   };
 
   /** 尺寸预设：居中放置，超出图片的边 clamp（双边都超即整图） */
@@ -469,22 +495,35 @@ export default function CropModal({ image, title, subtitle, onConfirm, onSkip, o
     if (!bitmap) return;
     const w = Math.min(s, imgW);
     const h = Math.min(s, imgH);
-    setRect({ x: Math.round((imgW - w) / 2), y: Math.round((imgH - h) / 2), w, h });
+    changeSelection({ x: Math.round((imgW - w) / 2), y: Math.round((imgH - h) / 2), w, h });
   };
 
   const doConfirm = async () => {
-    if (!rect || busy) return;
+    if (!rect || busy || operationBusyRef.current || dragRef.current.kind !== "none") return false;
+    operationBusyRef.current = true;
     setBusyText(t("msg.cropping_a8d178"));
     setBusy(true);
     try {
       const blob = await cropImage(image, rect);
-      await onConfirm(blob);
+      const result = await onConfirm(blob);
+      if (result === false) return false;
+      await flushPersistence(key => /^POST:\/api\/(frames\/[^/]+\/replace|materials\/[^/]+\/replace-image)$/.test(key));
+      return true;
     } catch (e) {
       notify(t("msg.crop_failed_msg", { msg: (e as Error).message }));
+      return false;
     } finally {
-      setBusy(false);
+      operationBusyRef.current = false; setBusy(false);
     }
   };
+  useEditingCommands({ label: title ?? t("msg.crop_image"), priority: 100, scope: scopeRef,
+    busy, canSave: !!rect && !!bitmap, save: doConfirm, canUndo: !!history.length,
+    dirty: !!initialSelectionRef.current && JSON.stringify(initialSelectionRef.current) !== JSON.stringify(selection()),
+    allowShortcut: () => dragRef.current.kind === "none", undo: () => {
+      const previous = historyRef.current.at(-1); if (!previous || busy) return false;
+      historyRef.current = historyRef.current.slice(0, -1); setHistory(historyRef.current);
+      setCurrentRect(previous.rect ? { ...previous.rect } : null); setRatio(previous.ratio); return true;
+    } });
 
   /** 「应用到剩余 N 张」：把当前框交给队列批量处理（hook 内逐张求交集），结束后队列关闭 */
   const doConfirmAll = async () => {
@@ -514,6 +553,7 @@ export default function CropModal({ image, title, subtitle, onConfirm, onSkip, o
   // 经 ref 转发，window 监听只挂一次且始终拿到最新状态
   const keyRef = useRef<(e: KeyboardEvent) => void>(() => {});
   keyRef.current = (e) => {
+    if (e.defaultPrevented || e.isComposing || e.ctrlKey || e.metaKey || e.altKey || busy || operationBusyRef.current) return;
     const move: Record<string, [number, number]> = {
       ArrowLeft: [-1, 0],
       ArrowRight: [1, 0],
@@ -525,7 +565,7 @@ export default function CropModal({ image, title, subtitle, onConfirm, onSkip, o
       // 数字输入框内也接管方向键（preventDefault 挡住数值自增）
       e.preventDefault();
       const step = e.shiftKey ? 10 : 1;
-      setRect(clampRect({ ...rect, x: rect.x + d[0] * step, y: rect.y + d[1] * step }, imgW, imgH));
+      changeSelection(clampRect({ ...rect, x: rect.x + d[0] * step, y: rect.y + d[1] * step }, imgW, imgH));
       return;
     }
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
@@ -547,7 +587,7 @@ export default function CropModal({ image, title, subtitle, onConfirm, onSkip, o
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
-  useModalEscClose(onClose);
+  useModalEscClose(onClose, !busy);
 
   const num = (v: number, onChange: (n: number) => void, max: number) => (
     <input
@@ -563,6 +603,7 @@ export default function CropModal({ image, title, subtitle, onConfirm, onSkip, o
   return (
     <motion.div className="modal-mask" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}  >
       <motion.div
+        ref={scopeRef}
         className="modal pixel-panel crop-modal"
         initial={{ scale: 0.92, y: 24 }}
         animate={{ scale: 1, y: 0 }}
@@ -574,7 +615,7 @@ export default function CropModal({ image, title, subtitle, onConfirm, onSkip, o
             {title ?? t("msg.crop_image")}
             {subtitle && <span className="crop-sub"> · {subtitle}</span>}
           </h2>
-          <IconBtn onClick={onClose} title={t("common.close")}>
+          <IconBtn onClick={onClose} disabled={busy} title={t("common.close")}>
             <X size={16} />
           </IconBtn>
         </div>
@@ -586,6 +627,7 @@ export default function CropModal({ image, title, subtitle, onConfirm, onSkip, o
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
           />
         </div>
 

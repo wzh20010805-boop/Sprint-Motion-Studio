@@ -131,9 +131,19 @@ AI 客户端 → POST /mcp { jsonrpc, method: "initialize" }
   → 单元格间复制粘贴矢量数据，每个步骤可独立移动/缩放/旋转/淡化
 替换图片 → CropModal 剪裁并编码 PNG → POST /api/frames/:id/replace
   → 写入 processed 槽位并清理旧 processed 文件
-时间轴 HTML5 DnD → 前端乐观重排 → POST /api/projects/:id/reorder {frameIds}
-  → 事务重写 idx → 广播 frames_reordered
+时间轴 HTML5 DnD → 原网格插入边界 → 仅 CSS 顺移让位预览
+  → 同轨单格松手：POST /api/tracks/:id/cells/reorder {frameId,beforeStepId?}
+  → 顶部帧号松手：POST /api/axes/:id/steps/reorder {stepIds}
+  → 队列中提交一次 → 广播 timeline_changed；取消不发请求
 ```
+
+### 时间轴插入与整列移动
+
+`apps/web/src/timelineInsertion.ts` 提供纯函数形式的插入排序及原网格命中。`Timeline` 使用原生 HTML5 拖放、插入线及 CSS `translateX` 的 180ms 动画；已让位的卡片不会反过来改变命中坐标。requestAnimationFrame 循环在横向边缘自动滚动并重算边界。悬停只更新本地显示状态，Esc 或取消会重置预览，不触发持久化；有效松手仅调用一次编辑动作。
+
+同轨拖动图片时，图片与独立特效作为完整格移动，中间各格（包括空格和仅有特效的格）依次让位。`timeline.ts` 的原子 `reorderTrackCells` 事务沿空位推进，保留帧/特效 ID、变换、metadata 和原文件；其他轨道及共享步骤的位置、时长保持不变，移动图片的兼容 `idx/duration` 镜像目标步骤。生产有理数时长继续绑定 frame ID，独立的期望源选择保留。拖动顶部帧号则使用 `reorderSteps`，所有轨道及共享列时长一起移动。跨轨仍使用原有移动/交换，素材池仍按原规则复制实例。
+
+`Editor` 将两种松手操作放入 `queueTimelineAction`，等待之前的图片/特效保存，并在乐观排序失败时回滚界面。项目撤销使用同一队列，松手后 Ctrl/Cmd+Z 按顺序恢复刚提交的编辑。非法位置或锁定源轨道的单格移动不会留下部分变更；无变化的插入不新增撤销记录。REST 与 `reorder_track_cells` MCP 工具复用同一后端操作，接口细节见[时间轴契约](api.zh-CN.md#规范合成时间轴)。
 
 ### 导出动画（纯前端，无服务端参与）
 
@@ -190,7 +200,7 @@ storage/
 - `projects(id, name, folder_id, created_at)`
 - `frames(id, project_id, idx, raw_path, processed_path, status, duration, is_keyframe, offset_x, offset_y, scale, rotation, opacity, tags, source, metadata)`
 - 规范动画模型：`animation_axes(project_id, idx, fps)` → `animation_tracks(axis_id, idx, visible, locked, is_primary)`，并共享 `animation_steps(axis_id, idx, duration)`；`frames.track_id + step_id` 是唯一合成单元格坐标。旧 `frames.idx/duration` 暂保持同步镜像。
-- 启动迁移具备事务性和幂等性：每个历史/空项目补齐 `Default`（8 fps）/`Main`；历史帧按 `idx,id` 确定性排序后各建一步，保留 ID、文件、变换、顺序和时长。`frames.is_asset` 区分左侧可复用帧资产与时间轴实例；从左侧拖放会创建实例且不消耗源资产，时间轴内部拖动仍执行移动或交换。
+- 启动迁移具备事务性和幂等性：每个历史/空项目补齐 `Default`（8 fps）/`Main`；历史帧按 `idx,id` 确定性排序后各建一步，保留 ID、文件、变换、顺序和时长。`frames.is_asset` 区分左侧可复用帧资产与时间轴实例；从左侧拖放会创建实例且不消耗源资产，同轨单格拖动采用插入顺移，跨轨保留原有移动/交换规则。
 - `jobs(id, project_id, type, status, progress, error, created_at)`
 - `materials(id, name, raw_path, processed_path, status, source, folder_id, metadata, created_at)`
 - `folders(id, kind, parent_id, name, sort, created_at)`：素材/项目多级目录（kind=`material`|`project`）
@@ -212,7 +222,7 @@ storage/
 - `Editor`：状态中枢（frames/activeId/selectedIds/图片版本号 v），WS 订阅刷新；帧多选与批量操作（BatchBar）
 - `FrameList`：竖排帧列表，左边框色 = shared `SOURCE_COLORS[source]`（浅色主题 color-mix 加深）；帧项右键出菜单（`onContextMenu` 上抛 Editor）
 - `FrameEditor`：PixiJS `Application`（async init + cancelled 竞态处理）；viewport 居中缩放；主精灵拖拽改 offset；洋葱皮（prev 红 0.3 / next 蓝 0.2）；网格 Graphics；画布背景与网格色随主题（CSS 变量）；工具栏可调 scale（10% 步进）/rotation（15° 步进）/opacity（10% 步进），并支持剪裁替换/时长±/关键帧
-- `Timeline`：HTML5 DnD 换序、关键帧星标、时长角标；帧项右键出菜单（同 FrameList）
+- `Timeline` + `timelineInsertion.ts`：原生 HTML5 DnD 同轨单格插入与整列移动，按原网格坐标命中，显示插入线、CSS 顺移预览及边缘自动滚动；帧项右键出菜单（同 FrameList）。
 - `ContextMenu`：通用右键菜单——fixed 定位光标处、视口右/下边缘自动收拢，Esc / 点外部 / 滚动 / 失焦关闭，点项先关菜单再执行；编辑器里右键未选中帧 = 设为当前帧出单帧菜单（关键帧/时长 ±1/剪裁/复制/删除），右键落在多选内 = 保留选区出批量菜单（复制/裁透明边/删除，复用 BatchBar 的 handler）
 - `PlaybackBar` + `FrameEditor` 播放模式：1–24 fps tick，每帧停留 duration 个 tick；直接复用 Pixi 变换渲染
 - `ImportModal`：素材库 / 上传文件 / CLI 生成三 Tab——素材库 Tab 网格多选素材后 `batch-import` 进当前项目（主流程），顶部搜索框按素材名/prompt 本地过滤（不影响已选）；上传 Tab 多文件逐个分发，选文件后同样询问「是否需要剪裁」（与素材导入共用 useCropQueue + CropModal），提交后弹窗内轮询 `/api/jobs/:id` 汇总；生成 Tab 提交即关窗（不阻塞等待），进度交给 JobPanel；生成 Tab 支持「图片 / 视频」切换（视频模式：fps 抽帧滑杆、`ProviderModelPicker` 只列支持视频的 provider，隐藏数量/引用图/尺寸）
@@ -247,6 +257,8 @@ Worker自动根据边缘颜色判断是否适合背景色法：98%边缘RGB与�
 `pipeline/alignment.ts`保存角色公共预设、动作根轨迹与审核指纹；`export.ts`冻结主轨输入，产生清单/报告/联系表/MP4/ZIP，再核验修订和文件字节后发布新不可变目录。`images.ts`保留PNG原件与原Alpha，建立独立未审核遮罩。`recipe.ts`按schema提交下一未完成阶段，遇人工闸门停止。抠图缓存按项目隔离并校验输出摘要；同输入预览合并进行中的请求。
 
 `AlignmentWorkshop`左右显示原图与共享后端画布。`FrameEditor`保留活跃纹理及8项近期缓存；时间轴惰性载入128px缩略图。GUI、CLI、MCP共用持久队列；CLI提供完整结构化stdout，`mcpBridge.ts`维持有界stdio客户租约，`mcp/sfs.ts`仅注册制作工具白名单。
+
+`FrameEditor` 淘汰纹理前解绑所有引用它的精灵，包含隐藏的洋葱皮。同一 URL 重新加载前等待旧卸载完成，过期加载失败不得修改当前场景；洋葱皮只有在帧身份匹配且纹理及其 source 有效时才能显示。`scripts/verify_editor_undo_canvas.ts` 检查连续原生撤销、延迟加载、真实缓存淘汰及图片/网格持续渲染。
 
 `apps/desktop/main.cjs`负责独立Electron单实例、鉴权Cookie、contextIsolation/sandbox、本地CSP与资源、外部导航和权限拒绝、用户可写工作区、关闭任务策略和明确可选模型导入/下载。`distribution.ts`定位旁边的运行时。`build_portable.ts`打包CLI/服务、固定Electron、独立Python、FFmpeg、Worker与许可/清单/SHA256；`verify_portable.ts`进行本机换目录和限制系统PATH测试，不冒称干净虚拟机验收。
 
@@ -330,3 +342,13 @@ Task11 新增独立 `CandidateReviewWorkspace` 与 Canvas2D `CandidateReviewCanv
 经过鉴权的 `POST /api/v1/runtime/stop` 在同一步核查排队/运行任务、其他HTTP请求和WebSocket连接；忙时返回 `409 WORKSPACE_BUSY`。接受时返回202，退出守卫以 `503 SERVICE_STOPPING` 阻止新请求，25毫秒后协作关闭，原退出处理负责释放本实例。CLI核实健康身份、锁归属与任务后请求此接口，最多等待5秒，不按外部PID强杀。`service clean` 持有排他恢复锁，只移除所有者已退出且归属匹配的服务记录与 `before-human-desktop` 历史发现备份。活动、损坏或归属不明记录阻止清理；日志、数据库、原始素材、固定候选、审核历史及失败staging保留。
 
 生产API **1.3** 将7个无范围审核写入别名及重复候选审核读取入口收口到候选/问题/Task范围路径。GUI与制作适配器仍使用原权限及CAS契约；不兼容服务明确拒绝连接，不强制终止。1.0.8便携包包含以上更新；旧版1.0.7/API1.1下载保留。详见[管理命令与接口迁移](api.zh-CN.md#工作区与服务管理api13)。
+
+## 统一编辑命令
+
+`apps/web/src/editingCommandStore.ts` 串行分发当前编辑上下文的保存/撤销，`editingCommands.ts` 绑定 React 工作台与快捷键，`EditCommandBar` 复用于导航、逐帧/骨骼页顶部和活动弹窗。注册使用 scope ref、真实 DOM 可见性和弹窗层级，避免子弹窗误操作父项目；输入框保留系统文字撤销。不支持的上下文禁用命令，不回退调用项目快照。
+
+各工作台拥有真实保存与历史：素材、剪裁、色键、骨骼和绑定草稿保留本地历史与脏状态；已保存的动作、骨骼文档、对齐与设置通过原 API 恢复。`settingsEditHistory.ts` 独立管理五组设置，原始值仅存内存，部分失败时准确记录成功组；`useReversibleEdits` 对轻量元数据执行带现值检查的逆向操作。审核、批准、固定交付、后台任务和素材/项目永久删除不纳入普通数据库回滚。
+
+`persistence.ts` 管理写入、作用域内失败和请求版本。保存等待相关写入，重试仍保留的自动保存意图，对未解决错误明确失败；手动图片替换不能被其他页面盲目重试。明确取消、成功回滚界面和删除对象时丢弃对应意图，并使迟到错误失效。手动草稿在保存后本地撤销时，保持待保存，直到再次显式写入。
+
+D 显式调用 `clearFramePlacement(frameId, true)`：同一事务内解绑资产或删除实例，仅在该共享列所有轨道都没有图片与独立特效时删除步骤，再同步编号。`pruneEmptySteps(axisId)` 在一次可撤销请求中清理旧空列。普通读取不移除有意设置的空白停顿；原素材文件、幸存帧精确时长和独立源选择保留。REST/MCP 的可选参数见时间轴 API 章节。

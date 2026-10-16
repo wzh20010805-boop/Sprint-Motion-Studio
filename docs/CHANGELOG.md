@@ -4,8 +4,21 @@ This document records features, changes, and bug fixes by release. Main releases
 
 ## [Unreleased]
 
+- Fix the image and grid going blank after repeated Undo: detach hidden onion sprites before releasing old textures, validate frame identity and texture state before showing previews, ignore stale load failures and await prior unloads of the same image.
+- Fix the axis dropdown being covered by timeline rows and losing pointer input. Upward menus also appear above canvas controls and layout dividers, while drag insertion markers stay inside the grid.
+- Add same-track cell insertion and whole-column dragging with an insertion line, 180ms displacement preview and edge autoscroll. Image/effect cells and empty cells shift without replacement; column dragging moves all tracks and the shared duration. Keep hover/cancel free of writes, commit once on drop and serialize moves with Undo; preserve original assets and frame-bound rational production timing.
+- Add D and a visible Delete current frame control that also removes and renumbers its column when completely empty, avoiding blank playback frames while preserving assets and other tracks/effects. Add a reversible Remove empty frames action for existing holes, with input, modal, gesture, playback and lock guards.
+- Move whole-action deletion (axis and all tracks) into the Main row with an explicit scope hint. Replace its toolbar position with single-frame deletion and label whole-step deletion as Delete column.
+- Add shared Save/Undo controls and Ctrl/Cmd+S, Ctrl/Cmd+Z dispatched to the visible workbench: frame, material/mask/alignment, skeletal/binding/clip, crop/color-key and settings editors. Preserve autosave, wait for real persistence, report failures and partial writes, and never replay canceled edits. Settings saves its five dirty groups and can undo persisted values; ordinary undo does not roll back reviews or background jobs.
+
 - Add a visible source-desktop workspace menu with the active name/path, registered choices and an existing-folder picker. Reuse CLI service handshakes to open the target in a new window and persist its selection while retaining the original window, unsaved edits and background jobs.
 - Keep ordinary source windows out of screenshot smoke checks so unavailable display capture cannot close the editor. Explicit smoke runs and probe scenarios retain their checks.
+
+- Fix editor onion skins using asset-list and instance-array order. Timeline selection compares the exact previous and next cells on the same track, preserving empty cells and endpoints. Hidden tracks show no ghosts, and asset preview uses asset-list neighbors only.
+
+- Fix the hidden collaboration panel being treated as an open modal and blocking editor shortcuts, including left/right frame navigation. Keep the panel mounted, restore shortcuts while closed, and retain modal protection while open.
+
+- Avoid compiling unused PyMatting JIT functions when starting the ONNX-only mask worker; preserve explicitly configured Numba settings and the existing mask inference path.
 
 ## [1.0.8] - 2026-10-15
 

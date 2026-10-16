@@ -6,13 +6,15 @@ import { useT } from "../i18n";
 import { palette, removeColor } from "../imageops/client";
 import type { RemoveColorOptions, RgbColor } from "../imageops/ops";
 import { notify } from "../notice";
+import { useEditingCommands } from "../editingCommands";
+import { discardPersistence, flushPersistence } from "../persistence";
 import IconBtn from "./IconBtn";
 
 interface Props {
   image: Blob;
   title?: string;
   batchCount?: number;
-  onConfirm: (blob: Blob, options: RemoveColorOptions) => void | Promise<void>;
+  onConfirm: (blob: Blob, options: RemoveColorOptions) => unknown | Promise<unknown>;
   onClose: () => void;
 }
 
@@ -42,6 +44,10 @@ export default function ColorKeyModal({ image, title, batchCount = 1, onConfirm,
   const panRef = useRef<{ x: number; y: number } | null>(null);
   const previewRequest = useRef(0);
   const previewResult = useRef<{ key: string; blob: Blob } | null>(null);
+  const scopeRef = useRef<HTMLDivElement>(null), operationBusyRef = useRef(false);
+  const [history, setHistory] = useState<RemoveColorOptions[]>([]);
+  const historyRef = useRef<RemoveColorOptions[]>([]);
+  const optionsRef = useRef<RemoveColorOptions>({ targets: [], tolerance: 0, softness: 0 });
   useModalEscClose(onClose, !busy);
 
   const options = useMemo<RemoveColorOptions>(
@@ -49,6 +55,13 @@ export default function ColorKeyModal({ image, title, batchCount = 1, onConfirm,
     [softness, targets, tolerance],
   );
   const currentKey = optionsKey(options);
+  optionsRef.current = options;
+  const changeOptions = (next: RemoveColorOptions) => {
+    if (busy || operationBusyRef.current || optionsKey(next) === optionsKey(optionsRef.current)) return;
+    historyRef.current = [...historyRef.current.slice(-49), structuredClone(optionsRef.current)]; setHistory(historyRef.current);
+    optionsRef.current = next; setTargets(next.targets); setTolerance(next.tolerance); setSoftness(next.softness ?? 0);
+  };
+  useEffect(() => () => discardPersistence(key => /^POST:\/api\/materials\/[^/]+\/replace-image$/.test(key)), [image]);
 
   const fitView = useCallback((width: number, height: number, imageWidth: number, imageHeight: number) => {
     if (!width || !height || !imageWidth || !imageHeight) return;
@@ -60,6 +73,7 @@ export default function ColorKeyModal({ image, title, batchCount = 1, onConfirm,
   useEffect(() => {
     let alive = true;
     let bitmap: ImageBitmap | null = null;
+    historyRef.current = []; setHistory([]); optionsRef.current = { targets: [], tolerance: 0, softness: 0 }; setTargets([]); setTolerance(0); setSoftness(0);
     void createImageBitmap(image)
       .then((decoded) => {
         if (!alive) {
@@ -176,9 +190,8 @@ export default function ColorKeyModal({ image, title, batchCount = 1, onConfirm,
   }, []);
 
   const addColor = (color: RgbColor) => {
-    setTargets((current) => current.some((item) => item.every((value, index) => value === color[index]))
-      ? current
-      : [...current, color]);
+    const current = optionsRef.current;
+    if (!current.targets.some(item => item.every((value, index) => value === color[index]))) changeOptions({ ...current, targets: [...current.targets, color] });
   };
 
   const pickColor = (screenX: number, screenY: number) => {
@@ -199,6 +212,7 @@ export default function ColorKeyModal({ image, title, batchCount = 1, onConfirm,
   };
 
   const onPointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (busy || operationBusyRef.current) return;
     const bounds = event.currentTarget.getBoundingClientRect();
     const x = event.clientX - bounds.left;
     const y = event.clientY - bounds.top;
@@ -221,22 +235,34 @@ export default function ColorKeyModal({ image, title, batchCount = 1, onConfirm,
   };
 
   const confirm = async () => {
-    if (!targets.length || busy) return;
+    if (!targets.length || !source || busy || operationBusyRef.current || panRef.current) return false;
+    operationBusyRef.current = true;
     setBusy(true);
     try {
       const cached = previewResult.current;
       const output = cached?.key === currentKey ? cached.blob : await removeColor(image, options);
-      await onConfirm(output, options);
+      const result = await onConfirm(output, options);
+      if (result === false) return false;
+      await flushPersistence(key => /^POST:\/api\/materials\/[^/]+\/replace-image$/.test(key));
+      return true;
     } catch (error) {
       notify(t("colorKey.failed", { msg: (error as Error).message }));
+      return false;
     } finally {
-      setBusy(false);
+      operationBusyRef.current = false; setBusy(false);
     }
   };
+  useEditingCommands({ label: title ?? t("colorKey.title"), priority: 100, scope: scopeRef, busy,
+    dirty: !!targets.length || tolerance !== 0 || softness !== 0, canSave: !!source && !!targets.length,
+    save: confirm, canUndo: !!history.length, allowShortcut: () => !panRef.current, undo: () => {
+      const previous = historyRef.current.at(-1); if (!previous || busy) return false;
+      optionsRef.current = structuredClone(previous); setTargets(optionsRef.current.targets); setTolerance(previous.tolerance); setSoftness(previous.softness ?? 0);
+      historyRef.current = historyRef.current.slice(0, -1); setHistory(historyRef.current); return true;
+    } });
 
   return (
     <motion.div className="modal-mask color-key-mask" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-      <motion.div className="modal pixel-panel color-key-modal" initial={{ scale: .94, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: .94, y: 20 }} onClick={(event) => event.stopPropagation()}>
+      <motion.div ref={scopeRef} className="modal pixel-panel color-key-modal" initial={{ scale: .94, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: .94, y: 20 }} onClick={(event) => event.stopPropagation()}>
         <div className="form-inline">
           <div style={{ flex: 1 }}>
             <h2><Pipette size={18} /> {t("colorKey.title")}</h2>
@@ -267,7 +293,7 @@ export default function ColorKeyModal({ image, title, batchCount = 1, onConfirm,
               <label>{t("colorKey.selectedColors")}</label>
               <div className="color-key-swatches selected">
                 {targets.length === 0 ? <span className="hint">{t("colorKey.noneSelected")}</span> : targets.map((color) => (
-                  <button key={color.join(",")} type="button" className="color-key-swatch" style={{ background: colorCss(color) }} title={`${colorHex(color)} · ${t("colorKey.removeColor")}`} onClick={() => setTargets((current) => current.filter((item) => item !== color))}>
+                  <button key={color.join(",")} type="button" className="color-key-swatch" disabled={busy} style={{ background: colorCss(color) }} title={`${colorHex(color)} · ${t("colorKey.removeColor")}`} onClick={() => changeOptions({ ...optionsRef.current, targets: optionsRef.current.targets.filter((item) => item !== color) })}>
                     <X size={12} />
                   </button>
                 ))}
@@ -277,17 +303,17 @@ export default function ColorKeyModal({ image, title, batchCount = 1, onConfirm,
             <section>
               <label>{t("colorKey.palette")}</label>
               <div className="color-key-swatches">
-                {colors.map((color) => <button key={color.join(",")} type="button" className="color-key-swatch" style={{ background: colorCss(color) }} title={colorHex(color)} onClick={() => addColor(color)} />)}
+                {colors.map((color) => <button key={color.join(",")} type="button" className="color-key-swatch" disabled={busy} style={{ background: colorCss(color) }} title={colorHex(color)} onClick={() => addColor(color)} />)}
               </div>
             </section>
 
             <label className="color-key-range">
               <span>{t("colorKey.tolerance")} <b>{tolerance}</b></span>
-              <input type="range" min={0} max={255} value={tolerance} onChange={(event) => setTolerance(Number(event.target.value))} />
+              <input type="range" min={0} max={255} value={tolerance} disabled={busy} onChange={(event) => changeOptions({ ...optionsRef.current, tolerance: Number(event.target.value) })} />
             </label>
             <label className="color-key-range">
               <span>{t("colorKey.softness")} <b>{softness}</b></span>
-              <input type="range" min={0} max={64} value={softness} onChange={(event) => setSoftness(Number(event.target.value))} />
+              <input type="range" min={0} max={64} value={softness} disabled={busy} onChange={(event) => changeOptions({ ...optionsRef.current, softness: Number(event.target.value) })} />
             </label>
             <div className="hint">{t("colorKey.toleranceHint")}</div>
           </aside>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { Layers3, ListTodo, PlugZap, Plus, RefreshCw, Save, Settings2, Sparkles, Stethoscope, Trash2, Wand2 } from "lucide-react";
 import type {
@@ -15,6 +15,8 @@ import { api } from "../api";
 import { refreshServerConfig, useServerConfig } from "../config";
 import { askConfirm, notify } from "../notice";
 import { t, useT } from "../i18n";
+import { useEditingCommands } from "../editingCommands";
+import { GroupedSettingsHistory, SettingsWriteError } from "../settingsEditHistory";
 import PxSelect from "./PxSelect";
 import PxSuggest from "./PxSuggest";
 
@@ -46,6 +48,20 @@ interface EnhancerDraft {
   model: string;
   legacy: boolean;
 }
+
+interface SettingsDraft {
+  genProviders: ProviderDraft[];
+  matting: MattingSettings;
+  imageLayers: ImageLayerSettings;
+  queueConcurrency: number;
+  promptEnhancers: EnhancerDraft[];
+}
+const SETTINGS_GROUPS = ["genProviders", "matting", "imageLayers", "queueConcurrency", "promptEnhancers"] as const;
+type SettingsGroup = (typeof SETTINGS_GROUPS)[number];
+const GROUP_LABELS: Record<SettingsGroup, string> = {
+  genProviders: "msg.gen_providers", matting: "msg.matting", imageLayers: "layers.settingsTitle",
+  queueConcurrency: "msg.queue_concurrency", promptEnhancers: "msg.prompt_enhancers",
+};
 
 const MAT_DEFAULT: MattingSettings = { cliBin: "", cliInputArg: "", cliOutputArg: "", cliModelArg: "", model: "" };
 const IMAGE_LAYERS_DEFAULT: ImageLayerSettings = {
@@ -256,15 +272,45 @@ function engineText(cfg: ReturnType<typeof useServerConfig>): string {
 /** 设置页：生成 provider 列表（CLI/API 多个共存，生成时选择）+ 抠图配置 + 体检 */
 export default function SettingsPage() {
   const t = useT();
-  const [drafts, setDrafts] = useState<ProviderDraft[]>([]);
-  const [mat, setMat] = useState<MattingSettings>(MAT_DEFAULT);
-  const [imageLayers, setImageLayers] = useState<ImageLayerSettings>(IMAGE_LAYERS_DEFAULT);
-  const [enhancers, setEnhancers] = useState<EnhancerDraft[]>([]);
+  const commandScope = useRef<HTMLDivElement>(null);
+  const rawSettings = useRef<Record<string, unknown>>({});
+  const historyRef = useRef<GroupedSettingsHistory<SettingsDraft> | null>(null);
+  if (!historyRef.current) historyRef.current = new GroupedSettingsHistory<SettingsDraft>({
+    genProviders: [], matting: MAT_DEFAULT, imageLayers: IMAGE_LAYERS_DEFAULT, queueConcurrency: 2, promptEnhancers: [],
+  }, SETTINGS_GROUPS, (key, value) => {
+    if (key === "queueConcurrency" && (!Number.isInteger(value) || Number(value) < 1 || Number(value) > 16)) throw new Error(t("settings.queueInvalid"));
+    if (key === "genProviders") {
+      const original = Array.isArray(rawSettings.current.genProviders) ? rawSettings.current.genProviders as GenProvider[] : [];
+      return (value as ProviderDraft[]).map(draft => ({ ...original.find(provider => provider.id === draft.id), ...fromDraft(draft) }));
+    }
+    if (key === "promptEnhancers") {
+      const original = Array.isArray(rawSettings.current.promptEnhancers) ? rawSettings.current.promptEnhancers as PromptEnhancer[] : [];
+      return (value as EnhancerDraft[]).map(({ id, name, providerId, model, legacy }) => legacy
+        ? { ...original.find(enhancer => enhancer.id === id), id, name, model }
+        : { id, name, providerId, model });
+    }
+    return value;
+  });
+  const history = historyRef.current;
+  const [, renderHistory] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+  const [settingsBusy, setSettingsBusy] = useState(false);
+  const settingsBusyRef = useRef(false);
+  const refreshPendingRef = useRef(false);
+  const { genProviders: drafts, matting: mat, imageLayers, promptEnhancers: enhancers, queueConcurrency } = history.current;
+  const editGroup = <K extends SettingsGroup>(key: K, next: SettingsDraft[K] | ((value: SettingsDraft[K]) => SettingsDraft[K])) => {
+    if (!loaded || settingsBusyRef.current) return;
+    if (history.edit(key, next)) renderHistory(value => value + 1);
+  };
+  const setDrafts = (next: ProviderDraft[] | ((value: ProviderDraft[]) => ProviderDraft[])) => editGroup("genProviders", next);
+  const setMat = (next: MattingSettings | ((value: MattingSettings) => MattingSettings)) => editGroup("matting", next);
+  const setImageLayers = (next: ImageLayerSettings | ((value: ImageLayerSettings) => ImageLayerSettings)) => editGroup("imageLayers", next);
+  const setEnhancers = (next: EnhancerDraft[] | ((value: EnhancerDraft[]) => EnhancerDraft[])) => editGroup("promptEnhancers", next);
+  const setQueueConcurrency = (next: number) => editGroup("queueConcurrency", next);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [savingMat, setSavingMat] = useState(false);
   const [savingImageLayers, setSavingImageLayers] = useState(false);
-  const [queueConcurrency, setQueueConcurrency] = useState(2);
   const [savingQueue, setSavingQueue] = useState(false);
   const [savingEnh, setSavingEnh] = useState(false);
   const [tests, setTests] = useState<Record<string, { testing: boolean; result: ProviderTestResponse | null }>>({});
@@ -278,29 +324,30 @@ export default function SettingsPage() {
 
   // 打开时回填 settings 表中的值（env 兜底在服务端，这里只编辑设置页自己的值）
   useEffect(() => {
+    let active = true;
     api
       .getSettings()
       .then((s) => {
+        if (!active) return;
         const list = Array.isArray(s["genProviders"])
           ? (s["genProviders"] as Array<GenProvider & { layerModels?: unknown }>)
           : [];
         const providerDrafts = list.map(toDraft);
-        setDrafts(providerDrafts);
         const m = s["matting"] as Partial<MattingSettings> | undefined;
-        if (m && typeof m === "object") setMat({ ...MAT_DEFAULT, ...m });
+        const matting = m && typeof m === "object" ? { ...MAT_DEFAULT, ...m } : MAT_DEFAULT;
         const standaloneLayers = s["imageLayers"] as Partial<ImageLayerSettings> | undefined;
+        let layers = IMAGE_LAYERS_DEFAULT;
         if (standaloneLayers && typeof standaloneLayers === "object") {
-          setImageLayers({ ...IMAGE_LAYERS_DEFAULT, ...standaloneLayers });
+          layers = { ...IMAGE_LAYERS_DEFAULT, ...standaloneLayers };
         } else {
           const legacy = list.find((p) => p.type === "api" && Array.isArray(p.layerModels) && p.layerModels.some((model) => typeof model === "string"));
           const legacyModel = legacy && Array.isArray(legacy.layerModels)
             ? legacy.layerModels.find((model): model is string => typeof model === "string")
             : undefined;
-          if (legacy && legacyModel) setImageLayers({ apiBaseUrl: legacy.apiBaseUrl, apiKey: legacy.apiKey, model: legacyModel });
+          if (legacy && legacyModel) layers = { apiBaseUrl: legacy.apiBaseUrl, apiKey: legacy.apiKey, model: legacyModel };
         }
         const enh = Array.isArray(s["promptEnhancers"]) ? (s["promptEnhancers"] as PromptEnhancer[]) : [];
-        setEnhancers(
-          enh.map((e) => {
+        const enhancerDrafts = enh.map((e) => {
             const model = e.model || e.apiModel || "";
             const modelMatches = list.filter((p) => p.type !== "cli" && (p.textModels ?? []).includes(model));
             const match = e.providerId
@@ -308,12 +355,16 @@ export default function SettingsPage() {
               // 旧记录没有 providerId/凭证时，仅在模型名唯一时恢复关联，避免错用连接。
               || (modelMatches.length === 1 ? modelMatches[0].id : "");
             return { id: e.id, name: e.name, providerId: match, model, legacy: !match && !!e.apiBaseUrl };
-          })
-        );
+          });
         const qc = s["queueConcurrency"];
-        if (typeof qc === "number" && qc >= 1) setQueueConcurrency(qc);
+        rawSettings.current = s;
+        history.reset({ genProviders: providerDrafts, matting, imageLayers: layers, promptEnhancers: enhancerDrafts,
+          queueConcurrency: typeof qc === "number" && qc >= 1 ? qc : 2 }, s);
+        setLoaded(true);
+        renderHistory(value => value + 1);
       })
       .catch((e) => notify(t("msg.load_settings_failed_msg", { msg: (e as Error).message })));
+    return () => { active = false; };
   }, []);
 
   const runDoctorCheck = () => {
@@ -329,6 +380,60 @@ export default function SettingsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /** 分组 API 没有事务：成功组立即更新基线，后续失败时保留草稿并准确报告未完成组。 */
+  const writeSettings = async (operation: (writer: (key: SettingsGroup, value: unknown) => Promise<boolean>) => Promise<unknown>) => {
+    if (!loaded || settingsBusyRef.current) return false;
+    settingsBusyRef.current = true;
+    setSettingsBusy(true);
+    let failure: unknown;
+    let result: unknown;
+    try {
+      try {
+        result = await operation(async (key, value) => {
+          const response = await api.putSetting(key, value);
+          if (response.ok !== true) return false;
+          rawSettings.current[key] = structuredClone(value);
+          refreshPendingRef.current = true;
+          return true;
+        });
+      } catch (error) { failure = error; }
+      if (refreshPendingRef.current) {
+        const config = await refreshServerConfig();
+        if (config) {
+          refreshPendingRef.current = false;
+          runDoctorCheck();
+        } else if (!failure) failure = new Error(t("settings.refreshFailed"));
+      }
+      if (failure instanceof SettingsWriteError) {
+        const labels = (keys: string[]) => keys.map(key => t(GROUP_LABELS[key as SettingsGroup])).join("、");
+        throw new Error(t(failure.completed.length ? "settings.partialWriteFailed" : "settings.writeFailed", {
+          saved: labels(failure.completed), failed: labels(failure.remaining),
+        }));
+      }
+      if (failure) throw failure;
+      return result;
+    } finally {
+      settingsBusyRef.current = false;
+      setSettingsBusy(false);
+      renderHistory(value => value + 1);
+    }
+  };
+
+  const saveGroup = async (key: SettingsGroup): Promise<boolean> => {
+    try { return await writeSettings(writer => history.save([key], writer)) !== false; }
+    catch (error) {
+      notify(t("msg.save_failed_msg", { msg: (error as Error).message }));
+      return false;
+    }
+  };
+
+  useEditingCommands({ label: t("msg.settings"), scope: commandScope,
+    save: () => writeSettings(writer => history.save(SETTINGS_GROUPS, writer)),
+    undo: () => writeSettings(writer => history.undo(writer)),
+    canSave: loaded && (history.dirty || refreshPendingRef.current), canUndo: loaded && history.canUndo,
+    busy: settingsBusy || !loaded, dirty: history.dirty,
+  });
+
   const patchDraft = (id: string, patch: Partial<ProviderDraft>) =>
     setDrafts((prev) => prev.map((d) => (d.id === id ? { ...d, ...patch } : d)));
 
@@ -337,14 +442,8 @@ export default function SettingsPage() {
 
   /** 任意卡片保存/删除都整表写入 genProviders */
   const persist = async (list: ProviderDraft[]): Promise<boolean> => {
-    try {
-      await api.putSetting("genProviders", list.map(fromDraft));
-      await refreshServerConfig();
-      return true;
-    } catch (e) {
-      notify(t("msg.save_failed_msg", { msg: (e as Error).message }));
-      return false;
-    }
+    setDrafts(list);
+    return saveGroup("genProviders");
   };
 
   const saveOne = async (id: string) => {
@@ -415,12 +514,7 @@ export default function SettingsPage() {
   const saveMatting = async () => {
     setSavingMat(true);
     try {
-      await api.putSetting("matting", mat);
-      await refreshServerConfig();
-      notify(t("msg.matting_config_saved"), "info");
-      runDoctorCheck();
-    } catch (e) {
-      notify(t("msg.save_failed_msg", { msg: (e as Error).message }));
+      if (await saveGroup("matting")) notify(t("msg.matting_config_saved"), "info");
     } finally {
       setSavingMat(false);
     }
@@ -429,27 +523,16 @@ export default function SettingsPage() {
   const saveImageLayerSettings = async () => {
     setSavingImageLayers(true);
     try {
-      await api.putSetting("imageLayers", imageLayers);
-      await refreshServerConfig();
-      notify(t("layers.configSaved"), "info");
-      runDoctorCheck();
-    } catch (e) {
-      notify(t("msg.save_failed_msg", { msg: (e as Error).message }));
+      if (await saveGroup("imageLayers")) notify(t("layers.configSaved"), "info");
     } finally {
       setSavingImageLayers(false);
     }
   };
 
   const saveQueue = async () => {
-    const n = Math.max(1, Math.min(16, Math.floor(Number(queueConcurrency)) || 1));
-    setQueueConcurrency(n);
     setSavingQueue(true);
     try {
-      await api.putSetting("queueConcurrency", n);
-      await refreshServerConfig();
-      notify(t("msg.queue_concurrency_saved"), "info");
-    } catch (e) {
-      notify(t("msg.save_failed_msg", { msg: (e as Error).message }));
+      if (await saveGroup("queueConcurrency")) notify(t("msg.queue_concurrency_saved"), "info");
     } finally {
       setSavingQueue(false);
     }
@@ -482,14 +565,8 @@ export default function SettingsPage() {
     ]);
 
   const persistEnhancers = async (list: EnhancerDraft[]): Promise<boolean> => {
-    try {
-      await api.putSetting("promptEnhancers", list.map(({ id, name, providerId, model }) => ({ id, name, providerId, model })));
-      await refreshServerConfig();
-      return true;
-    } catch (e) {
-      notify(t("msg.save_failed_msg", { msg: (e as Error).message }));
-      return false;
-    }
+    setEnhancers(list);
+    return saveGroup("promptEnhancers");
   };
 
   const saveEnhancers = async () => {
@@ -531,13 +608,15 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="page settings-page">
+    <div ref={commandScope} className="page settings-page">
       <header className="home-header">
         <h1>
           <Settings2 size={24} /> {t("msg.settings")}
         </h1>
         <p className="subtitle">{t("msg.gen_providers_cli_api_pick_model_at_gen_time_matting_doc")}</p>
       </header>
+
+      <fieldset disabled={settingsBusy || !loaded} style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
 
       {/* ===== 生成 Provider 列表 ===== */}
       <section className="settings-sec">
@@ -1071,6 +1150,7 @@ export default function SettingsPage() {
           </ul>
         )}
       </section>
+      </fieldset>
     </div>
   );
 }

@@ -783,6 +783,23 @@ export interface TimelineStep {
   duration: number;
 }
 
+export interface PruneEmptyStepsResponse {
+  ok: true;
+  removedStepIds: string[];
+}
+
+export interface ReorderTrackCellsRequest {
+  frameId: string;
+  /** 原时间轴中该列之前的插入边界；省略表示最后一列之后。 */
+  beforeStepId?: string;
+}
+
+export interface ReorderTrackCellsResponse {
+  ok: true;
+  frame: Frame;
+  affectedStepIds: string[];
+}
+
 export interface TimelineResponse {
   axes: AnimationAxis[];
   axis: AnimationAxis;

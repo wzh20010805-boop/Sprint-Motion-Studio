@@ -235,6 +235,8 @@ def main(request):
                 if session is None:
                     os.environ['U2NET_HOME'] = request['models']
                     os.environ['OMP_NUM_THREADS'] = '2'
+                    # 此路径仅做 ONNX 遮罩推理；避免 rembg 导入时编译未使用的 PyMatting 函数。
+                    os.environ.setdefault('NUMBA_DISABLE_JIT', '1')
                     from rembg import remove
                     session = local_session(model_path, request['model'])
                 crop_mask = remove(crop, session=session, only_mask=True, post_process_mask=False).convert('L')

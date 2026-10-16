@@ -127,11 +127,13 @@ multipart/form-data：`file`（PNG，服务端校验文件签名）。编辑器�
 - `POST /api/axes/:id/tracks`；`PATCH|DELETE /api/tracks/:id`；`POST /api/axes/:id/tracks/reorder` 接收完整且不重复的 `trackIds`。主轨/唯一轨道不可删除。
 - `POST /api/axes/:id/steps`；`PATCH|DELETE /api/steps/:id`；`POST /api/axes/:id/steps/reorder` 接收完整且不重复的 `stepIds`。时长范围 1–600，并镜像到步骤内全部单元格。
 - `PATCH /api/frames/:id/placement` 请求 `{ "trackId", "stepId", "swap"?, "copy"? }`；时间轴内部移动沿用原帧，左侧组装使用 `copy: true` 创建实例，源资产始终留在左侧并可重复使用。`swap: true` 时目标已有帧会退回资产面板。
-- `DELETE /api/frames/:id/placement` 清空单个时间轴单元格但不删除可复用图片文件；资产帧退回资产面板，复制出的时间轴实例则丢弃。
+- `POST /api/tracks/:id/cells/reorder` 请求 `{ "frameId", "beforeStepId"? }`，在图片当前所属的未锁定轨道内插入移动完整单元格。`beforeStepId` 表示原时间轴中某列之前的插入边界；省略表示最后一列之后。源图片及同格独立特效一起移动，中间各格（包括空格和仅有特效的格）顺移让位。例如把 B 插到 D 之前，`[A,B,C,D]` 变为 `[A,C,B,D]`；不会覆盖、交换、复制图片或特效，也不退回素材池。其他轨道和共享步骤的 ID、顺序、时长保持不变。图片内容继承目标时间列的整数 tick 时长；精确生产时长仍跟随 frame ID，原素材 metadata/文件及期望源帧选择不改。返回 `{ "ok": true, "frame": Frame, "affectedStepIds": [...] }`，包含移动帧最终的 `step_id`，受影响列按时间轴顺序排列。轨道或帧不存在返回 404，锁定轨道返回 409，跨轨、未编排源帧或跨动画轴插入边界返回 400。一次成功移动对应一次项目撤销，失败时全部回滚。拖到自身之前或紧邻其后的边界不改变内容（`affectedStepIds: []`），也不新增撤销历史。整列拖动仍使用 `steps/reorder`，此时该列时长与所有轨道一起移动；单格拖动保留共享时间格。
+- `DELETE /api/frames/:id/placement` 清空单个时间轴图片但不删除可复用图片文件；资产帧退回资产面板，复制出的时间轴实例则丢弃。默认（或 `?removeEmptyStep=false`）保留共享步骤；指定 `?removeEmptyStep=true` 时，在同一事务内仅当该步骤的所有轨道均无图片和独立特效，才删除此步骤并连续重排剩余帧号。同列仍有内容时保留该列，不单独平移所选轨道，也不清理其他历史空列；此选项对锁定的所选轨道返回 409。
+- `POST /api/axes/:id/steps/prune-empty` 清理当前动画轴的全部完全空列并连续重排剩余帧号，按原时间轴顺序返回 `{ "ok": true, "removedStepIds": [...] }`。任意轨道（包括隐藏或锁定轨道）的图片或独立特效都会保留所在列。其他动画轴、原素材文件、期望源帧选择和幸存帧的精确时长均保留。清理会缩短动作时长，整个请求记为一次可撤销 REST 编辑；撤销一次恢复全部空列和原位置。
 - `POST /api/tracks/:id/place-frames` 请求 `{ "frameIds": [...], "startStepId"? }`，把同项目帧资产依次复制到目标轨道的连续单元格。已有单元格帧退回资产面板，末尾步骤不足时原子追加；跨项目来源与非资产帧会在时间轴变更前被拒绝。
 - `PUT /api/tracks/:id/steps/:stepId/effect`：在任意轨道×步骤单元格创建或替换特效，即使该格没有图片也可使用。请求最多 128 条笔画；每笔保存 `#RRGGBB` 颜色、1–256 笔宽、可选且确定性渲染的纹理 `brush`（`slash`、`bristle`、`dry`、`spark`、`echo`，缺省为 `slash`）及最多 4096 个 `{x,y,pressure}` 点，以及独立位置/缩放/旋转/透明度和可选 `style`（`flame`、`energy`、`ink`）。同 URL 的 `DELETE` 只清除特效，不影响该格的人物图片。
 
-时间轴变更广播 `timeline_changed` 及 `projectId` 和相关 ID。删除单元格仅在步骤变空时裁剪步骤；旧复制会在源步骤后插入共享步骤；旧换序仅接受主轨“一步骤一单元格”的无歧义形态。
+时间轴变更广播 `timeline_changed` 及 `projectId` 和相关 ID；清理空列还包含 `removedStepIds`。清空图片默认保留步骤，仅显式收紧时删除刚变为完全空的步骤。旧复制会在源步骤后插入共享步骤；旧换序仅接受主轨“一步骤一单元格”的无歧义形态。
 
 - `POST /api/projects/:id/undo`：恢复该项目最近一次成功的时间轴/帧编辑。服务端为每个项目最多保留 50 条快照；纯数据库编辑不会复制图片，替换、删除、复制或导入项目图片时才同时保存项目文件。同项目编辑与撤销请求会串行执行，恢复失败时回滚且不消费快照。异步任务完成及 MCP 项目写入会清除更早的历史，防止陈旧快照覆盖较新的产物。恢复成功后广播 `timeline_changed` 和 `frames_changed`；没有可撤销历史时返回 404。
 
@@ -509,7 +511,9 @@ SDK负责协议协商；当前制作适配器仍校验原始鉴权Request，并�
 | `list_frames` | 列出项目全部帧 |
 | `update_frame` | 更新帧图片属性/变换 |
 | `delete_frame` | 删除帧 |
-| `clear_frame_cell` | 清空时间轴单元格但不删除可复用资产文件 |
+| `clear_frame_cell` | 清空图片但不删除可复用资产文件；可选 `removeEmptyStep` 默认 false，仅删除刚清成完全空的共享步骤 |
+| `prune_empty_steps` | 接收 `axisId`，清理该轴全部完全空列并返回 `removedStepIds`，保留有内容的列和原素材文件 |
+| `reorder_track_cells` | 接收 `trackId`、`frameId`、可选 `beforeStepId`，同轨插入图片与特效完整格并顺移让位；省略边界表示追加，无变化时保留已有撤销历史 |
 | `get_timeline` | 获取轨道、步骤、图片单元格和独立特效单元格 |
 | `upsert_attack_effect` | 在任意轨道×步骤单元格创建或替换攻击特效 |
 | `duplicate_frame` | 复制帧 1–16 份 |

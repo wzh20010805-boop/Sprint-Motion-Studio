@@ -24,6 +24,9 @@ import ContextMenu, { type CtxMenuItem } from "./ContextMenu";
 import ColorKeyModal from "./ColorKeyModal";
 import IconBtn from "./IconBtn";
 import { useMaterialEditor } from "./MaterialEditor";
+import { useEditingCommands } from "../editingCommands";
+import { discardPersistence, flushPersistence } from "../persistence";
+import { useReversibleEdits } from "../hooks/useReversibleEdits";
 
 const isMac = /macintosh|mac os/i.test(navigator.userAgent);
 
@@ -93,6 +96,9 @@ const MaterialCard = memo(function MaterialCard({
 
 export default function MaterialsPage() {
   const t = useT();
+  const pageRef = useRef<HTMLDivElement>(null);
+  const renameRef = useRef<HTMLFormElement>(null);
+  const editHistory = useReversibleEdits();
   const [materials, setMaterials] = useState<Material[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -128,7 +134,11 @@ export default function MaterialsPage() {
   const cfg = useServerConfig();
   const sfsLocal = !!cfg?.sfs;
   const openMaterialEditor = useMaterialEditor();
-  useModalEscClose(() => setRenameTarget(null), Boolean(renameTarget) && !renameBusy);
+  const cancelRename = () => {
+    if (renameTarget) discardPersistence(key => key === `PATCH:/api/materials/${renameTarget.id}`);
+    setRenameTarget(null);
+  };
+  useModalEscClose(cancelRename, Boolean(renameTarget) && !renameBusy);
 
   const openRename = (material: Material) => {
     setRenameTarget(material);
@@ -138,19 +148,31 @@ export default function MaterialsPage() {
   const submitRename = async () => {
     const target = renameTarget;
     const name = renameName.trim();
-    if (!target || !name || renameBusy) return;
+    if (!target || !name || renameBusy) return false;
     setRenameBusy(true);
     try {
       const { material } = await api.renameMaterial(target.id, name);
       setMaterials((items) => items.map((item) => item.id === material.id ? material : item));
       setRenameTarget(null);
+      editHistory.record(async () => {
+        const current = (await api.listMaterials()).find(item => item.id === target.id);
+        if (current?.name !== name) throw new Error(t("editing.changedElsewhere"));
+        const restored = await api.renameMaterial(target.id, target.name);
+        setMaterials(items => items.map(item => item.id === restored.material.id ? restored.material : item));
+      });
       notify(t("material.rename.success"), "info");
+      return true;
     } catch (e) {
       notify(t("material.rename.failed", { msg: (e as Error).message }));
+      return false;
     } finally {
       setRenameBusy(false);
     }
   };
+
+  useEditingCommands({ label: t("msg.materials"), scope: pageRef, save: () => flushPersistence(key => /\/api\/(?:materials|folders)(?:\/|$)/.test(key)), undo: editHistory.undo, canUndo: editHistory.canUndo, busy: busy || editHistory.busy, autoSave: true });
+  useEditingCommands({ label: t("material.rename.title"), priority: 100, enabled: !!renameTarget, scope: renameRef, save: submitRename,
+    undo: () => { if (renameTarget) setRenameName(renameTarget.name); }, canUndo: !!renameTarget && renameName !== renameTarget.name, canSave: !!renameName.trim(), busy: renameBusy, dirty: !!renameTarget && renameName !== renameTarget.name });
 
   const loadFolders = useCallback(async () => {
     try {
@@ -401,7 +423,19 @@ export default function MaterialsPage() {
       folderId == null ? t("msg.ungrouped") : (folders.find((f) => f.id === folderId)?.name ?? folderId);
     if (!(await askConfirm(t("msg.move_n_materials_to_name", { n: ids.length, name })))) return;
     try {
+      const before = materials.filter(item => ids.includes(item.id)).map(item => ({ id: item.id, folderId: item.folder_id }));
       await api.moveItems("material", ids, folderId);
+      editHistory.record(async () => {
+        const current = await api.listMaterials();
+        for (const item of before) {
+          const found = current.find(value => value.id === item.id);
+          if (!found || found.folder_id !== folderId && found.folder_id !== item.folderId) throw new Error(t("editing.changedElsewhere"));
+        }
+        const groups = new Map<string | null, string[]>();
+        for (const item of before) groups.set(item.folderId, [...(groups.get(item.folderId) ?? []), item.id]);
+        for (const [original, members] of groups) await api.moveItems("material", members, original);
+        await load();
+      });
       await load();
       toast(t("msg.moved_count_materials", { count: ids.length }));
     } catch (e) {
@@ -785,7 +819,7 @@ export default function MaterialsPage() {
         : [];
 
   return (
-    <div className="page page-with-folders">
+    <div className="page page-with-folders" ref={pageRef}>
       <aside className="material-library-sidebar">
       <MaterialProjectTree projects={projects} materials={materials} selected={partition} onSelect={choosePartition} />
       <FolderTree
@@ -799,7 +833,13 @@ export default function MaterialsPage() {
           await loadFolders();
         }}
         onRename={async (id, name) => {
+          const before = folders.find(folder => folder.id === id);
           await api.patchFolder(id, { name });
+          if (before) editHistory.record(async () => {
+            const current = (await api.listFolders("material")).find(folder => folder.id === id);
+            if (current?.name !== name) throw new Error(t("editing.changedElsewhere"));
+            await api.patchFolder(id, { name: before.name }); await loadFolders();
+          });
           await loadFolders();
         }}
         onDelete={async (id) => {
@@ -808,7 +848,13 @@ export default function MaterialsPage() {
           await load();
         }}
         onMoveFolder={async (id, parentId) => {
+          const before = folders.find(folder => folder.id === id);
           await api.patchFolder(id, { parentId });
+          if (before) editHistory.record(async () => {
+            const current = (await api.listFolders("material")).find(folder => folder.id === id);
+            if (!current || current.parent_id !== parentId) throw new Error(t("editing.changedElsewhere"));
+            await api.patchFolder(id, { parentId: before.parent_id }); await loadFolders();
+          });
           await loadFolders();
         }}
         onDropItems={(folderId, ids) => void moveSelectedTo(folderId, ids)}
@@ -977,10 +1023,10 @@ export default function MaterialsPage() {
         <AnimatePresence>
           {renameTarget && (
             <motion.div className="modal-mask" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <motion.form className="modal pixel-panel" role="dialog" aria-modal="true" aria-labelledby="material-rename-title" initial={{ scale: .9, y: 24 }} animate={{ scale: 1, y: 0 }} exit={{ scale: .9, y: 24 }} onSubmit={(event) => { event.preventDefault(); void submitRename(); }}>
+              <motion.form ref={renameRef} className="modal pixel-panel" role="dialog" aria-modal="true" aria-labelledby="material-rename-title" initial={{ scale: .9, y: 24 }} animate={{ scale: 1, y: 0 }} exit={{ scale: .9, y: 24 }} onSubmit={(event) => { event.preventDefault(); void submitRename(); }}>
                 <h2 id="material-rename-title">{t("material.rename.title")}</h2>
                 <label>{t("material.rename.label")}<input className="px-input" autoFocus maxLength={200} value={renameName} placeholder={t("material.rename.placeholder")} disabled={renameBusy} onChange={(event) => setRenameName(event.target.value)} /></label>
-                <div className="modal-actions"><button type="button" className="px-btn" disabled={renameBusy} onClick={() => setRenameTarget(null)}>{t("common.cancel")}</button><button type="submit" className="px-btn accent" disabled={renameBusy || !renameName.trim()}>{t("msg.rename")}</button></div>
+                <div className="modal-actions"><button type="button" className="px-btn" disabled={renameBusy} onClick={cancelRename}>{t("common.cancel")}</button><button type="submit" className="px-btn accent" disabled={renameBusy || !renameName.trim()}>{t("msg.rename")}</button></div>
               </motion.form>
             </motion.div>
           )}

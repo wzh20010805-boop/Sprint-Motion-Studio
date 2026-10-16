@@ -1,0 +1,25 @@
+{
+  "initial": {
+    "width": 1024,
+    "height": 1280,
+    "zoom": 2,
+    "characterHeight": 960,
+    "fullyVisible": false,
+    "viewHeight": 483.5
+  },
+  "options": [],
+  "enlarged": null,
+  "restored": null,
+  "inputs": [
+    "512",
+    "640",
+    "0.7395993836671803",
+    "256",
+    "592",
+    "485",
+    "691",
+    "0",
+    "0"
+  ],
+  "passed": false
+}

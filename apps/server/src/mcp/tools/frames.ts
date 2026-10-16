@@ -101,14 +101,20 @@ export function register(server: McpServer) {
     {
       title: "Clear Frame Cell",
       description:
-        "Remove a frame from its timeline cell without deleting reusable asset files. Asset frames return to the asset pool; timeline instances are discarded.",
+        "Remove a frame from its timeline cell without deleting reusable asset files. Asset frames return to the asset pool; timeline instances are discarded. Optional removeEmptyStep also removes that shared step only if no image or independent effect remains on any track; locked tracks reject this option.",
       inputSchema: z.object({
         frameId: z.string().describe("Timeline frame UUID"),
+        removeEmptyStep: z.boolean().optional().describe("Close this step only if it becomes completely empty; defaults to false"),
       }),
       annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     },
-    async ({ frameId }) => {
-      const frame = clearFramePlacement(frameId);
+    async ({ frameId, removeEmptyStep }) => {
+      let frame;
+      try {
+        frame = clearFramePlacement(frameId, removeEmptyStep ?? false);
+      } catch (error) {
+        return err((error as Error).message);
+      }
       if (!frame) return err("轨道单元格不存在");
       invalidateProjectUndo(frame.project_id);
       broadcast("timeline_changed", {

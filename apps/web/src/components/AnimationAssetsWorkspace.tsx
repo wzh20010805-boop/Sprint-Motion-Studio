@@ -6,6 +6,8 @@ import { attachmentLocalBounds, attachmentLocalCorners, attachmentSvgImageY, fit
 import { localizeBoneName, localizeSkeletonName } from "../builtinAnimationLabels";
 import { useT } from "../i18n";
 import { askConfirm, notify } from "../notice";
+import { editingCommands, useEditingCommands } from "../editingCommands";
+import { discardPersistence } from "../persistence";
 import { useWarpedAttachments } from "../hooks/useWarpedAttachments";
 import FolderTree, { type FolderSelection } from "./FolderTree";
 import { useMaterialEditor } from "./MaterialEditor";
@@ -152,15 +154,30 @@ function SkeletonPreview({ skeleton, clip, rangeClip, time, selectedBone, disabl
   </svg><small>{onEditBone ? `${t("animation.canvas.hint")} ${t("animation.canvas.zoomHint")}` : `${skeletonName} · ${t("animation.canvas.zoomHint")}`}</small></div>;
 }
 
-export function SkeletonEditor({ skeleton, previewBinding, busy, onSave }: { skeleton: Skeleton; previewBinding?: CharacterBinding; busy: boolean; onSave: (next: Skeleton) => Promise<void> }) {
+export function SkeletonEditor({ skeleton, previewBinding, busy, onSave }: { skeleton: Skeleton; previewBinding?: CharacterBinding; busy: boolean; onSave: (next: Skeleton) => Promise<unknown> }) {
   const t = useT();
   const [draft, setDraft] = useState(() => structuredClone(skeleton));
+  const scopeRef = useRef<HTMLElement>(null), draftRef = useRef(draft), skeletonIdRef = useRef(skeleton.id);
+  const [history, setHistory] = useState<Skeleton[]>([]);
+  const historyRef = useRef<Skeleton[]>([]);
+  draftRef.current = draft;
   const [selectedBone, setSelectedBone] = useState(skeleton.bones[0]?.id ?? "");
   const boneName = (bone: Skeleton["bones"][number]) => localizeBoneName(draft.id, bone.id, bone.name, t);
-  useEffect(() => { setDraft(structuredClone(skeleton)); setSelectedBone(skeleton.bones[0]?.id ?? ""); }, [skeleton]);
+  useEffect(() => {
+    if (skeletonIdRef.current !== skeleton.id) { historyRef.current = []; setHistory([]); skeletonIdRef.current = skeleton.id; }
+    draftRef.current = structuredClone(skeleton);
+    setDraft(draftRef.current); setSelectedBone((id) => skeleton.bones.some(bone => bone.id === id) ? id : skeleton.bones[0]?.id ?? "");
+  }, [skeleton]);
+  const changeDraft = (change: (old: Skeleton) => Skeleton) => {
+    if (busy) return;
+    const old = draftRef.current, next = change(old);
+    if (JSON.stringify(old) === JSON.stringify(next)) return;
+    historyRef.current = [...historyRef.current.slice(-49), structuredClone(old)]; setHistory(historyRef.current);
+    draftRef.current = next; setDraft(next);
+  };
   const selected = draft.bones.find((bone) => bone.id === selectedBone);
   const sampled = useMemo(() => sampleMotionClip({ schemaVersion: 1, kind: "motion-clip", id: "skeleton-edit-rest", name: "Rest", skeletonId: draft.id, duration: 0, loop: false, tracks: [], events: [] }, draft, 0), [draft]);
-  const patchBone = (id: string, patch: Partial<Skeleton["bones"][number]>) => setDraft((old) => ({ ...old, bones: old.bones.map((bone) => bone.id === id ? { ...bone, ...patch } : bone) }));
+  const patchBone = (id: string, patch: Partial<Skeleton["bones"][number]>) => changeDraft((old) => ({ ...old, bones: old.bones.map((bone) => bone.id === id ? { ...bone, ...patch } : bone) }));
   const editOnCanvas = (id: string, patch: { tx?: number; ty?: number; rz?: number }) => {
     const bone = draft.bones.find((item) => item.id === id);
     if (!bone) return;
@@ -201,19 +218,28 @@ export function SkeletonEditor({ skeleton, previewBinding, busy, onSave }: { ske
   const addBone = () => {
     if (!selected) return;
     const id = uid("bone"), translation = [...(selected.tipOffset ?? [40, 0, 0])] as [number, number, number];
-    setDraft((old) => ({ ...old, bones: [...old.bones, { id, name: t("animation.skeletonEditor.newBoneName"), parentId: selected.id, rest: { ...identity(), translation }, tipOffset: [40, 0, 0] }] }));
+    changeDraft((old) => ({ ...old, bones: [...old.bones, { id, name: t("animation.skeletonEditor.newBoneName"), parentId: selected.id, rest: { ...identity(), translation }, tipOffset: [40, 0, 0] }] }));
     setSelectedBone(id);
   };
   const removeBone = () => {
     if (!selected || draft.bones.length <= 1 || draft.bones.some((bone) => bone.parentId === selected.id)) return;
     const next = draft.bones.find((bone) => bone.id !== selected.id)!;
-    setDraft((old) => ({ ...old, bones: old.bones.filter((bone) => bone.id !== selected.id) }));
+    changeDraft((old) => ({ ...old, bones: old.bones.filter((bone) => bone.id !== selected.id) }));
     setSelectedBone(selected.parentId ?? next.id);
   };
   const dirty = JSON.stringify(draft) !== JSON.stringify(skeleton);
+  const saveDraft = () => busy ? false : onSave(draftRef.current);
+  useEditingCommands({ label: t("animation.skeleton"), priority: 30, scope: scopeRef, busy, dirty,
+    save: saveDraft, canUndo: !!history.length, undo: () => {
+      const previous = historyRef.current.at(-1); if (!previous || busy) return false;
+      discardPersistence(key => key === `PUT:/api/animation-assets/${skeleton.id}`);
+      historyRef.current = historyRef.current.slice(0, -1); setHistory(historyRef.current);
+      draftRef.current = structuredClone(previous); setDraft(draftRef.current);
+      setSelectedBone(id => previous.bones.some(bone => bone.id === id) ? id : previous.bones[0]?.id ?? "");
+    } });
   const selectedLength = selected?.tipOffset ? Math.hypot(selected.tipOffset[0], selected.tipOffset[1]) : 0;
   const selectedDirection = selected?.tipOffset ? Math.atan2(selected.tipOffset[1], selected.tipOffset[0]) * 180 / Math.PI : 0;
-  return <section className="skeleton-editor">
+  return <section ref={scopeRef} className="skeleton-editor">
     {previewBinding
       ? <CharacterPreview binding={previewBinding} skeleton={draft} time={0} selectedBoneId={selectedBone} showSkeleton onSelectBone={setSelectedBone} />
       : <SkeletonPreview skeleton={draft} time={0} selectedBone={selectedBone} disabled={busy} onSelectBone={setSelectedBone} onEditBone={editOnCanvas} />}
@@ -237,7 +263,7 @@ export function SkeletonEditor({ skeleton, previewBinding, busy, onSave }: { ske
         </div>
         <button className="px-btn danger" type="button" disabled={busy || draft.bones.length <= 1 || draft.bones.some((bone) => bone.parentId === selected.id)} onClick={removeBone}><Trash2 size={13} />{t("animation.skeletonEditor.deleteBone")}</button>
       </>}
-      <div className="skeleton-editor-actions"><span>{t(dirty ? "animation.skeletonEditor.unsaved" : "animation.skeletonEditor.saved")}</span><button className="px-btn accent" type="button" disabled={busy || !dirty} onClick={() => void onSave(draft)}>{t("common.save")}</button></div>
+      <div className="skeleton-editor-actions"><span>{t(dirty ? "animation.skeletonEditor.unsaved" : "animation.skeletonEditor.saved")}</span><button className="px-btn accent" type="button" disabled={busy || !dirty} onClick={() => void saveDraft()}>{t("common.save")}</button></div>
     </aside>
   </section>;
 }
@@ -624,7 +650,7 @@ export function CharacterPreview({ binding, skeleton, clip, time, selectedAttach
   </svg>;
 }
 
-export function BindingEditor({ binding, skeleton, materials, materialFolders, busy, onSave, onMaterialsChanged }: { binding: CharacterBinding; skeleton: Skeleton; materials: Material[]; materialFolders: Folder[]; busy: boolean; onSave: (value: CharacterBinding) => Promise<void>; onMaterialsChanged?: () => void }) {
+export function BindingEditor({ binding, skeleton, materials, materialFolders, busy, onSave, onMaterialsChanged }: { binding: CharacterBinding; skeleton: Skeleton; materials: Material[]; materialFolders: Folder[]; busy: boolean; onSave: (value: CharacterBinding) => Promise<unknown>; onMaterialsChanged?: () => void }) {
   const firstSlot = binding.slots[0];
   const t = useT();
   const openMaterialEditor = useMaterialEditor();
@@ -636,9 +662,12 @@ export function BindingEditor({ binding, skeleton, materials, materialFolders, b
   const [draft, setDraft] = useState(binding), [selectedAttachmentId, setSelectedAttachmentId] = useState(binding.attachments[0]?.id ?? ""), [selectedBoneId, setSelectedBoneId] = useState(firstSlot?.boneId ?? skeleton.bones[0]?.id ?? "");
   const [transformTool, setTransformTool] = useState<BindingTransformTool>("translate"), [undoDrafts, setUndoDrafts] = useState<CharacterBinding[]>([]), [redoDrafts, setRedoDrafts] = useState<CharacterBinding[]>([]);
   const [fittingAspect, setFittingAspect] = useState(false);
+  const scopeRef = useRef<HTMLElement>(null);
   const initialMaterial = materials.find((item) => item.id === binding.attachments[0]?.materialId);
   const [materialFolder, setMaterialFolder] = useState<FolderSelection>(initialMaterial?.folder_id ?? (initialMaterial ? "ungrouped" : "all"));
   const draftRef = useRef(draft), continuousEditRef = useRef<CharacterBinding | undefined>(undefined), fitRequestRef = useRef(0);
+  const previousBindingRef = useRef(binding), previousSkeletonIdRef = useRef(skeleton.id);
+  const undoDraftsRef = useRef<CharacterBinding[]>([]), redoDraftsRef = useRef<CharacterBinding[]>([]);
   draftRef.current = draft;
   const restPose = useMemo(() => sampleMotionClip({ schemaVersion: 1, kind: "motion-clip", id: "binding-editor-rest", name: "Rest", skeletonId: skeleton.id, duration: 0, loop: false, tracks: [], events: [] }, skeleton, 0, draft.boneRotationOffsets), [draft.boneRotationOffsets, skeleton]);
   const defaultAttachmentSize = useMemo(() => {
@@ -654,12 +683,14 @@ export function BindingEditor({ binding, skeleton, materials, materialFolders, b
     return Math.max(.5, Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) / 4);
   }, [restPose, skeleton]);
   useEffect(() => {
-    setDraft(binding);
-    setUndoDrafts([]);
-    setRedoDrafts([]);
-    continuousEditRef.current = undefined;
-    setSelectedAttachmentId((current) => binding.attachments.some((item) => item.id === current) ? current : binding.attachments[0]?.id ?? "");
-    setSelectedBoneId((current) => skeleton.bones.some((bone) => bone.id === current) ? current : binding.slots[0]?.boneId ?? skeleton.bones[0]?.id ?? "");
+    const changedIdentity = previousBindingRef.current.id !== binding.id || previousSkeletonIdRef.current !== skeleton.id;
+    if (changedIdentity) { draftRef.current = binding; setDraft(binding); }
+    if (changedIdentity) {
+      undoDraftsRef.current = []; redoDraftsRef.current = []; setUndoDrafts([]); setRedoDrafts([]); continuousEditRef.current = undefined;
+    }
+    previousBindingRef.current = binding; previousSkeletonIdRef.current = skeleton.id;
+    setSelectedAttachmentId((current) => draftRef.current.attachments.some((item) => item.id === current) ? current : draftRef.current.attachments[0]?.id ?? "");
+    setSelectedBoneId((current) => skeleton.bones.some((bone) => bone.id === current) ? current : draftRef.current.slots[0]?.boneId ?? skeleton.bones[0]?.id ?? "");
   }, [binding, skeleton]);
   const patchRegion = (id: string, patch: Partial<CharacterBinding["attachments"][number]>) => setDraft((old) => {
     const next = { ...old, attachments: old.attachments.map((item) => item.id === id ? { ...item, ...patch } : item) };
@@ -672,8 +703,8 @@ export function BindingEditor({ binding, skeleton, materials, materialFolders, b
     return next;
   });
   const rememberDraft = (value = draftRef.current) => {
-    setUndoDrafts((items) => [...items.slice(-49), structuredClone(value)]);
-    setRedoDrafts([]);
+    undoDraftsRef.current = [...undoDraftsRef.current.slice(-49), structuredClone(value)]; redoDraftsRef.current = [];
+    setUndoDrafts(undoDraftsRef.current); setRedoDrafts([]);
   };
   const beginContinuousEdit = () => { continuousEditRef.current ??= structuredClone(draftRef.current); };
   const endContinuousEdit = () => {
@@ -682,23 +713,43 @@ export function BindingEditor({ binding, skeleton, materials, materialFolders, b
     if (previous && JSON.stringify(previous) !== JSON.stringify(draftRef.current)) rememberDraft(previous);
   };
   const restoreDraft = (value: CharacterBinding) => {
-    setDraft(structuredClone(value));
+    draftRef.current = structuredClone(value); setDraft(draftRef.current);
     const attachmentId = value.attachments.some((item) => item.id === selectedAttachmentId) ? selectedAttachmentId : value.attachments[0]?.id ?? "";
     setSelectedAttachmentId(attachmentId);
     setSelectedBoneId(value.slots.find((item) => item.attachmentId === attachmentId)?.boneId ?? skeleton.bones[0]?.id ?? "");
   };
   const travelDraftHistory = (direction: "undo" | "redo") => {
-    const source = direction === "undo" ? undoDrafts : redoDrafts, target = source.at(-1);
-    if (!target) return;
-    if (direction === "undo") {
-      setUndoDrafts(source.slice(0, -1));
-      setRedoDrafts((items) => [...items, structuredClone(draftRef.current)]);
-    } else {
-      setRedoDrafts(source.slice(0, -1));
-      setUndoDrafts((items) => [...items, structuredClone(draftRef.current)]);
+    if (busy) return false;
+    const pending = continuousEditRef.current;
+    continuousEditRef.current = undefined;
+    if (pending && JSON.stringify(pending) !== JSON.stringify(draftRef.current)) {
+      if (direction === "undo") { redoDraftsRef.current = [...redoDraftsRef.current, structuredClone(draftRef.current)]; setRedoDrafts(redoDraftsRef.current); restoreDraft(pending); return true; }
+      rememberDraft(pending);
     }
+    const source = direction === "undo" ? undoDraftsRef.current : redoDraftsRef.current, target = source.at(-1);
+    if (!target) return false;
+    if (direction === "undo") {
+      undoDraftsRef.current = source.slice(0, -1); redoDraftsRef.current = [...redoDraftsRef.current, structuredClone(draftRef.current)];
+    } else {
+      redoDraftsRef.current = source.slice(0, -1); undoDraftsRef.current = [...undoDraftsRef.current, structuredClone(draftRef.current)];
+    }
+    setUndoDrafts(undoDraftsRef.current); setRedoDrafts(redoDraftsRef.current);
     restoreDraft(target);
+    return true;
   };
+  const saveBinding = async () => {
+    if (busy || fittingAspect) return false;
+    endContinuousEdit();
+    const previous = draftRef.current;
+    const normalized = { ...previous, slots: [...previous.slots].sort((a, b) => a.drawOrder - b.drawOrder).map((slot, drawOrder) => ({ ...slot, drawOrder })) };
+    const result = await onSave(normalized);
+    if (result === false) return false;
+    if (draftRef.current === previous) { draftRef.current = normalized; setDraft(normalized); }
+    return true;
+  };
+  useEditingCommands({ label: t("animation.binding.visualTitle"), priority: 30, scope: scopeRef, busy: busy || fittingAspect,
+    dirty: JSON.stringify(binding) !== JSON.stringify(draft), save: saveBinding,
+    undo: () => travelDraftHistory("undo"), canUndo: !!undoDrafts.length || !!continuousEditRef.current && JSON.stringify(continuousEditRef.current) !== JSON.stringify(draft) });
   const addRow = () => {
     rememberDraft();
     const id = uid("region"), boneId = selectedBoneId || skeleton.bones[0]?.id || "", order = draft.slots.length ? Math.max(...draft.slots.map((slot) => slot.drawOrder)) + 1 : 0;
@@ -851,13 +902,15 @@ export function BindingEditor({ binding, skeleton, materials, materialFolders, b
   const scaleRange = selectedAttachment ? Math.max(3, selectedAttachment.rest.scale[0] * 1.5, selectedAttachment.rest.scale[1] * 1.5) : 3;
   useEffect(() => {
     const handleShortcut = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || busy) return;
       const target = event.target as HTMLElement | null;
       if (target?.matches("input, textarea, select, [contenteditable='true']")) return;
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === "z") {
         event.preventDefault();
-        travelDraftHistory(event.shiftKey ? "redo" : "undo");
+        travelDraftHistory("redo");
         return;
       }
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
       const tool = ({ v: "translate", r: "rotate", s: "scale", p: "pivot", w: "warp" } as const)[event.key.toLowerCase() as "v" | "r" | "s" | "p" | "w"];
       if (tool) {
         event.preventDefault();
@@ -866,7 +919,7 @@ export function BindingEditor({ binding, skeleton, materials, materialFolders, b
     };
     window.addEventListener("keydown", handleShortcut);
     return () => window.removeEventListener("keydown", handleShortcut);
-  }, [undoDrafts, redoDrafts]);
+  }, [undoDrafts, redoDrafts, busy]);
   // 部件条按绑定骨骼分组（保持槽位原顺序）
   const partGroups: { boneId: string; label: string; slots: typeof draft.slots }[] = [];
   for (const slot of draft.slots) {
@@ -878,8 +931,8 @@ export function BindingEditor({ binding, skeleton, materials, materialFolders, b
     }
     group.slots.push(slot);
   }
-  return <section className="binding-editor">
-    <header className="binding-editor-heading"><div><h3>{t("animation.binding.visualTitle")}</h3><p>{t("animation.binding.visualHint")}</p></div><div className="binding-editor-actions"><button className="px-btn" disabled={!materials.length} onClick={addRow}><Plus size={14} />{t("animation.binding.addRegion")}</button><button className="px-btn accent" disabled={busy} onClick={() => void onSave({ ...draftRef.current, slots: [...draftRef.current.slots].sort((a, b) => a.drawOrder - b.drawOrder).map((slot, drawOrder) => ({ ...slot, drawOrder })) })}><Save size={13} />{t("common.save")}</button></div></header>
+  return <section ref={scopeRef} className="binding-editor">
+    <header className="binding-editor-heading"><div><h3>{t("animation.binding.visualTitle")}</h3><p>{t("animation.binding.visualHint")}</p></div><div className="binding-editor-actions"><button className="px-btn" disabled={!materials.length} onClick={addRow}><Plus size={14} />{t("animation.binding.addRegion")}</button><button className="px-btn accent" disabled={busy || fittingAspect} onClick={() => void saveBinding()}><Save size={13} />{t("common.save")}</button></div></header>
     <section className="binding-part-strip"><header><strong>{t("animation.binding.parts")}</strong></header><div className="binding-part-list">{partGroups.map((group) => <div className="binding-part-group" key={group.boneId}><strong>{group.label}</strong>{group.slots.map((slot) => { const attachment = draft.attachments.find((item) => item.id === slot.attachmentId); if (!attachment) return null; const slotName = slot.name?.trim() || attachmentName(attachment); return <button type="button" className={selectedAttachmentId === attachment.id ? "selected" : ""} title={`${slotName} · ${attachmentName(attachment)} · ${group.label}`} key={slot.id} onClick={() => selectAttachment(attachment.id)}><span>{slotName}</span><small>{attachmentName(attachment)}</small></button>; })}</div>)}</div></section>
     <div className="binding-calibration-workspace">
       <article className="binding-preview-card">
@@ -944,6 +997,7 @@ const transformToPoseDraft = (transform: ReturnType<typeof sampleMotionClip>["lo
 
 export default function AnimationAssetsWorkspace({ onOpenProjects, initialAssetId, previewBinding }: { onOpenProjects: () => void; initialAssetId?: string; previewBinding?: CharacterBinding }) {
   const t = useT(), inputRef = useRef<HTMLInputElement>(null);
+  const scopeRef = useRef<HTMLDivElement>(null), clipSavingRef = useRef(false);
   const openMaterialEditor = useMaterialEditor();
   const [assets, setAssets] = useState<AnimationAssetSummary[]>([]), [folders, setFolders] = useState<Folder[]>([]), [folder, setFolder] = useState<FolderSelection>("all");
   const [filter, setFilter] = useState<AssetFilter>("all");
@@ -1071,16 +1125,19 @@ export default function AnimationAssetsWorkspace({ onOpenProjects, initialAssetI
     }
   };
   const saveSkeleton = async (next: Skeleton) => {
-    if (busy || builtin || stored?.kind !== "skeleton") return;
+    if (busy || builtin || stored?.kind !== "skeleton") return false;
     setBusy(true);
     try {
-      const saved = await api.putAnimationAsset(next.id, next);
+      const saved = await api.putAnimationAsset(next.id, { ...next, name: renaming && name.trim() ? name.trim() : next.name });
       setStored(saved.asset);
       setSkeleton(saved.asset as Skeleton);
+      setName(saved.asset.name); setRenaming(false);
       await load();
       notify(t("animation.skeletonEditor.savedNotice"), "info");
+      return true;
     } catch (e) {
       notify(t("animation.skeletonEditor.saveFailed", { msg: (e as Error).message }));
+      return false;
     } finally {
       setBusy(false);
     }
@@ -1107,7 +1164,7 @@ export default function AnimationAssetsWorkspace({ onOpenProjects, initialAssetI
       setBusy(false);
     }
   };
-  const saveName = async () => { if (!stored || builtin || !name.trim()) return; try { const updated = await api.putAnimationAsset(stored.id, { ...stored, name: name.trim() }); setStored(updated.asset); setRenaming(false); setUndo([]); setRedo([]); await load(); } catch (e) { notify(t("animation.renameFailed", { msg: (e as Error).message })); } };
+  const saveName = async () => { if (clip) return saveCurrentClip(); if (!stored || builtin || !name.trim()) return false; try { return await editingCommands.execute("save"); } catch (e) { notify(t("animation.renameFailed", { msg: (e as Error).message })); return false; } };
   const remove = async () => { if (!stored || builtin || !(await askConfirm(t("animation.deleteConfirm", { name: stored.name })))) return; try { await api.deleteAnimationAsset(stored.id); setSelected(undefined); await load(); } catch (e) { notify(t("animation.deleteFailed", { msg: (e as Error).message })); } };
   const copyBuiltinClip = async (patch?: Pick<MotionClip, "loop">) => {
     if (!clip || !builtin || busy) return;
@@ -1129,15 +1186,16 @@ export default function AnimationAssetsWorkspace({ onOpenProjects, initialAssetI
       setBusy(false);
     }
   };
-  const persistClip = async (next: MotionClip, previous: MotionClip) => {
-    setBusy(true); setStored(next);
+  const persistClip = async (next: MotionClip) => {
+    if (clipSavingRef.current) return false;
+    clipSavingRef.current = true; setBusy(true);
     try { const saved = await api.putAnimationAsset(next.id, next); setStored(saved.asset); return true; }
-    catch (e) { setStored(previous); notify(t("animation.saveFailed", { msg: (e as Error).message })); return false; }
-    finally { setBusy(false); }
+    catch (e) { notify(t("animation.saveFailed", { msg: (e as Error).message })); return false; }
+    finally { clipSavingRef.current = false; setBusy(false); }
   };
   const commitClipEdit = async (next: MotionClip) => {
     if (!clip || builtin || busy || next === clip) return false;
-    if (!(await persistClip(next, clip))) return false;
+    if (!(await persistClip(next))) return false;
     setUndo((items) => [...items, clip]); setRedo([]);
     return true;
   };
@@ -1183,12 +1241,22 @@ export default function AnimationAssetsWorkspace({ onOpenProjects, initialAssetI
     await commitClipEdit(next);
   };
   const travelHistory = async (direction: "undo" | "redo") => {
-    if (!clip || busy) return;
+    if (!clip || busy) return false;
+    if (direction === "undo" && (poseDraftDirty || attachmentDraftDirty || name !== clip.name || durationDraft !== String(clip.duration))) {
+      discardPersistence(key => key === `PUT:/api/animation-assets/${clip.id}`);
+      const sampled = skeleton ? sampleMotionClip(clip, skeleton, time) : undefined;
+      setStagedDrafts({}); setStagedAttachmentDrafts({}); setName(clip.name); setDurationDraft(String(clip.duration));
+      if (selectedBone && sampled?.local[selectedBone]) setDraft(transformToPoseDraft(sampled.local[selectedBone]!));
+      setAttachmentDraft(offsetToAttachmentDraft(selectedAttachmentId ? sampled?.attachmentOffsets[selectedAttachmentId] : undefined));
+      return true;
+    }
     const source = direction === "undo" ? undo : redo, snapshot = source[source.length - 1];
-    if (!snapshot) return;
-    if (!(await persistClip(snapshot, clip))) return;
+    if (!snapshot) return false;
+    if (!(await persistClip(snapshot))) return false;
+    setName(snapshot.name); setDurationDraft(String(snapshot.duration)); setTime(old => Math.min(old, snapshot.duration));
     if (direction === "undo") { setUndo(source.slice(0, -1)); setRedo((items) => [...items, clip]); }
     else { setRedo(source.slice(0, -1)); setUndo((items) => [...items, clip]); }
+    return true;
   };
   const toggleLoop = async (loop: boolean) => {
     if (!clip || busy) return;
@@ -1201,39 +1269,64 @@ export default function AnimationAssetsWorkspace({ onOpenProjects, initialAssetI
     const events = movesTerminalEvents ? clip.events.map((event) => event.time >= clip.duration ? { ...event, time: terminalTime } : event) : clip.events;
     if (await commitClipEdit({ ...clip, loop, events }) && movesTerminalEvents) notify(t("animation.loopTerminalEventsMoved"), "info");
   };
-  const saveDuration = async () => {
-    if (!clip || builtin || busy) return;
+  const prepareDuration = async (base: MotionClip): Promise<MotionClip | false> => {
     const duration = Number(durationDraft);
     if (!Number.isFinite(duration) || duration <= 0) {
-      setDurationDraft(String(clip.duration));
       notify(t("animation.durationInvalid"));
-      return;
+      return false;
     }
-    if (Math.abs(duration - clip.duration) <= MOTION_KEY_TIME_EPSILON) return;
-    const trimsContent = duration < clip.duration && (
-      clip.tracks.some((track) => track.keyframes.some((key) => key.time > duration))
-      || clip.events.some((event) => event.time > duration || (clip.loop && event.time >= duration))
-      || clip.contacts?.some((contact) => contact.intervals.some((interval) => interval.end > duration))
+    if (Math.abs(duration - base.duration) <= MOTION_KEY_TIME_EPSILON) return base;
+    const trimsContent = duration < base.duration && (
+      base.tracks.some((track) => track.keyframes.some((key) => key.time > duration))
+      || base.events.some((event) => event.time > duration || (base.loop && event.time >= duration))
+      || base.contacts?.some((contact) => contact.intervals.some((interval) => interval.end > duration))
     );
     if (trimsContent && !(await askConfirm(t("animation.durationTrimConfirm")))) {
-      setDurationDraft(String(clip.duration));
-      return;
+      return false;
     }
-    const tracks = clip.tracks.flatMap((track) => {
+    const tracks = base.tracks.flatMap((track) => {
       const keyframes = track.keyframes.filter((key) => key.time <= duration);
       if (!keyframes.length) return [];
-      if (clip.schemaVersion === 2) keyframes[keyframes.length - 1] = { ...keyframes[keyframes.length - 1]!, outInterpolation: null } as (typeof keyframes)[number];
+      if (base.schemaVersion === 2) keyframes[keyframes.length - 1] = { ...keyframes[keyframes.length - 1]!, outInterpolation: null } as (typeof keyframes)[number];
       return [{ ...track, keyframes } as AnyMotionTrack];
     });
     const terminalTime = Math.max(0, duration - MOTION_KEY_TIME_EPSILON);
-    const events = clip.events.filter((event) => event.time <= duration).map((event) => clip.loop && event.time >= duration ? { ...event, time: terminalTime } : event);
-    const contacts = clip.contacts?.map((contact) => ({ ...contact, intervals: contact.intervals.filter((interval) => interval.start <= duration).map((interval) => ({ ...interval, end: Math.min(interval.end, duration) })) })).filter((contact) => contact.intervals.length);
-    const next = { ...clip, duration, tracks, events, ...(contacts ? { contacts } : {}) } as MotionClip;
-    if (await commitClipEdit(next)) {
-      setDurationDraft(String(duration));
-      setTime((old) => Math.min(old, duration));
-    } else setDurationDraft(String(clip.duration));
+    const events = base.events.filter((event) => event.time <= duration).map((event) => base.loop && event.time >= duration ? { ...event, time: terminalTime } : event);
+    const contacts = base.contacts?.map((contact) => ({ ...contact, intervals: contact.intervals.filter((interval) => interval.start <= duration).map((interval) => ({ ...interval, end: Math.min(interval.end, duration) })) })).filter((contact) => contact.intervals.length);
+    return { ...base, duration, tracks, events, ...(contacts ? { contacts } : {}) } as MotionClip;
   };
+  // 一次保存合并所有当前草稿，避免名称、时长、骨骼和部件分别以旧 clip 覆盖彼此。
+  const saveCurrentClip = async () => {
+    if (!clip || !skeleton || builtin || busy || !name.trim()) return false;
+    let next: MotionClip = { ...clip, name: name.trim() };
+    const sampled = sampleMotionClip(clip, skeleton, time);
+    if (poseDraftDirty) for (const [boneId, value] of Object.entries({ ...stagedDrafts, ...(selectedBone ? { [selectedBone]: draft } : {}) })) {
+      const transform = sampled.local[boneId];
+      if (!transform || !Object.values(value).every(Number.isFinite)) return false;
+      next = upsertMotionKeyframe(next, boneId, "translation", time, [value.tx, value.ty, transform.translation[2]]);
+      next = upsertMotionKeyframe(next, boneId, "rotation", time, quaternionFromZRotation(value.rz * Math.PI / 180));
+      next = upsertMotionKeyframe(next, boneId, "scale", time, [value.sx, value.sy, transform.scale[2]]);
+    }
+    if (attachmentDraftDirty) for (const [id, value] of Object.entries({ ...stagedAttachmentDrafts, ...(selectedAttachmentId ? { [selectedAttachmentId]: attachmentDraft } : {}) })) {
+      if (!Object.values(value).every(finiteDraftValue)) return false;
+      const target = `${ATTACHMENT_TARGET_PREFIX}${id}`;
+      next = upsertMotionKeyframe(next, target, "translation", time, [value.tx, value.ty, 0]);
+      next = upsertMotionKeyframe(next, target, "rotation", time, quaternionFromZRotation(value.rz * Math.PI / 180));
+      next = upsertMotionKeyframe(next, target, "scale", time, [value.sx, value.sy, 1]);
+      next = upsertMotionKeyframe(next, target, "deform", time, [value.bend, 0, 0]);
+      if (value.warp) next = upsertMotionKeyframe(next, target, "warp", time, value.warp);
+    }
+    const resized = await prepareDuration(next);
+    if (!resized) return false;
+    const saved = JSON.stringify(resized) !== JSON.stringify(clip) ? await commitClipEdit(resized) : await persistClip(resized);
+    if (!saved) return false;
+    setName(resized.name); setDurationDraft(String(resized.duration)); setRenaming(false); setTime(old => Math.min(old, resized.duration));
+    return true;
+  };
+  const saveDuration = saveCurrentClip;
+  useEditingCommands({ label: t("animation.motionClip"), priority: 30, scope: scopeRef, enabled: !!clip && !builtin,
+    busy, dirty: poseDraftDirty || attachmentDraftDirty || !!clip && (name !== clip.name || durationDraft !== String(clip.duration)),
+    save: saveCurrentClip, undo: () => travelHistory("undo"), canUndo: !!undo.length || poseDraftDirty || attachmentDraftDirty || !!clip && (name !== clip.name || durationDraft !== String(clip.duration)) });
   const addEvent = async () => {
     if (!clip || busy || !eventDraft.type.trim() || !eventDraft.name.trim() || time < 0 || time > clip.duration || (clip.loop && time >= clip.duration)) return;
     let payload: Record<string, JsonValue> | undefined;
@@ -1311,7 +1404,7 @@ export default function AnimationAssetsWorkspace({ onOpenProjects, initialAssetI
     setAttachmentDraft(stagedAttachmentDrafts[id] ?? offsetToAttachmentDraft(sampleMotionClip(clip, skeleton, time).attachmentOffsets[id]));
   };
   const editAttachmentOnCanvas = (id: string, patch: Partial<AttachmentDraft>) => {
-    if (!clip || !skeleton || builtin) return;
+    if (!clip || !skeleton || builtin || busy || clipSavingRef.current) return;
     setPlaying(false);
     if (id === selectedAttachmentId) setAttachmentDraft((old) => ({ ...old, ...patch }));
     else {
@@ -1322,12 +1415,12 @@ export default function AnimationAssetsWorkspace({ onOpenProjects, initialAssetI
     }
   };
   const resetSelectedAttachment = () => {
-    if (builtin) return;
+    if (builtin || busy) return;
     setPlaying(false);
     setAttachmentDraft({ tx: 0, ty: 0, rz: 0, sx: 1, sy: 1, bend: 0 });
   };
   const editBoneOnCanvas = (id: string, patch: { tx?: number; ty?: number; rz?: number }) => {
-    if (!clip || !skeleton || builtin) return;
+    if (!clip || !skeleton || builtin || busy || clipSavingRef.current) return;
     setPlaying(false);
     if (id === selectedBone) setDraft((old) => ({ ...old, ...patch }));
     else {
@@ -1339,7 +1432,7 @@ export default function AnimationAssetsWorkspace({ onOpenProjects, initialAssetI
     }
   };
   const resetSelectedBone = () => {
-    if (!selectedBoneInfo || builtin) return;
+    if (!selectedBoneInfo || builtin || busy) return;
     setPlaying(false);
     setDraft({
       tx: selectedBoneInfo.rest.translation[0],
@@ -1349,7 +1442,7 @@ export default function AnimationAssetsWorkspace({ onOpenProjects, initialAssetI
       sy: selectedBoneInfo.rest.scale[1],
     });
   };
-  const nudgeRotation = (degrees: number) => { if (builtin) return; setPlaying(false); setDraft((old) => ({ ...old, rz: Math.max(-180, Math.min(180, old.rz + degrees)) })); };
+  const nudgeRotation = (degrees: number) => { if (builtin || busy) return; setPlaying(false); setDraft((old) => ({ ...old, rz: Math.max(-180, Math.min(180, old.rz + degrees)) })); };
   const selectTrackTarget = (targetId: string) => {
     if (isAttachmentTargetId(targetId)) selectAttachment(targetId.slice(ATTACHMENT_TARGET_PREFIX.length));
     else selectBone(targetId);
@@ -1403,7 +1496,7 @@ export default function AnimationAssetsWorkspace({ onOpenProjects, initialAssetI
     <li className={counts.skeleton ? "done" : ""}><b>1</b><button onClick={() => setFilter("skeleton")}><strong>{t("animation.flow.skeleton")}</strong><small>{t("animation.flow.skeletonHint")}</small></button></li>
     <li className={counts["motion-clip"] ? "done" : ""}><b>2</b><button onClick={() => setFilter("motion-clip")}><strong>{t("animation.flow.motion")}</strong><small>{t("animation.flow.motionHint")}</small></button></li>
     <li><b>3</b><span><strong>{t("animation.flow.project")}</strong><small>{t("animation.flow.projectHint")}</small></span><button className="px-btn" onClick={onOpenProjects}>{t("animation.flow.openProjects")}</button></li>
-  </ol>}<div className={`animation-workspace${previewBinding ? " embedded" : ""}`}>
+  </ol>}<div ref={scopeRef} className={`animation-workspace${previewBinding ? " embedded" : ""}`}>
     {!previewBinding && <><FolderTree className="animation-folders" title={t("animation.folders")} kind="animation" folders={folders} selected={folder} onSelect={setFolder} onCreate={async (n, p) => { await api.createFolder("animation", n, p); await load(); }} onRename={async (id, n) => { await api.patchFolder(id, { name: n }); await load(); }} onDelete={async (id) => { await api.deleteFolder(id); await load(); }} onMoveFolder={async (id, p) => { await api.patchFolder(id, { parentId: p }); await load(); }} onDropItems={(folderId, ids) => void api.moveItems("animation", ids, folderId).then(load).catch((e) => notify(t("animation.moveFailed", { msg: e.message })))} />
     <div className="animation-filter-rail"><strong>{t("animation.filter.title")}</strong>{(["all", "skeleton", "motion-clip"] as AssetFilter[]).map((kind) => <button key={kind} className={filter === kind ? "on" : ""} onClick={() => setFilter(kind)}>{t(`animation.filter.${kind}`)} <span>{counts[kind]}</span></button>)}</div>
     <section className="pixel-panel animation-library"><header><h2>{t("animation.assets")}</h2><div className="animation-library-actions"><input ref={inputRef} hidden type="file" accept="application/json,.json" onChange={(e) => { void importFile(e.target.files?.[0]); e.currentTarget.value = ""; }} /><button className="px-btn" onClick={() => inputRef.current?.click()}><Upload size={14} />{t("animation.importJson")}</button><button className="px-btn" disabled={busy} onClick={() => void createSkeleton()}><Plus size={14} />{t("animation.skeletonEditor.create")}</button><button className="px-btn accent" onClick={openCreateAction}><Plus size={14} />{t("animation.createAction")}</button></div></header><div className="animation-list">{visible.map((asset) => { const locked = isBuiltinAnimationAssetId(asset.id); return <button draggable={!locked} onDragStart={locked ? undefined : (e) => e.dataTransfer.setData("application/x-framebaker-ids", JSON.stringify([asset.id]))} className={`${selected === asset.id ? "on" : ""}${locked ? " builtin" : ""}`} key={asset.id} onClick={() => setSelected(asset.id)}><strong>{asset.kind === "skeleton" ? localizeSkeletonName(asset.id, asset.name, t) : asset.name}</strong><span>{locked && <Lock size={11} />}{locked ? t("animation.builtin.badge") : asset.kind === "skeleton" ? t("animation.skeleton") : t("animation.motionClip")}</span></button>; })}{!visible.length && <p>{t("animation.empty")}</p>}</div></section></>}
@@ -1414,8 +1507,8 @@ export default function AnimationAssetsWorkspace({ onOpenProjects, initialAssetI
         <div className="animation-motion-compose">
         <section className="animation-motion-stage">
         {previewBinding
-          ? <CharacterPreview binding={previewBinding} skeleton={skeleton} clip={previewClip} time={time} selectedAttachmentId={selectedAttachmentId || undefined} selectedBoneId={selectedBone} showSkeleton onSelectBone={selectBone} onSelectAttachment={selectAttachment} onTransformAttachmentOffset={builtin || playing ? undefined : editAttachmentOnCanvas} />
-          : <SkeletonPreview skeleton={skeleton} clip={previewClip} rangeClip={clip} time={time} selectedBone={selectedBone} disabled={playing} onSelectBone={selectBone} onEditBone={builtin ? undefined : editBoneOnCanvas} />}
+          ? <CharacterPreview binding={previewBinding} skeleton={skeleton} clip={previewClip} time={time} selectedAttachmentId={selectedAttachmentId || undefined} selectedBoneId={selectedBone} showSkeleton onSelectBone={selectBone} onSelectAttachment={selectAttachment} onTransformAttachmentOffset={builtin || playing || busy ? undefined : editAttachmentOnCanvas} />
+          : <SkeletonPreview skeleton={skeleton} clip={previewClip} rangeClip={clip} time={time} selectedBone={selectedBone} disabled={playing || busy} onSelectBone={selectBone} onEditBone={builtin ? undefined : editBoneOnCanvas} />}
         <div className="animation-controls"><button className="px-btn accent" disabled={busy} onClick={() => setPlaying((v) => !v)}>{playing ? <Pause size={14} /> : <Play size={14} />}{playing ? t("animation.pause") : t("animation.play")}</button><input type="range" min="0" max={clip.duration} step="0.001" value={time} onChange={(e) => { setPlaying(false); setTime(+e.target.value); }} /><span>{time.toFixed(2)}s / {clip.duration.toFixed(2)}s</span><label className="px-check" title={builtin ? t("animation.builtin.loopEditHint") : undefined}><input type="checkbox" checked={clip.loop} disabled={busy} onChange={(event) => void toggleLoop(event.target.checked)} />{t("animation.loop")}</label>{clip.loop && <button className="px-btn" disabled={busy || builtin} onClick={() => skeleton && void commitClipEdit(closeMotionLoopSeam(clip, skeleton))}>{t("animation.closeLoopSeam")}</button>}</div>
 
         <ol className="animation-quick-guide" aria-label={t("animation.guide.title")}>

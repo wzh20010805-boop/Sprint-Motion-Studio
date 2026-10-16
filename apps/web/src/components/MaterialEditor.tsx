@@ -9,6 +9,8 @@ import { useT } from "../i18n";
 import { notify } from "../notice";
 import { useTheme } from "../theme";
 import IconBtn from "./IconBtn";
+import { useEditingCommands } from "../editingCommands";
+import { discardPersistence, flushPersistence } from "../persistence";
 
 interface OpenMaterialEditorOptions {
   id?: string;
@@ -88,6 +90,8 @@ function MaterialEditorModal({ request, onClose }: { request: OpenMaterialEditor
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const workRef = useRef<HTMLCanvasElement | null>(null);
   const strokesRef = useRef<EraseStroke[]>([]);
+  const undoDraftsRef = useRef<Array<{ strokes: EraseStroke[]; quarterTurns: number; flipHorizontal: boolean }>>([]);
+  const savedDraftRef = useRef(JSON.stringify({ strokes: [], quarterTurns: 0, flipHorizontal: false }));
   const activeStrokeRef = useRef<EraseStroke | null>(null);
   const cursorRef = useRef<{ x: number; y: number } | null>(null);
   const panRef = useRef({ x: 0, y: 0 });
@@ -129,6 +133,8 @@ function MaterialEditorModal({ request, onClose }: { request: OpenMaterialEditor
         work.getContext("2d")!.drawImage(nextBitmap, 0, 0);
         workRef.current = work;
         strokesRef.current = [];
+        undoDraftsRef.current = [];
+        savedDraftRef.current = JSON.stringify({ strokes: [], quarterTurns: 0, flipHorizontal: false });
         setImage(blob);
         setBitmap(nextBitmap);
         setBrushSize(Math.max(1, Math.min(64, Math.round(Math.min(nextBitmap.width, nextBitmap.height) / 12))));
@@ -146,6 +152,9 @@ function MaterialEditorModal({ request, onClose }: { request: OpenMaterialEditor
   }, [request.id, request.image, request.v, t]);
 
   useEffect(() => () => bitmap?.close(), [bitmap]);
+  useEffect(() => () => {
+    discardPersistence(key => request.id ? key === `POST:/api/materials/${request.id}/replace-image` : /^POST:\/api\/(?:frames\/[^/]+\/replace|materials\/[^/]+\/replace-image)$/.test(key));
+  }, [request.id]);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -157,6 +166,7 @@ function MaterialEditorModal({ request, onClose }: { request: OpenMaterialEditor
 
   const keyRef = useRef<(event: KeyboardEvent) => void>(() => {});
   keyRef.current = (event) => {
+      if (event.defaultPrevented) return;
       const target = event.target instanceof Element ? event.target : null;
       const isControl = Boolean(target?.closest("button, input, textarea, select, [contenteditable]"));
       if (event.code === "Space" && !isControl && !saving) {
@@ -308,6 +318,7 @@ function MaterialEditorModal({ request, onClose }: { request: OpenMaterialEditor
     const stroke = activeStrokeRef.current;
     activeStrokeRef.current = null;
     if (stroke?.points.length) {
+      rememberDraft();
       strokesRef.current.push(stroke);
       setRevision((value) => value + 1);
     }
@@ -324,14 +335,28 @@ function MaterialEditorModal({ request, onClose }: { request: OpenMaterialEditor
     setRevision((value) => value + 1);
   }
 
+  function rememberDraft() {
+    undoDraftsRef.current = [...undoDraftsRef.current.slice(-49), { strokes: structuredClone(strokesRef.current), quarterTurns, flipHorizontal }];
+  }
+
+  function draftSignature() {
+    return JSON.stringify({ strokes: strokesRef.current, quarterTurns: ((quarterTurns % 4) + 4) % 4, flipHorizontal });
+  }
+
   function undo() {
-    if (busy || !strokesRef.current.length) return;
-    strokesRef.current.pop();
+    if (busy || activeStrokeRef.current) return false;
+    const previous = undoDraftsRef.current.pop();
+    if (!previous) return false;
+    strokesRef.current = structuredClone(previous.strokes);
+    setQuarterTurns(previous.quarterTurns);
+    setFlipHorizontal(previous.flipHorizontal);
     rebuildWork();
+    return true;
   }
 
   const reset = () => {
     if (busy) return;
+    if (strokesRef.current.length || quarterTurns % 4 !== 0 || flipHorizontal) rememberDraft();
     strokesRef.current = [];
     setQuarterTurns(0);
     setFlipHorizontal(false);
@@ -342,13 +367,21 @@ function MaterialEditorModal({ request, onClose }: { request: OpenMaterialEditor
 
   const rotate = (delta: number) => {
     if (busy) return;
+    rememberDraft();
     setQuarterTurns((value) => value + delta);
     setZoom(1);
     panRef.current = { x: 0, y: 0 };
   };
 
+  const flip = () => {
+    if (busy) return;
+    rememberDraft();
+    setFlipHorizontal(value => !value);
+  };
+
   const save = async () => {
-    if (!image || busy || (!strokesRef.current.length && quarterTurns % 4 === 0 && !flipHorizontal)) return;
+    if (!image || busy || activeStrokeRef.current) return false;
+    if (draftSignature() === savedDraftRef.current) return true;
     setBusy(true);
     setSaving(true);
     try {
@@ -361,22 +394,30 @@ function MaterialEditorModal({ request, onClose }: { request: OpenMaterialEditor
       if (request.onSave) await request.onSave(output);
       else if (request.id) await api.replaceMaterialImage(request.id, output, "processed");
       else throw new Error(t("msg.failed_to_read_material_image"));
+      await flushPersistence(key => request.id ? key === `POST:/api/materials/${request.id}/replace-image` : /^POST:\/api\/(?:frames\/[^/]+\/replace|materials\/[^/]+\/replace-image)$/.test(key));
+      savedDraftRef.current = draftSignature();
       request.onSaved?.();
       notify(t(request.onSave ? "materialEdit.changesSaved" : "materialEdit.saved"), "info");
-      onClose();
+      return true;
     } catch (error) {
       notify(t("materialEdit.saveFailed", { msg: (error as Error).message }));
+      return false;
     } finally {
       setSaving(false);
       setBusy(false);
     }
   };
 
+  const dirty = draftSignature() !== savedDraftRef.current;
+  useEditingCommands({ label: t("materialEdit.title", { name: request.name ?? t("common.material") }), priority: 100, scope: modalRef, save, undo,
+    canSave: !!image && dirty, canUndo: undoDraftsRef.current.length > 0, busy, dirty });
+
   return (
     <motion.div className="modal-mask material-editor-mask" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
       <motion.div ref={modalRef} className="modal pixel-panel material-editor-modal" role="dialog" aria-modal="true" tabIndex={-1} initial={{ scale: 0.94, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.94, y: 20 }} onClick={(event) => event.stopPropagation()}>
         <div className="form-inline">
           <h2 style={{ flex: 1 }}>{t("materialEdit.title", { name: request.name ?? t("common.material") })}</h2>
+          <span data-material-edit-status>{t(dirty ? "editing.unsaved" : "editing.saved")}</span>
           <IconBtn disabled={saving} onClick={onClose} title={t("common.close")}><X size={16} /></IconBtn>
         </div>
         <div className="material-editor-stage" ref={stageRef}>
@@ -398,8 +439,8 @@ function MaterialEditorModal({ request, onClose }: { request: OpenMaterialEditor
           <span className="tb-sep" />
           <IconBtn title={t("materialEdit.rotateLeft")} disabled={busy} onClick={() => rotate(-1)}><RotateCcw size={14} /></IconBtn>
           <IconBtn title={t("materialEdit.rotateRight")} disabled={busy} onClick={() => rotate(1)}><RotateCw size={14} /></IconBtn>
-          <IconBtn title={t("materialEdit.flipHorizontal")} className={flipHorizontal ? "active" : ""} aria-pressed={flipHorizontal} disabled={busy} onClick={() => setFlipHorizontal((value) => !value)}><FlipHorizontal2 size={14} /></IconBtn>
-          <IconBtn title={t("materialEdit.undo")} disabled={busy || !strokesRef.current.length} onClick={undo}><Undo2 size={14} /></IconBtn>
+          <IconBtn title={t("materialEdit.flipHorizontal")} className={flipHorizontal ? "active" : ""} aria-pressed={flipHorizontal} disabled={busy} onClick={flip}><FlipHorizontal2 size={14} /></IconBtn>
+          <IconBtn title={t("materialEdit.undo")} disabled={busy || !undoDraftsRef.current.length} onClick={undo}><Undo2 size={14} /></IconBtn>
           <span className="tb-sep" />
           <IconBtn title={t("msg.zoom_out")} disabled={busy} onClick={() => setZoom((value) => Math.max(0.25, value / 1.25))}><Minus size={14} /></IconBtn>
           <span className="zoom-label">{Math.round(zoom * 100)}%</span>
@@ -410,7 +451,7 @@ function MaterialEditorModal({ request, onClose }: { request: OpenMaterialEditor
         <div className="modal-actions">
           <button type="button" className="px-btn" disabled={busy} onClick={reset}>{t("materialEdit.reset")}</button>
           <button type="button" className="px-btn" disabled={busy} onClick={onClose}>{t("common.cancel")}</button>
-          <motion.button type="button" whileTap={{ scale: 0.95 }} className="px-btn accent" disabled={busy || !image || (!strokesRef.current.length && quarterTurns % 4 === 0 && !flipHorizontal)} onClick={() => void save()}>
+          <motion.button type="button" whileTap={{ scale: 0.95 }} className="px-btn accent" disabled={busy || !image || !dirty} onClick={() => void save()}>
             <Save size={14} /> {busy ? t("materialEdit.saving") : t(request.onSave ? "materialEdit.saveChanges" : "materialEdit.saveProcessed")}
           </motion.button>
         </div>

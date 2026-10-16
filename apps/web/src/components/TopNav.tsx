@@ -3,6 +3,7 @@ import { Clapperboard, Package, Settings } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import LangToggle from "./LangToggle";
 import NoticeHistory from "./NoticeHistory";
+import EditCommandBar from "./EditCommandBar";
 import { useT } from "../i18n";
 
 interface Props {
@@ -44,6 +45,7 @@ export default function TopNav({ current, onNav }: Props) {
       </div>
       <div className="spacer" />
       <div className="nav-tools">
+        <EditCommandBar compact />
         <NoticeHistory />
         <LangToggle />
         <ThemeToggle />

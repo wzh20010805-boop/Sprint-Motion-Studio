@@ -5,6 +5,7 @@ import { maskApi, type MaskState } from '../maskApi';
 import { askConfirm, notify } from '../notice';
 import { useT } from '../i18n';
 import { hasVisibleForeground } from '../maskPixels';
+import { useEditingCommands } from '../editingCommands';
 
 type View='checker'|'raw'|'alpha'|'black'|'white';
 type Tool='erase'|'restore'|'region';
@@ -13,6 +14,7 @@ const loadImage=(src:string)=>new Promise<HTMLImageElement>((resolve,reject)=>{c
 /** 遮罩笔刷始终使用完整原图坐标；修订交给共享后端，原图不写回。 */
 export default function MaskWorkshop({projectId,frames,initialId,onClose,onChanged}:{projectId:string;frames:Frame[];initialId:string|null;onClose:()=>void;onChanged:()=>void}) {
  const t=useT();
+ const commandScope=useRef<HTMLDivElement>(null);
  const [index,setIndex]=useState(Math.max(0,frames.findIndex(f=>f.id===initialId)));
  const [refresh,setRefresh]=useState(0);
  const [reviewed,setReviewed]=useState<Set<string>>(new Set());
@@ -72,7 +74,7 @@ export default function MaskWorkshop({projectId,frames,initialId,onClose,onChang
   }}catch(e){if(!dead){notify((e as Error).message);setJobId(null);setBusy(false);}}finally{polling=false;}};
   void poll();const timer=setInterval(poll,1000);return()=>{dead=true;clearInterval(timer);};
  },[jobId]);
- const safely=async(work:()=>Promise<void>)=>{setBusy(true);try{await work();onChanged();}catch(e){notify((e as Error).message);}finally{setBusy(false);}};
+ const safely=async(work:()=>Promise<void>)=>{setBusy(true);try{await work();onChanged();return true;}catch(e){notify((e as Error).message);return false;}finally{setBusy(false);}};
  const discardStrokes=async()=>{
   if(!strokeRef.current.length)return true;
   confirmPending.current=true;
@@ -118,10 +120,11 @@ export default function MaskWorkshop({projectId,frames,initialId,onClose,onChang
   if(strokes.length&&!await askConfirm(t('p2.discard')))return;
   setStrokes([]);setBusy(true);try {const result=await maskApi.matte({project_id:projectId,frame_ids:scope==='all'?frames.map(f=>f.id):[frame!.id],region});setJobId(result.job_id);setProgress(t('p2.processing'));}catch(e){notify((e as Error).message);setBusy(false);}
  };
- const save=()=>safely(async()=>{if(!state)return;const result=await maskApi.save(frame!.id,state,strokes);setStrokes([]);setState(result);setRefresh(v=>v+1);setProgress(t('p2.saved'));});
- const undo=()=>{if(strokes.length){setStrokes(s=>s.slice(0,-1));return;}void safely(async()=>{setState(await maskApi.undo(frame!.id,state!));setRefresh(v=>v+1);});};
+ const save=async()=>{if(busy||loading||!state||!frame||drawing.current||!strokeRef.current.length)return false;return safely(async()=>{const result=await maskApi.save(frame.id,state,strokeRef.current);setStrokes([]);setState(result);setRefresh(v=>v+1);setProgress(t('p2.saved'));});};
+ const undo=async()=>{if(busy||loading||drawing.current)return false;if(strokeRef.current.length){setStrokes(s=>s.slice(0,-1));return true;}if(!frame||!state?.current?.parent_id)return false;return safely(async()=>{setState(await maskApi.undo(frame.id,state));setRefresh(v=>v+1);});};
+ useEditingCommands({label:t('p2.title'),priority:100,scope:commandScope,save,undo,canSave:!!state&&!!strokes.length,canUndo:!!strokes.length||!!state?.current?.parent_id,busy:busy||loading,dirty:!!strokes.length});
  const reasons=state?.source_changed?['SOURCE_CHANGED']:[...new Set([...(abnormal[frame?.id??'']??(state?.current?JSON.parse(state.current.info).reasons:[])??[]),...(invisible?['LOW_CONFIDENCE']:[])])];
- return <div className="modal-mask mask-workshop-backdrop"><section className="mask-workshop" role="dialog" aria-modal="true" aria-label={t('p2.title')}>
+ return <div ref={commandScope} className="modal-mask mask-workshop-backdrop"><section className="mask-workshop" role="dialog" aria-modal="true" aria-label={t('p2.title')}>
   <header className="mask-heading"><div><span className="candy-eyebrow">CUTOUT LAB / 02</span><h2><Sparkles size={24}/>{t('p2.title')}</h2><p>{t('p2.subtitle')}</p></div><button className="icon-btn" onClick={()=>void close()} aria-label={t('common.close')}><X size={20}/></button></header>
   <div className="mask-layout">
    <aside className="mask-controls"><span className="candy-step">01 / {t('p2.initial')}</span>

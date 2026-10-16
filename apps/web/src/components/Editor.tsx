@@ -29,6 +29,10 @@ import {CollaborationPanel} from './CollaborationPanel';
 import { exportAnimation, type AnimationExportFormat } from "../export";
 import { DEFAULT_ATTACK_COLOR } from "../attackEffect";
 import { useT } from "../i18n";
+import { useEditingCommands } from "../editingCommands";
+import { discardPersistence, flushPersistence } from "../persistence";
+import EditCommandBar from "./EditCommandBar";
+import { insertionOrder } from "../timelineInsertion";
 import {
   LAYOUT_DEFAULTS,
   clampSidebarW,
@@ -49,6 +53,7 @@ export interface FrameClickMods {
 
 export default function Editor({ projectId, onBack }: { projectId: string; onBack: () => void }) {
   const t = useT();
+  const commandScopeRef = useRef<HTMLDivElement>(null);
   const [project, setProject] = useState<Project | null>(null);
   const [frames, setFrames] = useState<Frame[]>([]);
   const [timeline, setTimeline] = useState<TimelineResponse | null>(null);
@@ -65,6 +70,12 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
   const activeIdRef = useRef<string | null>(null);
   activeIdRef.current = activeId;
   const undoingRef = useRef(false);
+  const [undoing, setUndoing] = useState(false);
+  const deletingCellRef = useRef(false);
+  const [deletingCell, setDeletingCell] = useState(false);
+  const movingTimelineRef = useRef(false);
+  const [movingTimeline, setMovingTimeline] = useState(false);
+  const timelineActions = useRef<Promise<void>>(Promise.resolve());
   const [showImport, setShowImport] = useState(false);
   const [showMasks, setShowMasks] = useState(false);
   const [showAlignment, setShowAlignment] = useState(false);
@@ -144,7 +155,7 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
   const productionFrames=useMemo(()=>steps.flatMap(step=>allFrames.filter(f=>f.track_id===productionTrack?.id&&f.step_id===step.id)),[timeline]);
   const allEffects = timeline?.effects ?? [];
 
-  const loadFrames = useCallback(async (preferredTrackId?: string) => {
+  const loadFrames = useCallback(async (preferredTrackId?: string, fallbackStepId?: string) => {
     try {
       const requestedAxisId = axisId;
       const data = await api.getTimeline(projectId, requestedAxisId ?? undefined);
@@ -161,18 +172,18 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
       setActiveTrackId(trackId);
       const list = data.frames.filter((f) => f.track_id === trackId);
       const assets = data.assetFrames ?? data.poolFrames ?? [];
-      const pool = data.poolFrames ?? [];
       setFrames([...assets, ...list.filter((frame) => !assets.some((asset) => asset.id === frame.id))]);
       setActiveStepId((currentStepId) => {
         if (trackId === null) {
           setActiveId((currentId) => assets.some((frame) => frame.id === currentId) ? currentId : null);
           return null;
         }
-        const stepId = currentStepId && data.steps.some((step) => step.id === currentStepId)
-          ? currentStepId
+        const requestedStep = currentStepId && data.steps.some(step => step.id === currentStepId) ? currentStepId : fallbackStepId;
+        const stepId = requestedStep && data.steps.some((step) => step.id === requestedStep)
+          ? requestedStep
           : data.steps[0]?.id ?? null;
         const cell = data.frames.find((frame) => frame.track_id === trackId && frame.step_id === stepId) ?? null;
-        setActiveId((currentId) => pool.some((frame) => frame.id === currentId) ? currentId : cell?.id ?? null);
+        setActiveId(cell?.id ?? null);
         return stepId;
       });
       // 选区里已不存在的帧自动剔除
@@ -224,6 +235,7 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
 
   const patchFrame = useCallback(
     (id: string, patch: FramePatch) => {
+      if (undoingRef.current || movingTimelineRef.current) return;
       const revision = (patchRevisions.current.get(id) ?? 0) + 1;
       patchRevisions.current.set(id, revision);
       setFrames((fs) => fs.map((frame) => (frame.id === id ? { ...frame, ...patch } : frame)));
@@ -244,9 +256,9 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
             } : current);
           }
         })
-        .catch((e) => {
+        .catch(async (e) => {
           notify(t("msg.frame_update_failed_msg", { msg: (e as Error).message }));
-          if (patchRevisions.current.get(id) === revision) void loadFrames();
+          if (patchRevisions.current.get(id) === revision && await loadFrames()) discardPersistence(key => key === `PATCH:/api/frames/${id}`);
         })
         .finally(() => {
           if (patchChains.current.get(id) === request) patchChains.current.delete(id);
@@ -258,6 +270,7 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
 
   /** 特效属于轨道×步骤单元格，不依赖该格是否放置图片帧。 */
   const changeActiveEffect = useCallback((effect: AttackEffect | null) => {
+    if (undoingRef.current || movingTimelineRef.current) return;
     if (!activeTrackId || !activeStepId) return;
     const trackId = activeTrackId;
     const stepId = activeStepId;
@@ -282,9 +295,9 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
         if (effect) await api.putAttackEffect(trackId, stepId, effect);
         else await api.deleteAttackEffect(trackId, stepId);
       })
-      .catch((error) => {
+      .catch(async (error) => {
         notify(t("msg.frame_update_failed_msg", { msg: (error as Error).message }));
-        void loadFrames(trackId);
+        if (await loadFrames(trackId)) discardPersistence(key => key.includes(`/api/tracks/${trackId}/steps/${stepId}/effect`));
       })
       .finally(() => {
         if (effectChains.current.get(key) === request) effectChains.current.delete(key);
@@ -367,6 +380,9 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
     (id: string, pos: { x: number; y: number }, source: "asset" | "timeline") => {
       if (!(selectedIds.size >= 2 && selectedIds.has(id))) {
         const timelineFrame = source === "timeline" ? allFrames.find((frame) => frame.id === id) : null;
+        activeIdRef.current = id;
+        activeTrackIdRef.current = timelineFrame?.track_id ?? null;
+        activeStepIdRef.current = timelineFrame?.step_id ?? null;
         setActiveId(id);
         setActiveTrackId(timelineFrame?.track_id ?? null);
         setActiveStepId(timelineFrame?.step_id ?? null);
@@ -383,6 +399,9 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
       const idx = frames.findIndex((f) => f.id === id);
       if (idx < 0) return;
       // 左侧资产与轨道单元格互斥选择；选资产时不保留轨道/步骤高亮。
+      activeTrackIdRef.current = null;
+      activeStepIdRef.current = null;
+      activeIdRef.current = id;
       setActiveTrackId(null);
       setActiveStepId(null);
       setActiveId(id);
@@ -534,7 +553,7 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
   useEffect(() => {
     const onArrow = (e: KeyboardEvent) => {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-      if (e.defaultPrevented || e.isComposing || e.keyCode === 229 || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || pointerBusyRef.current || draggingRef.current || ctxMenu) return;
+      if (e.defaultPrevented || e.isComposing || e.keyCode === 229 || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || pointerBusyRef.current || draggingRef.current || ctxMenu || undoingRef.current || movingTimelineRef.current) return;
       const target = e.target instanceof HTMLElement ? e.target : null;
       if (target?.isContentEditable || target?.closest('input, textarea, select, [contenteditable], [role="slider"], [role="spinbutton"], [role="combobox"]') || document.querySelector('.modal-mask, [role="dialog"], [aria-modal="true"], .px-select.open')) return;
       const delta = e.key === 'ArrowRight' ? 1 : -1;
@@ -576,45 +595,180 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
     return () => window.removeEventListener('keydown', onArrow);
   }, [allFrames, clearSelection, ctxMenu, rangeEnd, rangeStart, showPreview, steps, timeline]);
 
-  // Esc 清空多选；Delete/Backspace 删除当前轨道单元格内容。弹窗和输入控件不抢按键。
+  // 删除和撤销按用户顺序提交，避免 D 后立刻 Ctrl+Z 先撤销到其他编辑。
+  const queueTimelineAction = useCallback(<T,>(action: () => Promise<T>) => {
+    const request = timelineActions.current.then(action);
+    timelineActions.current = request.then(() => {}, () => {});
+    return request;
+  }, []);
+
+  const deleteActiveCell = useCallback((includeEffect = false) => {
+    if (showPreview || undoingRef.current || deletingCellRef.current || movingTimelineRef.current) return;
+    const trackId = activeTrackIdRef.current;
+    const stepId = activeStepIdRef.current;
+    if (!trackId || !stepId || tracks.find(track => track.id === trackId)?.locked) return;
+    const frame = allFrames.find(item => item.id === activeIdRef.current && item.track_id === trackId && item.step_id === stepId);
+    const effect = includeEffect ? allEffects.find(item => item.track_id === trackId && item.step_id === stepId) : null;
+    if (!frame && !effect) return;
+    const stepIndex = steps.findIndex(step => step.id === stepId);
+    const nextStepId = steps[stepIndex + 1]?.id ?? steps[stepIndex - 1]?.id;
+    // 同步置锁，长按和同一渲染周期的重复 D 不能重复清除。
+    deletingCellRef.current = true;
+    setDeletingCell(true);
+    void queueTimelineAction(async () => {
+      await Promise.allSettled([...patchChains.current.values(), ...effectChains.current.values()]);
+      try {
+        // D 只删图片；整列彻底为空时同步移除帧号，避免预览出现空白停顿。
+        if (effect) await api.deleteAttackEffect(trackId, stepId);
+        if (frame) await api.clearFrameCell(frame.id, true);
+        clearSelection();
+      } catch (error) {
+        notify(t("msg.delete_failed_msg", { msg: (error as Error).message }));
+      } finally {
+        await loadFrames(undefined, activeStepIdRef.current === stepId ? nextStepId : undefined);
+        deletingCellRef.current = false;
+        setDeletingCell(false);
+      }
+    });
+  }, [showPreview, tracks, steps, allFrames, allEffects, queueTimelineAction, clearSelection, loadFrames, t]);
+
+  const undoLastEdit = useCallback(() => {
+    if (showPreview || undoingRef.current || pointerBusyRef.current || draggingRef.current) return Promise.resolve(false);
+    undoingRef.current = true;
+    setUndoing(true);
+    return queueTimelineAction(async () => {
+      try {
+        // 等待已排队的变换与特效保存；撤销期间阻止新的用户编辑。
+        await Promise.allSettled([...patchChains.current.values(), ...effectChains.current.values()]);
+        await api.undoProject(projectId);
+        setV(value => value + 1);
+        clearSelection();
+        await loadFrames();
+        return true;
+      } catch (error) {
+        notify(t("msg.undo_failed_msg", { msg: (error as Error).message }));
+        return false;
+      } finally {
+        undoingRef.current = false;
+        setUndoing(false);
+      }
+    });
+  }, [showPreview, queueTimelineAction, projectId, clearSelection, loadFrames, t]);
+
+  const saveEdits = useCallback(async () => {
+    await timelineActions.current;
+    await Promise.all([...patchChains.current.values(), ...effectChains.current.values()]);
+    const ids = new Set([projectId, ...allFrames.map(frame => frame.id), ...(timeline?.assetFrames ?? []).map(frame => frame.id), ...tracks.map(track => track.id), ...steps.map(step => step.id), ...(timeline?.axes ?? []).map(axis => axis.id)]);
+    await flushPersistence(key => { const id = /\/api\/(?:projects|frames|axes|tracks|steps)\/([^/?]+)/.exec(key)?.[1]; return !!id && ids.has(id); });
+  }, [projectId, allFrames, timeline, tracks, steps]);
+
+  useEditingCommands({
+    label: project?.name ?? t("timeline.axis"), scope: commandScopeRef,
+    save: saveEdits, undo: undoLastEdit, canSave: !!project, canUndo: !showPreview,
+    allowShortcut: () => !pointerBusyRef.current && !draggingRef.current && !ctxMenu,
+    busy: undoing,
+    autoSave: true,
+    dirty: deletingCell || movingTimeline || patchChains.current.size > 0 || effectChains.current.size > 0,
+  });
+
+  const insertTimelineCell = (frameId: string, beforeStepId?: string) => {
+    if (!timeline || showPreview || movingTimelineRef.current || deletingCellRef.current || undoingRef.current) return;
+    const frame = allFrames.find(item => item.id === frameId);
+    if (!frame?.track_id || !frame.step_id || tracks.find(track => track.id === frame.track_id)?.locked) return;
+    const source = steps.findIndex(step => step.id === frame.step_id);
+    const boundary = beforeStepId ? steps.findIndex(step => step.id === beforeStepId) : steps.length;
+    if (source < 0 || boundary < 0) return;
+    const order = insertionOrder(steps, source, boundary);
+    if (order.every((step, index) => step.id === steps[index]?.id)) return;
+    const axis = timeline.axis.id, trackId = frame.track_id;
+    const destinations = new Map(order.map((step, index) => [step.id, steps[index]!]));
+    const target = destinations.get(frame.step_id)!;
+    movingTimelineRef.current = true; setMovingTimeline(true);
+    setTimeline(current => current?.axis.id === axis ? { ...current,
+      frames: current.frames.map(item => { const step = item.track_id === trackId && item.step_id ? destinations.get(item.step_id) : undefined; return step ? { ...item, step_id: step.id, idx: step.idx, duration: step.duration } : item; }),
+      effects: current.effects.map(effect => { const step = effect.track_id === trackId ? destinations.get(effect.step_id) : undefined; return step ? { ...effect, step_id: step.id } : effect; }),
+    } : current);
+    activeTrackIdRef.current = trackId; activeStepIdRef.current = target.id; activeIdRef.current = frameId;
+    setActiveTrackId(trackId); setActiveStepId(target.id); setActiveId(frameId); clearSelection();
+    void queueTimelineAction(async () => {
+      try {
+        await Promise.allSettled([...patchChains.current.values(), ...effectChains.current.values()]);
+        const result = await api.reorderTrackCells(trackId, { frameId, beforeStepId });
+        if (axisIdRef.current === axis) {
+          await loadFrames(trackId);
+          if (axisIdRef.current === axis) {
+            activeStepIdRef.current = result.frame.step_id; activeIdRef.current = result.frame.id;
+            setActiveStepId(result.frame.step_id); setActiveId(result.frame.id);
+          }
+        }
+      } catch (error) {
+        notify(t("timeline.moveFailed", { msg: (error as Error).message }));
+        if (axisIdRef.current === axis) await loadFrames();
+      } finally { movingTimelineRef.current = false; setMovingTimeline(false); }
+    });
+  };
+
+  const reorderTimelineSteps = (from: number, to: number) => {
+    if (!timeline || from === to || from < 0 || to < 0 || from >= steps.length || to >= steps.length || showPreview || movingTimelineRef.current || deletingCellRef.current || undoingRef.current) return;
+    const ordered = [...steps], [moved] = ordered.splice(from, 1);
+    ordered.splice(to, 0, moved!);
+    const axis = timeline.axis.id;
+    movingTimelineRef.current = true; setMovingTimeline(true);
+    setTimeline(current => current?.axis.id === axis ? { ...current, steps: ordered.map((step, idx) => ({ ...step, idx })) } : current);
+    void queueTimelineAction(async () => {
+      try {
+        await Promise.allSettled([...patchChains.current.values(), ...effectChains.current.values()]);
+        await api.reorderSteps(axis, ordered.map(step => step.id));
+        if (axisIdRef.current === axis) await loadFrames();
+      } catch (error) {
+        notify(t("timeline.moveFailed", { msg: (error as Error).message }));
+        if (axisIdRef.current === axis) await loadFrames();
+      } finally { movingTimelineRef.current = false; setMovingTimeline(false); }
+    });
+  };
+
+  const pruneEmptyFrames = async () => {
+    if (!timeline || deletingCellRef.current || undoingRef.current || !await askConfirm(t("timeline.pruneEmptyConfirm"))) return;
+    deletingCellRef.current = true;
+    setDeletingCell(true);
+    void queueTimelineAction(async () => {
+      try {
+        await Promise.allSettled([...patchChains.current.values(), ...effectChains.current.values()]);
+        const result = await api.pruneEmptySteps(timeline.axis.id);
+        notify(t("timeline.pruned", { n: result.removedStepIds.length }), "info");
+        await loadFrames();
+      } catch (error) {
+        notify(t("msg.delete_failed_msg", { msg: (error as Error).message }));
+      } finally { deletingCellRef.current = false; setDeletingCell(false); }
+    });
+  };
+
+  // D 只删所选格的图片，Ctrl/Cmd+Z 撤销；输入、弹窗与绘画不抢按键。
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && !showImport && !ctxMenu) clearSelection();
-      if (e.repeat || showPreview || ctxMenu) return;
-      const target = e.target as HTMLElement | null;
+      if (e.defaultPrevented || e.repeat || e.isComposing || e.keyCode === 229 || showPreview || ctxMenu || pointerBusyRef.current || draggingRef.current) return;
+      const target = e.target instanceof HTMLElement ? e.target : null;
       if (
         target?.isContentEditable ||
-        target?.closest("input, textarea, select, [contenteditable='true']") ||
-        document.querySelector(".modal-mask")
+        target?.closest('input, textarea, select, [contenteditable], [role="slider"], [role="spinbutton"], [role="combobox"]') ||
+        Array.from(document.querySelectorAll<HTMLElement>('.modal-mask, [role="dialog"], [aria-modal="true"], .px-select.open'))
+          .some(element => element.getClientRects().length > 0 && getComputedStyle(element).visibility !== "hidden")
       ) return;
-      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === "z") {
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "z") {
         e.preventDefault();
-        if (undoingRef.current) return;
-        undoingRef.current = true;
-        void api.undoProject(projectId)
-          .then(() => loadFrames())
-          .catch((error) => notify(t("msg.undo_failed_msg", { msg: (error as Error).message })))
-          .finally(() => { undoingRef.current = false; });
+        undoLastEdit();
         return;
       }
-      if (e.key !== "Delete" && e.key !== "Backspace") return;
-      const frame = allFrames.find(
-        (item) => item.id === activeId && item.track_id === activeTrackId && item.step_id === activeStepId
-      );
-      const cellEffect = allEffects.find((item) => item.track_id === activeTrackId && item.step_id === activeStepId);
-      if (!frame && !cellEffect) return;
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      const singleFrame = e.key.toLowerCase() === "d";
+      if (!singleFrame && e.key !== "Delete" && e.key !== "Backspace") return;
       e.preventDefault();
-      if (cellEffect) changeActiveEffect(null);
-      if (frame) {
-        setActiveId(null);
-        void api.clearFrameCell(frame.id)
-          .then(() => loadFrames(activeTrackId ?? undefined))
-          .catch((error) => notify(t("timeline.moveFailed", { msg: (error as Error).message })));
-      }
+      deleteActiveCell(!singleFrame);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [projectId, showImport, showPreview, ctxMenu, clearSelection, allFrames, allEffects, activeId, activeTrackId, activeStepId, loadFrames, t, changeActiveEffect]);
+  }, [showImport, showPreview, ctxMenu, clearSelection, deleteActiveCell, undoLastEdit]);
 
   // ---- 批量操作：循环调现有 API，完成后统一刷新并清空选区 ----
   const selectedInOrder = useCallback(
@@ -694,10 +848,27 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
     notify(t("msg.trimmed_trimmed_skipped_skipped_failed_failed", { trimmed, skipped, failed }), failed > 0 ? "error" : "info");
   }, [selectedInOrder, loadFrames, v]);
 
-  const activeIndex = frames.findIndex((f) => f.id === activeId);
-  const active = activeIndex >= 0 ? frames[activeIndex] : null;
-  const prev = activeIndex > 0 ? frames[activeIndex - 1] : null;
-  const next = activeIndex >= 0 && activeIndex < frames.length - 1 ? frames[activeIndex + 1] : null;
+  const assetFrames = timeline?.assetFrames ?? timeline?.poolFrames ?? [];
+  const assetIndex = assetFrames.findIndex((f) => f.id === activeId);
+  const assetFrameAt = (index: number) => {
+    const asset = assetFrames[index];
+    return asset ? frames.find((f) => f.id === asset.id) ?? asset : null;
+  };
+  const timelineSelected = activeTrackId !== null && activeStepId !== null;
+  const active = timelineSelected
+    ? allFrames.find((f) => f.track_id === activeTrackId && f.step_id === activeStepId) ?? null
+    : assetFrameAt(assetIndex);
+  const activeStepIndex = steps.findIndex((step) => step.id === activeStepId);
+  const activeTrackVisible = !!tracks.find((track) => track.id === activeTrackId)?.visible;
+  // 时间轴按同轨道的相邻格取洋葱皮，保留空格和边界；资产预览只使用资产顺序。
+  const adjacentTimelineFrame = (delta: number) => {
+    const step = steps[activeStepIndex + delta];
+    return activeStepIndex >= 0 && step && activeTrackVisible
+      ? allFrames.find((f) => f.track_id === activeTrackId && f.step_id === step.id) ?? null
+      : null;
+  };
+  const prev = timelineSelected ? adjacentTimelineFrame(-1) : assetIndex > 0 ? assetFrameAt(assetIndex - 1) : null;
+  const next = timelineSelected ? adjacentTimelineFrame(1) : assetIndex >= 0 ? assetFrameAt(assetIndex + 1) : null;
   // 播放时画布显示游标帧，停止回到当前编辑帧
   const displayStep = showPreview ? steps[cursor] : steps.find((s) => s.id === activeStepId);
   const trackOrder = useMemo(() => new Map(tracks.map((track) => [track.id, track] as const)), [tracks]);
@@ -726,7 +897,7 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
     : null;
   const activeEffect = activeEffectCell?.effect ?? null;
   const activeTrackLocked = !!tracks.find((track) => track.id === activeTrackId)?.locked;
-  const effectEditable = !showPreview && !!activeTrackId && !!activeStepId && !activeTrackLocked;
+  const effectEditable = !showPreview && !movingTimeline && !!activeTrackId && !!activeStepId && !activeTrackLocked;
   const activeFrameId = active?.id;
   // 选择来源由 activeTrack/activeStep 表达；历史资产即使仍绑定轨道，从左侧选中时也按资产预览。
   const poolActive = !!active && activeTrackId === null && activeStepId === null;
@@ -791,13 +962,14 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
         : [];
 
   return (
-    <div className="editor">
+    <div className="editor" ref={commandScopeRef} inert={undoing} aria-busy={undoing || deletingCell}>
       <header className="topbar pixel-bar">
         <IconBtn onClick={onBack} title={t("msg.back_to_projects")}>
           <ArrowLeft size={16} />
         </IconBtn>
         <span className="proj-name">{project?.name ?? "…"}</span>
         <span className="frame-count">{t("msg.n_frames", { n: allFrames.length + (timeline?.poolFrames.length ?? 0) })}</span>
+        <EditCommandBar />
         <div className="spacer" />
         {axisId&&<button className="px-btn" data-collaboration="manage" onClick={()=>setShowCollaboration(true)}>{t('collab.manage')}</button>}
         <button className="px-btn accent-cyan" disabled={!maskFrames.length} onClick={()=>setShowMasks(true)}><Scan size={16}/>{t('p2.title')}</button>
@@ -823,7 +995,7 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
         </motion.button>
       </header>
 
-      <div className="editor-main">
+      <div className="editor-main" inert={movingTimeline}>
         <FrameList
           frames={timeline?.assetFrames ?? timeline?.poolFrames ?? []}
           activeId={activeId}
@@ -882,7 +1054,7 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
                 composite={displayComposite}
                 effect={showPreview ? null : activeEffect}
                 effects={poolActive ? [] : compositeEffects}
-                editable={!showPreview && !!active && !tracks.find((tr) => tr.id === active.track_id)?.locked}
+                editable={!showPreview && !movingTimeline && !!active && !tracks.find((tr) => tr.id === active.track_id)?.locked}
                 effectEditable={effectEditable}
                 prev={prev}
                 next={next}
@@ -931,10 +1103,14 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
       <SplitDivider direction="row" onDelta={onTimelineDelta} onReset={() => setLayout((l) => ({ ...l, timelineH: LAYOUT_DEFAULTS.timelineH }))} />
       {timeline && <Timeline axes={timeline.axes} axis={timeline.axis} tracks={tracks} steps={steps} frames={allFrames} effects={allEffects}
         activeTrackId={activeTrackId} activeStepId={activeStepId} activeId={activeId} v={v} height={layout.timelineH}
-        onAxis={(id)=>{axisIdRef.current=id;setAxisId(id);setActiveId(null);setActiveStepId(null)}}
+        canDeleteFrame={!showPreview && !deletingCell && !undoing && !movingTimeline && !!allFrames.find(frame=>frame.id===activeId&&frame.track_id===activeTrackId&&frame.step_id===activeStepId) && !tracks.find(track=>track.id===activeTrackId)?.locked}
+        dragDisabled={showPreview || deletingCell || undoing || movingTimeline} onInsertCell={insertTimelineCell}
+        undoDisabled={showPreview || undoing} onDeleteFrame={()=>deleteActiveCell()} onUndo={undoLastEdit}
+        onPruneEmpty={pruneEmptyFrames} pruneDisabled={showPreview || deletingCell || undoing || movingTimeline || !steps.some(step=>!allFrames.some(frame=>frame.step_id===step.id)&&!allEffects.some(effect=>effect.step_id===step.id))}
+        onAxis={(id)=>{axisIdRef.current=id;activeIdRef.current=null;activeStepIdRef.current=null;setAxisId(id);setActiveId(null);setActiveStepId(null)}}
         onAddAxis={async()=>{const {axis}=await api.createAxis(projectId,{name:t("timeline.defaultAxisName"),fps});axisIdRef.current=axis.id;setAxisId(axis.id)}}
         onDeleteAxis={async()=>{if(await askConfirm(t("timeline.confirmDeleteAxis"))){await api.deleteAxis(timeline.axis.id);axisIdRef.current=null;setAxisId(null);void loadFrames()}}}
-        onCell={(trackId,stepId,frameId)=>{setActiveTrackId(trackId);setActiveStepId(stepId);setActiveId(frameId);setSelectedIds(new Set())}}
+        onCell={(trackId,stepId,frameId)=>{activeTrackIdRef.current=trackId;activeStepIdRef.current=stepId;activeIdRef.current=frameId;setActiveTrackId(trackId);setActiveStepId(stepId);setActiveId(frameId);setSelectedIds(new Set())}}
         onMoveCell={async(frameId,trackId,stepId,copy)=>{try{const {frame}=await api.moveFrameCell(frameId,trackId,stepId,true,copy);await loadFrames(trackId);setActiveTrackId(trackId);setActiveStepId(stepId);setActiveId(frame.id);setSelectedIds(new Set())}catch(e){notify(t("timeline.moveFailed",{msg:(e as Error).message}))}}}
         onPlaceBatch={async(frameIds,trackId,stepId)=>{try{const placed=await api.placeFramesBatch(trackId,{startStepId:stepId,frameIds});const refreshed=await loadFrames(trackId);const first=refreshed?.frames.find(frame=>frame.id===placed.frameIds[0]);setActiveTrackId(trackId);setActiveStepId(stepId??first?.step_id??null);setActiveId(placed.frameIds[0]??null);setSelectedIds(new Set())}catch(e){notify(t("timeline.moveFailed",{msg:(e as Error).message}))}}}
         onAddTrack={async()=>{await api.createTrack(timeline.axis.id,{name:t("timeline.defaultTrackName",{n:tracks.length+1})});void loadFrames()}}
@@ -944,7 +1120,7 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
         onAddStep={async()=>{const {step}=await api.createStep(timeline.axis.id);setActiveStepId(step.id);void loadFrames()}}
         onDeleteStep={async()=>{if(activeStepId&&await askConfirm(t("timeline.confirmDeleteStep"))){await api.deleteStep(activeStepId);setActiveStepId(null);setActiveId(null);void loadFrames()}}}
         onStepDuration={async(duration)=>{if(activeStepId){await api.patchStep(activeStepId,{duration});void loadFrames()}}}
-        onReorderSteps={async(from,to)=>{const ordered=[...steps];const [x]=ordered.splice(from,1);ordered.splice(to,0,x);await api.reorderSteps(timeline.axis.id,ordered.map(x=>x.id));void loadFrames()}}
+        onReorderSteps={reorderTimelineSteps}
         onContextMenu={(id,pos)=>onFrameContextMenu(id,pos,"timeline")}/>
       }
 
@@ -964,7 +1140,7 @@ export default function Editor({ projectId, onBack }: { projectId: string; onBac
         </AnimatePresence>
       </div>
 
-      {axisId&&<div className="modal-mask" style={showCollaboration?undefined:{display:'none'}}><section className="collaboration-dialog" role={showCollaboration?'dialog':undefined} aria-modal={showCollaboration?true:undefined} aria-label={t('collab.manage')}><header><h2>{t('collab.manage')}</h2><button className="px-btn" onClick={()=>setShowCollaboration(false)}>{t('review.close')}</button></header><CollaborationPanel context={{project_id:projectId,axis_id:axisId}} fps={fps} edit={draftEdit} onOpen={openCandidateReview} onTask={setKnownTaskId}/></section></div>}
+      {axisId&&<div className={showCollaboration?'modal-mask':undefined} style={showCollaboration?undefined:{display:'none'}}><section className="collaboration-dialog" role={showCollaboration?'dialog':undefined} aria-modal={showCollaboration?true:undefined} aria-label={t('collab.manage')}><header><h2>{t('collab.manage')}</h2><button className="px-btn" onClick={()=>setShowCollaboration(false)}>{t('review.close')}</button></header><CollaborationPanel context={{project_id:projectId,axis_id:axisId}} fps={fps} edit={draftEdit} onOpen={openCandidateReview} onTask={setKnownTaskId}/></section></div>}
       {reviewTaskId&&<CandidateReviewWorkspace taskId={reviewTaskId} onClose={()=>{setReviewTaskId(null);void loadFrames();}} onReturnToExport={()=>{setKnownTaskId(reviewTaskId);setReviewTaskId(null);setShowAlignment(true);void loadFrames();}} onEditDraft={context=>{if(context.project_id!==projectId){notify(t("collab.contextMismatch"));return;}setShowAlignment(false);setDraftEdit(context);setKnownTaskId(context.task_id);axisIdRef.current=context.axis_id;setAxisId(context.axis_id);setReviewTaskId(null);void loadFrames();}}/>}
       {/* 帧右键菜单（帧列表/时间轴共用，单帧 or 多选批量） */}
       {showMasks && <MaskWorkshop projectId={projectId} frames={maskFrames} initialId={activeId} onClose={()=>setShowMasks(false)} onChanged={()=>{void loadFrames();setV(x=>x+1);}}/>}

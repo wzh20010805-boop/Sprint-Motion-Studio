@@ -7,11 +7,14 @@ import { localizeSkeletonName } from "../builtinAnimationLabels";
 import { useModalEscClose } from "../hooks/useModalEscClose";
 import { useT } from "../i18n";
 import { askConfirm, notify } from "../notice";
+import { useEditingCommands } from "../editingCommands";
+import { discardPersistence } from "../persistence";
 import { exportSkeletalProjectPackage } from "../export";
 import { readZip } from "../zip";
 import AnimationAssetsWorkspace, { BindingEditor, CharacterPreview, SkeletonEditor } from "./AnimationAssetsWorkspace";
 import MaterialImportModal from "./MaterialImportModal";
 import PxSelect from "./PxSelect";
+import EditCommandBar from "./EditCommandBar";
 
 type WorkspaceTab = "character" | "animations";
 type BindingToolTab = "skeleton" | "parts";
@@ -35,6 +38,11 @@ export default function SkeletalProjectEditor({ project, onBack }: { project: Pr
   const [actionEditorClipId, setActionEditorClipId] = useState<string>();
   const [bindingToolTab, setBindingToolTab] = useState<BindingToolTab>("parts");
   const documentRef = useRef<SkeletalProjectDocument | undefined>(undefined);
+  const storedDocumentRef = useRef<SkeletalProjectDocument | undefined>(undefined);
+  const [documentHistory, setDocumentHistory] = useState<SkeletalProjectDocument[]>([]);
+  const [documentUndoing, setDocumentUndoing] = useState(false);
+  const documentHistoryRef = useRef<SkeletalProjectDocument[]>([]);
+  const scopeRef = useRef<HTMLDivElement>(null);
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const saveRevisionRef = useRef(0);
   const pendingSaveCountRef = useRef(0);
@@ -155,6 +163,7 @@ export default function SkeletalProjectEditor({ project, onBack }: { project: Pr
       .then(([nextDocument, nextAssets, nextMaterials, nextMaterialFolders]) => {
         if (!active) return;
         documentRef.current = nextDocument;
+        storedDocumentRef.current = structuredClone(nextDocument); documentHistoryRef.current = []; setDocumentHistory([]);
         setDocument(nextDocument);
         // 回到已经组装过角色的项目时，直接回到最常用的动作工作区；新项目仍从角色绑定开始。
         setTab(nextDocument.character ? "animations" : "character");
@@ -166,18 +175,25 @@ export default function SkeletalProjectEditor({ project, onBack }: { project: Pr
     return () => { active = false; };
   }, [project.id, t]);
 
-  const save = useCallback(async (next: SkeletalProjectDocument) => {
+  const save = useCallback(async (next: SkeletalProjectDocument, remember = true) => {
     const revision = ++saveRevisionRef.current;
+    documentRef.current = next; setDocument(next);
     pendingSaveCountRef.current += 1;
     setBusy(true);
     let stored: SkeletalProjectDocument | undefined;
     const operation = saveQueueRef.current.then(async () => {
       stored = await api.putSkeletalProjectDocument(project.id, next);
+      const previous = storedDocumentRef.current;
+      if (remember && previous && JSON.stringify(previous) !== JSON.stringify(stored)) {
+        documentHistoryRef.current = [...documentHistoryRef.current.slice(-49), structuredClone(previous)];
+        setDocumentHistory(documentHistoryRef.current);
+      }
+      storedDocumentRef.current = structuredClone(stored);
     });
     saveQueueRef.current = operation.catch(() => undefined);
     try {
       await operation;
-      if (revision === saveRevisionRef.current) {
+      if (revision === saveRevisionRef.current && documentRef.current === next) {
         documentRef.current = stored!;
         setDocument(stored!);
       }
@@ -190,6 +206,47 @@ export default function SkeletalProjectEditor({ project, onBack }: { project: Pr
       if (pendingSaveCountRef.current === 0) setBusy(false);
     }
   }, [project.id, t]);
+
+  const normalizedDocument = (value: SkeletalProjectDocument): SkeletalProjectDocument => ({ ...value, animations: value.animations.map(animation => ({
+    ...animation, name: animation.name.trim() || t("skeletal.animations.newName"),
+    speed: Math.min(8, Math.max(.1, animation.speed || 1)), repeat: Math.min(100, Math.max(1, Math.round(animation.repeat || 1))),
+  })) });
+  const waitForSaves = async () => {
+    let queued: Promise<void>;
+    do { queued = saveQueueRef.current; await queued; } while (queued !== saveQueueRef.current);
+  };
+  const flushDocument = async () => {
+    await waitForSaves();
+    const current = documentRef.current;
+    if (!current) return false;
+    return save(normalizedDocument(current));
+  };
+  const undoDocument = async () => {
+    setDocumentUndoing(true);
+    try {
+      await waitForSaves();
+      const current = documentRef.current, persisted = storedDocumentRef.current;
+      if (!current || !persisted) return false;
+      if (JSON.stringify(current) !== JSON.stringify(persisted)) {
+        discardPersistence(key => key === `PUT:/api/projects/${project.id}/skeletal-document`);
+        documentRef.current = structuredClone(persisted); setDocument(documentRef.current); return true;
+      }
+      const previous = documentHistoryRef.current.at(-1);
+      if (!previous) return false;
+      if (!(await save(structuredClone(previous), false))) {
+        discardPersistence(key => key === `PUT:/api/projects/${project.id}/skeletal-document`);
+        documentRef.current = current; setDocument(current); return false;
+      }
+      documentHistoryRef.current = documentHistoryRef.current.slice(0, -1); setDocumentHistory(documentHistoryRef.current);
+      return true;
+    } finally { setDocumentUndoing(false); }
+  };
+  useEditingCommands({ label: t("project.kind.skeletal"), priority: 10, scope: scopeRef, enabled: !!document,
+    autoSave: true,
+    busy: documentUndoing || busy && pendingSaveCountRef.current === 0,
+    dirty: JSON.stringify(document) !== JSON.stringify(storedDocumentRef.current),
+    save: flushDocument, undo: undoDocument,
+    canUndo: !!documentHistory.length || pendingSaveCountRef.current > 0 || JSON.stringify(document) !== JSON.stringify(storedDocumentRef.current) });
 
   const binding = document?.character?.binding;
   useEffect(() => {
@@ -274,15 +331,17 @@ export default function SkeletalProjectEditor({ project, onBack }: { project: Pr
   }, []);
 
   const saveSkeleton = async (next: Skeleton) => {
-    if (busy) return;
+    if (busy) return false;
     setBusy(true);
     try {
       const result = await api.putAnimationAsset(next.id, next);
       if (result.asset.kind !== "skeleton") throw new Error(t("skeletal.invalidSkeleton"));
       setSkeleton(result.asset);
       notify(t("animation.skeletonEditor.savedNotice"), "info");
+      return true;
     } catch (e) {
       notify(t("animation.skeletonEditor.saveFailed", { msg: (e as Error).message }));
+      return false;
     } finally {
       setBusy(false);
     }
@@ -400,7 +459,7 @@ export default function SkeletalProjectEditor({ project, onBack }: { project: Pr
   if (!document) return <div className="project-route-state">{t("project.loading")}</div>;
 
   return (
-    <div className="skeletal-project-shell">
+    <div ref={scopeRef} inert={documentUndoing || undefined} className="skeletal-project-shell">
       <header className="skeletal-project-header">
         <button type="button" className="px-btn" onClick={onBack}><ArrowLeft size={16} /> {t("msg.back_to_projects")}</button>
         <div className="skeletal-project-title">
@@ -408,6 +467,7 @@ export default function SkeletalProjectEditor({ project, onBack }: { project: Pr
           <h1>{project.name}</h1>
           <p>{t("project.skeletal.subtitle")}</p>
         </div>
+        <EditCommandBar />
       </header>
 
       <nav className="skeletal-project-tabs" aria-label={t("skeletal.workspaceTabs")}>
@@ -460,7 +520,11 @@ export default function SkeletalProjectEditor({ project, onBack }: { project: Pr
           {bindingToolTab === "skeleton"
             ? <SkeletonEditor skeleton={skeleton} previewBinding={binding} busy={busy} onSave={saveSkeleton} />
             : <BindingEditor binding={binding} skeleton={skeleton} materials={materials} materialFolders={materialFolders} busy={busy} onMaterialsChanged={() => void reloadMaterialLibrary().catch((e) => notify(t("skeletal.loadFailed", { msg: (e as Error).message })))} onSave={async (next: CharacterBinding) => {
-              if (await save({ ...document, character: { binding: next } })) setBindingEditorOpen(false);
+              const previous = documentRef.current!;
+              if (await save({ ...documentRef.current!, character: { binding: next } })) { setBindingEditorOpen(false); return true; }
+              documentRef.current = previous; setDocument(previous);
+              discardPersistence(key => key === `PUT:/api/projects/${project.id}/skeletal-document`);
+              return false;
             }} />}
         </section>
         {materialImportOpen && <MaterialImportModal initialTab="upload" initialProjectId={project.id} projects={[project]} onClose={() => setMaterialImportOpen(false)} onDone={() => {
@@ -491,8 +555,8 @@ export default function SkeletalProjectEditor({ project, onBack }: { project: Pr
             </div>
             <div className="skeletal-action-settings">
               <label>{t("skeletal.animations.name")}<input className="px-input" value={activeAnimation.name} onChange={(e) => { const next = { ...document, animations: document.animations.map((item) => item.id === activeAnimation.id ? { ...item, name: e.target.value } : item) }; documentRef.current = next; setDocument(next); }} onBlur={(e) => void patchAnimation(activeAnimation.id, { name: e.target.value.trim() || activeAnimation.name })} /></label>
-              <label>{t("skeletal.animations.speed")}<input key={`speed-${activeAnimation.id}-${activeAnimation.speed}`} className="px-input" type="number" min="0.1" max="8" step="0.1" defaultValue={activeAnimation.speed} onBlur={(e) => void patchAnimation(activeAnimation.id, { speed: Math.min(8, Math.max(.1, +e.target.value || 1)) })} onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }} /></label>
-              <label>{t("skeletal.animations.repeat")}<input key={`repeat-${activeAnimation.id}-${activeAnimation.repeat}`} className="px-input" type="number" min="1" max="100" step="1" defaultValue={activeAnimation.repeat} onBlur={(e) => void patchAnimation(activeAnimation.id, { repeat: Math.min(100, Math.max(1, Math.round(+e.target.value || 1))) })} onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }} /></label>
+              <label>{t("skeletal.animations.speed")}<input className="px-input" type="number" min="0.1" max="8" step="0.1" value={activeAnimation.speed} onChange={(e) => { const next = { ...documentRef.current!, animations: documentRef.current!.animations.map(item => item.id === activeAnimation.id ? { ...item, speed: +e.target.value } : item) }; documentRef.current = next; setDocument(next); }} onBlur={(e) => void patchAnimation(activeAnimation.id, { speed: Math.min(8, Math.max(.1, +e.target.value || 1)) })} onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }} /></label>
+              <label>{t("skeletal.animations.repeat")}<input className="px-input" type="number" min="1" max="100" step="1" value={activeAnimation.repeat} onChange={(e) => { const next = { ...documentRef.current!, animations: documentRef.current!.animations.map(item => item.id === activeAnimation.id ? { ...item, repeat: +e.target.value } : item) }; documentRef.current = next; setDocument(next); }} onBlur={(e) => void patchAnimation(activeAnimation.id, { repeat: Math.min(100, Math.max(1, Math.round(+e.target.value || 1))) })} onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }} /></label>
               <label className="px-check"><input type="checkbox" checked={activeAnimation.loop} onChange={(e) => void patchAnimation(activeAnimation.id, { loop: e.target.checked })} />{t("skeletal.animations.loop")}</label>
               <button type="button" className="px-btn danger" onClick={() => void deleteAnimation(activeAnimation.id)}><Trash2 size={14} /> {t("skeletal.animations.remove")}</button>
               <button type="button" className="px-btn accent" onClick={() => setActionEditorClipId(activeAnimation.motionClipId)}>{t("skeletal.animations.editOnCharacter")}</button>

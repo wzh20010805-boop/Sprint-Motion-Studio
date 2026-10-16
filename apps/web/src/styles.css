@@ -1213,10 +1213,20 @@ input[type="range"] {
   border-bottom: none;
   border-top: 4px solid var(--border);
 }
-.tl-controls { display:flex; align-items:center; gap:8px; position:sticky; left:0; margin-bottom:8px; white-space:nowrap; }
+/* 菜单向上展开时也须高于画布控件和布局分隔条；网格标记只在自身层级排序。 */
+.tl-controls { display:flex; align-items:center; gap:8px; position:sticky; z-index:20; left:0; margin-bottom:8px; white-space:nowrap; }
 .tl-axis-picker { display:flex; align-items:center; gap:6px; }
 .tl-axis-select { width:150px; }
-.tl-grid { display:grid; gap:4px; width:max-content; align-items:stretch; }
+.tl-grid { display:grid; gap:4px; width:max-content; align-items:stretch; position:relative; z-index:0; }
+.tl-grid .tl-step,.tl-grid .tl-cell { transition:transform 180ms cubic-bezier(.2,.75,.25,1); }
+.tl-inserting .tl-step,.tl-inserting .tl-cell { will-change:transform; }
+.tl-insert-settled .tl-step,.tl-insert-settled .tl-cell { transition:none; }
+.tl-step.dragging-step { opacity:.35; cursor:grabbing; }
+.tl-insert-marker { position:absolute; width:3px; background:var(--accent); z-index:5; pointer-events:none; box-shadow:0 0 0 1px var(--bg); }
+.tl-insert-marker::before,.tl-insert-marker::after { content:""; position:absolute; left:-3px; width:9px; height:3px; background:var(--accent); }
+.tl-insert-marker::before { top:0; }.tl-insert-marker::after { bottom:0; }
+.tl-insert-marker>span { position:absolute; left:5px; top:2px; white-space:nowrap; font-size:10px; padding:2px 4px; color:var(--accent-contrast); background:var(--accent); border-radius:4px; }
+@media(prefers-reduced-motion:reduce) { .tl-grid .tl-step,.tl-grid .tl-cell { transition:none; } }
 .tl-corner,.tl-step,.tl-track,.tl-cell { background:var(--bg); border:2px solid var(--border); min-height:48px; }
 .tl-corner,.tl-step { display:flex; align-items:center; justify-content:center; color:var(--text-muted); }
 .tl-step { cursor:grab; flex-direction:column; }
@@ -1225,6 +1235,9 @@ input[type="range"] {
 .tl-track.drop-target { border-color:var(--border-focused); background:var(--selected); box-shadow:inset 0 0 0 2px var(--border-focused); }
 .tl-track > span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
 .tl-track .icon-btn { width:18px; height:18px; }
+.edit-command-bar { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+.edit-command-bar small { color:var(--text-muted); white-space:nowrap; }
+.edit-command-dock { position:fixed; bottom:76px; left:50%; transform:translateX(-50%); z-index:10050; padding:7px 10px; background:var(--bg); }
 .tl-cell { position:relative; background:repeating-conic-gradient(var(--checker-a) 0% 25%,var(--checker-b) 0% 50%) 0 0/10px 10px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
 .tl-cell.draggable { cursor:grab; }
 .tl-cell.dragging { opacity:.45; cursor:grabbing; }

@@ -1,9 +1,11 @@
 import { setAxisFps } from '../pipeline/collaboration/drafts';
 import { draftState } from '../pipeline/collaboration/timing';
 import { Elysia, t } from "elysia";
+import type { PruneEmptyStepsResponse } from "@framebaker/shared";
 import { db, uid } from "../db";
-import { clearFramePlacement, getTimeline, placeAssetFramesBatch, placeFrame, reorderSteps, setStepDuration, syncAxis } from "../timeline";
+import { clearFramePlacement, getTimeline, placeAssetFramesBatch, placeFrame, pruneEmptySteps, reorderSteps, reorderTrackCells, setStepDuration, syncAxis } from "../timeline";
 import { broadcast } from "../ws";
+import { finishProjectUndo } from "../undo";
 
 const changed = (projectId: string, extra: Record<string, unknown> = {}) => broadcast("timeline_changed", { projectId, ...extra });
 const axisContext = (axisId: string) => db.query("SELECT id,project_id FROM animation_axes WHERE id=?").get(axisId) as {id:string;project_id:string}|null;
@@ -12,6 +14,7 @@ const stepContext = (id: string) => db.query("SELECT s.*,a.project_id FROM anima
 
 export const timelineApi = new Elysia({ prefix: "/api" })
   .get("/projects/:id/timeline", ({params,query,status}) => { try { return getTimeline(params.id,query.axisId); } catch(e) { return status(404,(e as Error).message); } }, { query:t.Object({axisId:t.Optional(t.String())}) })
+  .post("/tracks/:id/cells/reorder",({params,body,request,status})=>{try{const result=reorderTrackCells(params.id,body.frameId,body.beforeStepId);if(result.affectedStepIds.length)changed(result.frame.project_id,{trackId:params.id,frameId:result.frame.id,stepId:result.frame.step_id,affectedStepIds:result.affectedStepIds});else finishProjectUndo(request,false);return result;}catch(error){const message=(error as Error).message;return status(message==="轨道已锁定"?409:message==="轨道不存在"||message==="帧不存在"?404:400,message);}},{body:t.Object({frameId:t.String(),beforeStepId:t.Optional(t.String())})})
   .post("/projects/:id/axes", ({params,body,status}) => {
     if(!db.query("SELECT id FROM projects WHERE id=?").get(params.id)) return status(404,"项目不存在");
     const id=uid(), idx=(db.query("SELECT COALESCE(MAX(idx),-1)+1 next FROM animation_axes WHERE project_id=?").get(params.id) as any).next;
@@ -27,6 +30,7 @@ export const timelineApi = new Elysia({ prefix: "/api" })
   .patch("/steps/:id",({params,body,status})=>{const s=stepContext(params.id);if(!s)return status(404,"步骤不存在");setStepDuration(params.id,body.duration);changed(s.project_id,{axisId:s.axis_id,stepId:params.id});return {step:db.query("SELECT * FROM animation_steps WHERE id=?").get(params.id)};},{body:t.Object({duration:t.Integer({minimum:1,maximum:600})})})
   .delete("/steps/:id",({params,status})=>{const s=stepContext(params.id);if(!s)return status(404,"步骤不存在");db.transaction(()=>{db.query("DELETE FROM attack_effects WHERE step_id=?").run(params.id);db.query("DELETE FROM frames WHERE step_id=?").run(params.id);db.query("DELETE FROM animation_steps WHERE id=?").run(params.id);})();syncAxis(s.axis_id);changed(s.project_id,{axisId:s.axis_id,stepId:params.id});return {ok:true};})
   .post("/axes/:id/steps/reorder",({params,body,status})=>{const a=axisContext(params.id);if(!a)return status(404,"动画轴不存在");try{reorderSteps(params.id,body.stepIds);}catch(e){return status(400,(e as Error).message)}changed(a.project_id,{axisId:params.id});return {ok:true};},{body:t.Object({stepIds:t.Array(t.String())})})
+  .post("/axes/:id/steps/prune-empty",({params,status})=>{const a=axisContext(params.id);if(!a)return status(404,"动画轴不存在");const removedStepIds=pruneEmptySteps(params.id);changed(a.project_id,{axisId:params.id,removedStepIds});return {ok:true,removedStepIds} satisfies PruneEmptyStepsResponse;})
   .patch("/frames/:id/placement",({params,body,status})=>{try{const frame=placeFrame(params.id,body.trackId,body.stepId,body.swap??false,body.copy??false);changed(frame.project_id,{frameId:frame.id,trackId:body.trackId,stepId:body.stepId});return {frame};}catch(e){const m=(e as Error).message;return status(m==="OCCUPIED"?409:m==="帧不存在"?404:400,m==="OCCUPIED"?"目标轨道步骤已被占用":m);}},{body:t.Object({trackId:t.String(),stepId:t.String(),swap:t.Optional(t.Boolean()),copy:t.Optional(t.Boolean())})})
-  .delete("/frames/:id/placement",({params,status})=>{const frame=clearFramePlacement(params.id);if(!frame)return status(404,"轨道单元格不存在");changed(frame.project_id,{frameId:frame.id,trackId:frame.track_id,stepId:frame.step_id});return {ok:true};})
+  .delete("/frames/:id/placement",({params,query,status})=>{try{const frame=clearFramePlacement(params.id,query.removeEmptyStep==="true");if(!frame)return status(404,"轨道单元格不存在");changed(frame.project_id,{frameId:frame.id,trackId:frame.track_id,stepId:frame.step_id});return {ok:true};}catch(e){const message=(e as Error).message;return status(message==="轨道已锁定"?409:400,message);}},{query:t.Object({removeEmptyStep:t.Optional(t.Union([t.Literal("true"),t.Literal("false")]))})})
   .post("/tracks/:id/place-frames",({params,body,status})=>{const tr=trackContext(params.id);if(!tr)return status(404,"轨道不存在");try{const frameIds=placeAssetFramesBatch(tr.project_id,body.frameIds,{axisId:tr.axis_id,trackId:params.id,startStepId:body.startStepId});changed(tr.project_id,{axisId:tr.axis_id,trackId:params.id});return {frameIds};}catch(e){return status(400,(e as Error).message);}},{body:t.Object({frameIds:t.Array(t.String(),{minItems:1}),startStepId:t.Optional(t.String())})});

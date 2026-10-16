@@ -20,6 +20,9 @@ import type {
   MaterialResponse,
   MaterialsResponse,
   OkResponse,
+  PruneEmptyStepsResponse,
+  ReorderTrackCellsRequest,
+  ReorderTrackCellsResponse,
   Project,
   ProjectKind,
   ProjectResponse,
@@ -50,19 +53,29 @@ import type {
   CharacterPartSetMember,
   GenerationIntent,
 } from "@framebaker/shared";
+import { discardPersistence, trackPersistence } from "./persistence";
 
 export type { AttackEffect, AttackEffectCell, Frame, FramePatch, Job, Material, Project, ProjectKind, Folder, FolderKind, SkeletalProjectDocument, WSMessage, AnimationAxis, AnimationTrack, TimelineStep, TimelineResponse, CharacterPartSet, CharacterPartSetMember, CharacterPartSetSource, GenerationIntent } from "@framebaker/shared";
 export { frameImageUrl, materialFileUrl, materialImageUrl, projectThumbnailUrl } from "./api/mediaUrls";
 export { wsClient } from "./api/ws";
 
 // ---- fetch 封装 ----
-async function req<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || `HTTP ${res.status}`);
-  }
-  return (await res.json()) as T;
+function req<T>(url: string, init?: RequestInit): Promise<T> {
+  const request = async () => {
+    const res = await fetch(url, init);
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || `HTTP ${res.status}`);
+    }
+    const result = (await res.json()) as T;
+    if (init?.method === "DELETE" && /^\/api\/(?:projects|frames|materials|folders|axes|tracks|steps)\/[^/?]+$/.test(url)) {
+      discardPersistence(key => key.slice(key.indexOf(":") + 1).split("?")[0] === url || key.slice(key.indexOf(":") + 1).startsWith(`${url}/`));
+    }
+    return result;
+  };
+  const method = init?.method?.toUpperCase() ?? "GET";
+  const retains = method === "PATCH" || method === "PUT" || method === "POST" && /^\/api\/(?:frames\/[^/]+\/replace|materials\/[^/]+\/replace-image)$/.test(url);
+  return method === "GET" || method === "HEAD" ? request() : trackPersistence(`${method}:${url}`, request, retains, method !== "POST");
 }
 
 const json = (body: unknown) => ({
@@ -151,7 +164,9 @@ export const api = {
   deleteStep: (id: string) => req<OkResponse>(`/api/steps/${id}`, { method: "DELETE" }),
   reorderSteps: (axisId: string, stepIds: string[]) => req<OkResponse>(`/api/axes/${axisId}/steps/reorder`, { method: "POST", ...json({ stepIds }) }),
   moveFrameCell: (id: string, trackId: string, stepId: string, swap = false, copy = false) => req<FrameResponse>(`/api/frames/${id}/placement`, { method: "PATCH", ...json({ trackId, stepId, swap, copy }) }),
-  clearFrameCell: (id: string) => req<OkResponse>(`/api/frames/${id}/placement`, { method: "DELETE" }),
+  clearFrameCell: (id: string, removeEmptyStep = false) => req<OkResponse>(`/api/frames/${id}/placement${removeEmptyStep ? "?removeEmptyStep=true" : ""}`, { method: "DELETE" }),
+  pruneEmptySteps: (axisId: string) => req<PruneEmptyStepsResponse>(`/api/axes/${axisId}/steps/prune-empty`, { method: "POST" }),
+  reorderTrackCells: (trackId: string, body: ReorderTrackCellsRequest) => req<ReorderTrackCellsResponse>(`/api/tracks/${trackId}/cells/reorder`, { method: "POST", ...json(body) }),
   /** 批量把资产帧 copy 到目标轨道（从 startStepId 起连续放置，占用帧推回池，不足新建 step） */
   placeFramesBatch: (trackId: string, body: { startStepId?: string; frameIds: string[] }) =>
     req<{ frameIds: string[] }>(`/api/tracks/${trackId}/place-frames`, { method: "POST", ...json(body) }),

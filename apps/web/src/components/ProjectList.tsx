@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Bone, Clapperboard, Film, Plus, Sparkles, Trash2 } from "lucide-react";
 import { api, frameImageUrl, projectThumbnailUrl, wsClient, type Folder, type Project, type ProjectKind } from "../api";
@@ -8,9 +8,17 @@ import { useModalEscClose } from "../hooks/useModalEscClose";
 import FolderTree, { type FolderSelection } from "./FolderTree";
 import FileZoom, { useFileZoom } from "./FileZoom";
 import CandyDoodle from './CandyDoodle';
+import { useEditingCommands } from "../editingCommands";
+import { flushPersistence } from "../persistence";
+import { useReversibleEdits } from "../hooks/useReversibleEdits";
 
 export default function ProjectList({ onOpen }: { onOpen: (id: string) => void }) {
   const t = useT();
+  const pageRef = useRef<HTMLDivElement>(null);
+  const createScope = useRef<HTMLDivElement>(null);
+  const createBusy = useRef(false);
+  const editHistory = useReversibleEdits();
+  useEditingCommands({ label: t("msg.projects"), scope: pageRef, save: () => flushPersistence(key => /\/api\/(?:projects|folders)(?:\/|$)/.test(key)), undo: editHistory.undo, canUndo: editHistory.canUndo, busy: editHistory.busy, autoSave: true });
   const [projects, setProjects] = useState<Project[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [folderSel, setFolderSel] = useState<FolderSelection>("all");
@@ -60,16 +68,22 @@ export default function ProjectList({ onOpen }: { onOpen: (id: string) => void }
   const currentFolderId = folderSel !== "all" && folderSel !== "ungrouped" ? folderSel : null;
 
   const create = async () => {
-    if (!name.trim()) return;
+    if (!name.trim() || createBusy.current) return false;
+    createBusy.current = true;
     try {
       const { id } = await api.createProject(name.trim(), kind, currentFolderId);
       setShowModal(false);
       setName("");
       onOpen(id);
+      return true;
     } catch (e) {
       notify(t("msg.create_failed_msg", { msg: (e as Error).message }));
-    }
+      return false;
+    } finally { createBusy.current = false; }
   };
+
+  useEditingCommands({ label: t("msg.new_project"), priority: 100, enabled: showModal, scope: createScope,
+    save: create, canSave: !!name.trim(), dirty: !!name.trim(), undo: () => { setName(""); setKind("frame"); }, canUndo: !!name || kind !== "frame" });
 
   const remove = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -83,7 +97,19 @@ export default function ProjectList({ onOpen }: { onOpen: (id: string) => void }
       folderId == null ? t("msg.ungrouped") : (folders.find((f) => f.id === folderId)?.name ?? folderId);
     if (!(await askConfirm(t("msg.move_n_projects_to_name", { n: ids.length, name })))) return;
     try {
+      const before = projects.filter(item => ids.includes(item.id)).map(item => ({ id: item.id, folderId: item.folder_id }));
       await api.moveItems("project", ids, folderId);
+      editHistory.record(async () => {
+        const current = await api.listProjects();
+        for (const item of before) {
+          const found = current.find(value => value.id === item.id);
+          if (!found || found.folder_id !== folderId && found.folder_id !== item.folderId) throw new Error(t("editing.changedElsewhere"));
+        }
+        const groups = new Map<string | null, string[]>();
+        for (const item of before) groups.set(item.folderId, [...(groups.get(item.folderId) ?? []), item.id]);
+        for (const [original, members] of groups) await api.moveItems("project", members, original);
+        await load();
+      });
       await load();
     } catch (e) {
       notify(t("msg.operation_failed_msg", { msg: (e as Error).message }));
@@ -91,7 +117,7 @@ export default function ProjectList({ onOpen }: { onOpen: (id: string) => void }
   };
 
   return (
-    <div className="page page-with-folders">
+    <div className="page page-with-folders" ref={pageRef}>
       <FolderTree
         kind="project"
         folders={folders}
@@ -102,7 +128,13 @@ export default function ProjectList({ onOpen }: { onOpen: (id: string) => void }
           await loadFolders();
         }}
         onRename={async (id, folderName) => {
+          const before = folders.find(folder => folder.id === id);
           await api.patchFolder(id, { name: folderName });
+          if (before) editHistory.record(async () => {
+            const current = (await api.listFolders("project")).find(folder => folder.id === id);
+            if (current?.name !== folderName) throw new Error(t("editing.changedElsewhere"));
+            await api.patchFolder(id, { name: before.name }); await loadFolders();
+          });
           await loadFolders();
         }}
         onDelete={async (id) => {
@@ -111,7 +143,13 @@ export default function ProjectList({ onOpen }: { onOpen: (id: string) => void }
           await load();
         }}
         onMoveFolder={async (id, parentId) => {
+          const before = folders.find(folder => folder.id === id);
           await api.patchFolder(id, { parentId });
+          if (before) editHistory.record(async () => {
+            const current = (await api.listFolders("project")).find(folder => folder.id === id);
+            if (!current || current.parent_id !== parentId) throw new Error(t("editing.changedElsewhere"));
+            await api.patchFolder(id, { parentId: before.parent_id }); await loadFolders();
+          });
           await loadFolders();
         }}
         onDropItems={(folderId, ids) => void moveToFolder(folderId, ids)}
@@ -198,6 +236,7 @@ export default function ProjectList({ onOpen }: { onOpen: (id: string) => void }
             exit={{ opacity: 0 }}
           >
             <motion.div
+              ref={createScope}
               className="modal pixel-panel"
               initial={{ scale: 0.9, y: 24 }}
               animate={{ scale: 1, y: 0 }}

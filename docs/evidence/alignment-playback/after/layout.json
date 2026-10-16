@@ -1,0 +1,52 @@
+{
+  "initial": {
+    "width": 256,
+    "height": 320,
+    "zoom": 0.5,
+    "characterHeight": 240,
+    "fullyVisible": true,
+    "viewHeight": 445.5625
+  },
+  "options": [
+    "0.25",
+    "0.5",
+    "1",
+    "2"
+  ],
+  "enlarged": {
+    "width": 1024,
+    "height": 1280,
+    "zoom": 2,
+    "characterHeight": 960,
+    "fullyVisible": false,
+    "viewHeight": 483.5
+  },
+  "restored": {
+    "width": 256,
+    "height": 320,
+    "zoom": 0.5,
+    "characterHeight": 240,
+    "fullyVisible": true,
+    "viewHeight": 445.5625
+  },
+  "inputs": [
+    "512",
+    "640",
+    "0.7395993836671803",
+    "256",
+    "592",
+    "485",
+    "691",
+    "0",
+    "0"
+  ],
+  "playback": {
+    "visited": [
+      "1 / 3",
+      "2 / 3",
+      "3 / 3"
+    ],
+    "decoded": []
+  },
+  "passed": false
+}
